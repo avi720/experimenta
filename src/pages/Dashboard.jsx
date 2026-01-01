@@ -1,5 +1,5 @@
 import React from "react";
-import { useAppData } from "../Components/hooks/useAppData";
+import { useAppData } from "../components/hooks/useAppData";
 
 // Import the dashboard components from the new location
 import HeroSection from "../components/pagesComponents/dashboard/HeroSection";
