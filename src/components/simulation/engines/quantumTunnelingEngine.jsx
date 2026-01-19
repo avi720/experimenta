@@ -1,4 +1,3 @@
-
 /**
  * Quantum tunneling simulation engine with time evolution.
  * All internal calculations are done in SI units (meters, kg, seconds, Joules).
@@ -77,7 +76,7 @@ function calculateTransmissionReflection(E_si, V0_si, L_si, m_si) {
     return { transmission, reflection };
 }
 
-export function calculateStep(t, parameters = {}) {
+export function calculateQuantumTunnelingStep(t, parameters = {}) {
     // Ensure parameters object exists and has default values
     const { 
         v = 0.01,   // Particle speed as fraction of c (non-relativistic default)

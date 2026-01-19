@@ -1,22 +1,7 @@
-
-// Assuming React is available in the environment,
-// but no direct React hooks like useState, useEffect are called within useShoSimulation itself,
-// as it primarily orchestrates other custom hooks.
-
-// Import necessary custom hooks and utility functions.
-// Adjust paths based on your project's actual file structure.
-// For example, if useShoSimulation.js is in 'src/hooks',
-// and useShoParameters.js, useSimulationManager.js are also in 'src/hooks',
-// and shoCalculator.js is in 'src/utils'.
-import { useShoParameters } from './useShoParameters';
-import { useSimulationManager } from './useSimulationManager';
+import { useShoParameters } from './shoSimulation/useShoParameters';
+import { useSimulationManager } from './simulation/useSimulationManager';
 import { calculateShoStep } from '../utils/shoCalculator'; // Or adjust path as needed
-
 /**
- * useShoSimulation is a primary hook that orchestrates parameter management
- * and simulation execution for a Simple Harmonic Oscillator (SHO) experiment.
- * It combines functionalities from useShoParameters and useSimulationManager
- * to provide a comprehensive interface for controlling and observing the simulation.
  *
  * @param {object} experiment - An object containing experiment-specific configurations,
  *                              including default parameters for the SHO.
