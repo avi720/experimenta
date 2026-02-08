@@ -1,3 +1,4 @@
+// אף אחד לא משתמש בקובץ הזה. לבדיקה האם למחוק או להחליף במשהו שלא עובד
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { calculateStep } from '../../simulation/engines/shoEngine';
 

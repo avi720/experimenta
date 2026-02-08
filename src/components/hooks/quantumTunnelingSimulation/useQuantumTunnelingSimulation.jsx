@@ -1,8 +1,8 @@
 import { calculateQuantumTunnelingStep } from '../../simulation/engines/quantumTunnelingEngine';
 import { useQuantumTunnelingParameters } from './useQuantumTunnelingParameters';
 import { useSimulationManager } from '../simulation/useSimulationManager';
-import { useSimulationDataDisplay } from '../shoSimulation/useSimulationDataDisplay';
-import { useExperimentPersistence } from '../shoSimulation/useExperimentPersistence';
+import { useSimulationDataDisplay } from '../simulation/useSimulationDataDisplay';
+import { useExperimentPersistence } from '../simulation/useExperimentPersistence';
 import { useSimulationControlsLogic } from '../simulation/useSimulationControlsLogic';
 
 export function useQuantumTunnelingSimulation(experimentTemplate) {

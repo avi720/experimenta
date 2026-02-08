@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useShoParameters } from './useShoParameters';
 import { useSimulationManager } from '../simulation/useSimulationManager';
-import { useSimulationDataDisplay } from './useSimulationDataDisplay';
-import { useExperimentPersistence } from './useExperimentPersistence';
+import { useSimulationDataDisplay } from '../simulation/useSimulationDataDisplay';
+import { useExperimentPersistence } from '../simulation/useExperimentPersistence';
 import { calculateStep } from '../../simulation/engines/shoEngine';
 import { useSimulationControlsLogic } from '../simulation/useSimulationControlsLogic';
 

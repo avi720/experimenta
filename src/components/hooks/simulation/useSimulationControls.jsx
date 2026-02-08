@@ -1,3 +1,5 @@
+// אף אחד לא משתמש בקובץ הזה. לבדיקה האם למחוק או להחליף במשהו שלא עובד
+
 import { useCallback } from 'react';
 
 export function useSimulationControls({

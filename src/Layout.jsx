@@ -36,7 +36,7 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      <style jsx>{`
+      <style>{`
         .rtl { direction: rtl; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
         .ltr { direction: ltr; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
       `}</style>

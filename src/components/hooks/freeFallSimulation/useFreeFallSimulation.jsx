@@ -2,8 +2,8 @@ import { calculateFreeFallStep } from '../../simulation/engines/freeFallEngine';
 import { useFreeFallParameters } from './useFreeFallParameters';
 import { useSimulationManager } from '../simulation/useSimulationManager';
 import { useSimulationControlsLogic } from '../simulation/useSimulationControlsLogic';
-import { useSimulationDataDisplay } from '../shoSimulation/useSimulationDataDisplay';
-import { useExperimentPersistence } from '../shoSimulation/useExperimentPersistence';
+import { useSimulationDataDisplay } from '../simulation/useSimulationDataDisplay';
+import { useExperimentPersistence } from '../simulation/useExperimentPersistence';
 
 export function useFreeFallSimulation(experimentTemplate) {
     const {

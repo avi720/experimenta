@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { useAppData } from "../Components/hooks/useAppData";
+import { useAppData } from "../components/hooks/useAppData";
 import { useExperimentPageData } from "../components/hooks/useExperimentPageData";
 import { useFreeFallSimulation } from "../components/hooks/freeFallSimulation/useFreeFallSimulation";
 import WorkspaceShell from "../components/simulation/workspace/WorkspaceShell";
