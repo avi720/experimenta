@@ -1,148 +1,96 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { appParams } from '@/lib/app-params';
-import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
+import { supabase } from '@/api/supabaseClient';
+import { User } from '@/entities/User';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
   const [authError, setAuthError] = useState(null);
-  const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
+  // Guests never persist anything, so their language choice lives in memory only.
+  const [guestLocale, setGuestLocale] = useState(null);
 
-  useEffect(() => {
-    checkAppState();
+  const loadProfile = useCallback(async (nextSession) => {
+    if (!nextSession?.user) {
+      setUser(null);
+      return;
+    }
+    try {
+      setUser(await User.me());
+      setAuthError(null);
+    } catch (error) {
+      console.error('Failed to load user profile:', error);
+      setUser(null);
+      setAuthError({ type: 'profile_load_failed', message: error.message });
+    }
   }, []);
 
-  const checkAppState = async () => {
-    try {
-      setIsLoadingPublicSettings(true);
-      setAuthError(null);
-      
-      // First, check app public settings (with token if available)
-      // This will tell us if auth is required, user not registered, etc.
-      const appClient = createAxiosClient({
-        baseURL: `/api/apps/public`,
-        headers: {
-          'X-App-Id': appParams.appId
-        },
-        token: appParams.token, // Include token if available
-        interceptResponses: true
-      });
-      
-      try {
-        const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
-        setAppPublicSettings(publicSettings);
-        
-        // If we got the app public settings successfully, check if user is authenticated
-        if (appParams.token) {
-          await checkUserAuth();
-        } else {
-          setIsLoadingAuth(false);
-          setIsAuthenticated(false);
-        }
-        setIsLoadingPublicSettings(false);
-      } catch (appError) {
-        console.error('App state check failed:', appError);
-        
-        // Handle app-level errors
-        if (appError.status === 403 && appError.data?.extra_data?.reason) {
-          const reason = appError.data.extra_data.reason;
-          if (reason === 'auth_required') {
-            setAuthError({
-              type: 'auth_required',
-              message: 'Authentication required'
-            });
-          } else if (reason === 'user_not_registered') {
-            setAuthError({
-              type: 'user_not_registered',
-              message: 'User not registered for this app'
-            });
-          } else {
-            setAuthError({
-              type: reason,
-              message: appError.message
-            });
-          }
-        } else {
-          setAuthError({
-            type: 'unknown',
-            message: appError.message || 'Failed to load app'
-          });
-        }
-        setIsLoadingPublicSettings(false);
-        setIsLoadingAuth(false);
-      }
-    } catch (error) {
-      console.error('Unexpected error:', error);
-      setAuthError({
-        type: 'unknown',
-        message: error.message || 'An unexpected error occurred'
-      });
-      setIsLoadingPublicSettings(false);
-      setIsLoadingAuth(false);
-    }
-  };
+  useEffect(() => {
+    let isMounted = true;
 
-  const checkUserAuth = async () => {
-    try {
-      // Now check if the user is authenticated
-      setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
-      setUser(currentUser);
-      setIsAuthenticated(true);
-      setIsLoadingAuth(false);
-    } catch (error) {
-      console.error('User auth check failed:', error);
-      setIsLoadingAuth(false);
-      setIsAuthenticated(false);
-      
-      // If user auth fails, it might be an expired token
-      if (error.status === 401 || error.status === 403) {
-        setAuthError({
-          type: 'auth_required',
-          message: 'Authentication required'
-        });
-      }
-    }
-  };
+    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
+      if (!isMounted) return;
+      setSession(initialSession);
+      await loadProfile(initialSession);
+      if (isMounted) setIsLoadingAuth(false);
+    });
 
-  const logout = (shouldRedirect = true) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      setSession(nextSession);
+      // Supabase advises against awaiting other supabase calls inside this callback.
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'SIGNED_OUT') {
+        setTimeout(() => loadProfile(nextSession), 0);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [loadProfile]);
+
+  const signIn = useCallback((credentials) => User.signIn(credentials), []);
+  const signUp = useCallback((details) => User.signUp(details), []);
+
+  const logout = useCallback(async () => {
+    await User.logout();
     setUser(null);
-    setIsAuthenticated(false);
-    
-    if (shouldRedirect) {
-      // Use the SDK's logout method which handles token cleanup and redirect
-      base44.auth.logout(window.location.href);
-    } else {
-      // Just remove the token without redirect
-      base44.auth.logout();
-    }
-  };
+    setSession(null);
+  }, []);
 
-  const navigateToLogin = () => {
-    // Use the SDK's redirectToLogin method
-    base44.auth.redirectToLogin(window.location.href);
-  };
+  const navigateToLogin = useCallback(() => {
+    const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.assign(`/Login?redirect=${redirect}`);
+  }, []);
 
-  return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isAuthenticated, 
-      isLoadingAuth,
-      isLoadingPublicSettings,
-      authError,
-      appPublicSettings,
-      logout,
-      navigateToLogin,
-      checkAppState
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const updateProfile = useCallback(async (updates) => {
+    const updated = await User.updateMe(updates);
+    setUser((prev) => (prev ? { ...prev, ...updated } : prev));
+    return updated;
+  }, []);
+
+  const refreshUser = useCallback(() => loadProfile(session), [loadProfile, session]);
+
+  const value = useMemo(() => ({
+    session,
+    user,
+    isAuthenticated: !!session?.user,
+    isAdmin: user?.role === 'admin',
+    isLoadingAuth,
+    authError,
+    guestLocale,
+    setGuestLocale,
+    signIn,
+    signUp,
+    logout,
+    navigateToLogin,
+    updateProfile,
+    refreshUser,
+  }), [session, user, isLoadingAuth, authError, guestLocale, signIn, signUp, logout, navigateToLogin, updateProfile, refreshUser]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

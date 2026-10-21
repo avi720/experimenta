@@ -1,36 +1,29 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { AppSettings, User as UserEntity, ExperimentTemplate } from "@/entities/all";
-import { base44 } from "@/api/base44Client";
+import { AppSettings, ExperimentTemplate } from "@/entities/all";
+import { useAuth } from "@/lib/AuthContext";
+
+const DEFAULT_SETTINGS = { virtual_lab_enabled: true, locale_default: 'he' };
 
 export function useAppData() {
+    const { user, isLoadingAuth, logout, updateProfile, guestLocale, setGuestLocale } = useAuth();
     const [settings, setSettings] = useState(null);
-    const [user, setUser] = useState(null);
     const [experiments, setExperiments] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingData, setIsLoadingData] = useState(true);
 
     const loadData = useCallback(async () => {
-        setIsLoading(true);
+        setIsLoadingData(true);
         try {
-            const [settingsList, currentUser, experimentsList] = await Promise.all([
-                AppSettings.list(),
-                base44.auth.me().catch(() => null),
+            const [settingsList, experimentsList] = await Promise.all([
+                AppSettings.list().catch(() => []),
                 ExperimentTemplate.list().catch(() => [])
             ]);
-            updatedUser = currentUser;
-            if (currentUser && !currentUser.locale_preference) {
-                console.log("User has no locale preference, setting default to Hebrew.");
-                await base44.auth.updateMe({ locale_preference: 'he' });
-                updatedUser = { ...currentUser, locale_preference: 'he' }; 
-            }    
-            setSettings(settingsList[0] || { virtual_lab_enabled: true /*locale_default: 'he'*/ });
-            setUser(updatedUser);
+            setSettings(settingsList[0] || DEFAULT_SETTINGS);
             setExperiments(experimentsList.filter(exp => exp.is_active !== false));
         } catch (error) {
             console.error("Failed to load initial app data:", error);
-            setSettings({ virtual_lab_enabled: true});
-            setUser(null);
+            setSettings(DEFAULT_SETTINGS);
         } finally {
-            setIsLoading(false);
+            setIsLoadingData(false);
         }
     }, []);
 
@@ -38,39 +31,38 @@ export function useAppData() {
         loadData();
     }, [loadData]);
 
-    const handleLogout = async () => {
+    const handleLogout = useCallback(async () => {
         try {
-            await UserEntity.logout();
-            window.location.reload();
+            await logout();
         } catch (error) {
             console.error("Logout error:", error);
         }
-    };
+    }, [logout]);
 
-    const handleLanguageChange = async (newLocale) => {
+    const handleLanguageChange = useCallback(async (newLocale) => {
+        if (!user) {
+            setGuestLocale(newLocale);
+            return;
+        }
         try {
-            window.location.reload();
-            if(user){
-                await base44.auth.updateMe({ locale_preference: newLocale });
-                setUser(prevUser => ({ ...prevUser, locale_preference: newLocale }));
-            }
+            await updateProfile({ locale_preference: newLocale });
         } catch (error) {
             console.error("Language change error:", error);
         }
-    };
+    }, [user, updateProfile, setGuestLocale]);
 
-    const isRTL = useMemo(()=>{
-        const localePreference = user?.locale_preference;
-        return localePreference === 'he'
-    },[user]);
+    const locale = user?.locale_preference || guestLocale || settings?.locale_default || 'he';
+    const isRTL = useMemo(() => locale === 'he', [locale]);
 
     return {
         settings,
         user,
         experiments,
-        isLoading,
+        isLoading: isLoadingData || isLoadingAuth,
         isRTL,
+        locale,
         handleLogout,
-        handleLanguageChange
+        handleLanguageChange,
+        reload: loadData
     };
 }

@@ -12,6 +12,7 @@ import WhatIsNew from './pages/WhatIsNew';
 import Resources from './pages/Resources';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
+import Login from './pages/Login';
 import __Layout from './Layout.jsx';
 
 
@@ -30,6 +31,7 @@ export const PAGES = {
     "Resources": Resources,
     "PrivacyPolicy": PrivacyPolicy,
     "TermsOfService": TermsOfService,
+    "Login": Login,
 }
 
 export const pagesConfig = {

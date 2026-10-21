@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-//import { ExperimentTemplate, AppSettings, User as UserEntity } from "@/entities/all";
 import { createPageUrl } from "@/utils";
 import { toast } from "sonner";
 
@@ -20,8 +19,8 @@ export function useExperimentPageData(experimentSlug, settings, user, isRTL, all
             return;
         }
 
-        // Wait for allExperimentsList to be available
-        if (!allExperimentsList || allExperimentsList.length === 0) {
+        // Wait until the experiments list has been loaded (undefined = still loading)
+        if (!allExperimentsList) {
             return; // Will retry when allExperimentsList becomes available
         }
 

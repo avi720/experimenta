@@ -40,11 +40,12 @@ export function useQuantumTunnelingSimulation(experimentTemplate) {
         parameters: parameters
     });
 
-    const { saveRun, exportData } = useExperimentPersistence({
-        experiment: experimentTemplate,
+    const { saveRun, exportData } = useExperimentPersistence(
+        experimentTemplate,
+        null,
         parameters,
-        simulationData: simulationManager.simulationData
-    });
+        simulationManager.simulationData
+    );
 
     return {
         parameters,

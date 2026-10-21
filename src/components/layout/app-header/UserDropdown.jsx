@@ -1,5 +1,6 @@
 import React from 'react';
-import { User, LogOut, Globe, ChevronDown } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { User, LogOut, Globe, ChevronDown, LogIn } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -11,7 +12,20 @@ import { Button } from '@/components/ui/button';
 
 export default function UserDropdown({ user, isRTL, handleLogout, handleLanguageChange }) {
     if (!user) {
-        return null;
+        return (
+            <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => handleLanguageChange(isRTL ? 'en' : 'he')}>
+                    <Globe className="w-4 h-4" />
+                    {isRTL ? "EN" : "עב"}
+                </Button>
+                <Button asChild size="sm">
+                    <Link to="/Login">
+                        <LogIn className="w-4 h-4" />
+                        {isRTL ? "התחברות" : "Sign in"}
+                    </Link>
+                </Button>
+            </div>
+        );
     }
 
     return (
