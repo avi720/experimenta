@@ -29,3 +29,4 @@ dist-ssr
 
 # keep the env template
 !.env.example
+!.env.production

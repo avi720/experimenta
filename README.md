@@ -42,12 +42,10 @@ npm run dev
 
 ## Deploying to Vercel
 
-The repo includes `vercel.json` (Vite framework preset + SPA rewrite to `index.html`).
-Set these environment variables in the Vercel project for Production and Preview:
+The repo includes `vercel.json` (Vite framework preset + SPA rewrite to `index.html`)
+and `.env.production` with the production Supabase URL and publishable key, so importing
+the repo on Vercel works with no extra configuration.
 
-```
-VITE_SUPABASE_URL
-VITE_SUPABASE_ANON_KEY
-```
-
+To point a deployment at a different Supabase project, set `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_ANON_KEY` in the Vercel project; they override `.env.production`.
 Because Vite inlines `VITE_*` variables at build time, redeploy after changing them.
