@@ -1,12 +1,21 @@
 import { useCallback } from 'react';
 import { ExperimentRun } from '@/entities/ExperimentRun';
+import { useAuth } from '@/lib/AuthContext';
 
 /**
  * Hook לניהול שמירה וייצוא של תוצאות ניסוי
  */
-export function useExperimentPersistence(experiment, user, parameters, simulationData) {
-    // שמירת ריצה
+export function useExperimentPersistence(experiment, _user, parameters, simulationData) {
+    const { isAuthenticated, navigateToLogin } = useAuth();
+
+    // שמירת ריצה - זמינה רק למשתמשים מחוברים (אורחים לא שומרים מידע)
     const saveRun = useCallback(async () => {
+        if (!isAuthenticated) {
+            if (window.confirm('שמירת ריצות זמינה למשתמשים רשומים בלבד. לעבור להתחברות?')) {
+                navigateToLogin();
+            }
+            return;
+        }
         if (!experiment || !simulationData || simulationData.length === 0) {
             alert('אין נתונים לשמירה');
             return;
@@ -26,7 +35,7 @@ export function useExperimentPersistence(experiment, user, parameters, simulatio
             console.error('Error saving run:', error);
             alert('שגיאה בשמירת הריצה: ' + error.message);
         }
-    }, [experiment, parameters, simulationData]);
+    }, [experiment, parameters, simulationData, isAuthenticated, navigateToLogin]);
 
     // ייצוא נתונים ל-CSV
     const exportData = useCallback(() => {

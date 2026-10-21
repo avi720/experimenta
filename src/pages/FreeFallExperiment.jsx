@@ -7,8 +7,9 @@ import FreeFallScene from "../components/simulation/scenes/FreeFallScene";
 import AppLoadingSpinner from '../components/layout/AppLoadingSpinner';
 
 export default function FreeFallExperiment() {
-  const { settings, user, experiments, isLoading: isAppDataLoading, isRTL } = useAppData();
-  const { experiment, isLoading: isExperimentDataLoading  } = useExperimentPageData('free-fall', settings, user, isRTL, experiments);
+  const { settings, user, experiments, isLoading: isAppDataLoading, isRTL, handleLogout } = useAppData();
+  // Pass the list only once it has loaded, so an empty catalogue is reported as 'not found' instead of spinning forever.
+  const { experiment, isLoading: isExperimentDataLoading } = useExperimentPageData('free-fall', settings, user, isRTL, isAppDataLoading ? undefined : experiments);
   const isPageLoading = isAppDataLoading || isExperimentDataLoading; 
   const {
     parameters, setParameters, simulationStatus, simulationData, currentTime, playbackTime,
@@ -46,16 +47,7 @@ export default function FreeFallExperiment() {
     resetSimulation();
   }, [resetSimulation]);
 
-  const handleLogout = async () => {
-    try {
-      await User.logout();
-      window.location.reload();
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
-
-  if (isPageLoading || !experiment) {
+    if (isPageLoading || !experiment) {
     return <AppLoadingSpinner />;
   }
 

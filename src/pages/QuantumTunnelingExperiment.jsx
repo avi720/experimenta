@@ -1,13 +1,16 @@
 import React, { useCallback } from "react";
+import { useAppData } from "../components/hooks/useAppData";
 import { useExperimentPageData } from "../components/hooks/useExperimentPageData";
 import { useQuantumTunnelingSimulation } from "../components/hooks/quantumTunnelingSimulation/useQuantumTunnelingSimulation";
 import WorkspaceShell from "../components/simulation/workspace/WorkspaceShell";
 import QuantumTunnelingScene from "../components/simulation/scenes/QuantumTunnelingScene";
 import AppLoadingSpinner from '../components/layout/AppLoadingSpinner';
-import { User } from '@/entities/all';
 
 export default function QuantumTunnelingExperiment() {
-  const { experiment, settings, user, experiments, isLoading: isPageLoading, isRTL } = useExperimentPageData('quantum-tunneling');
+  const { settings, user, experiments, isLoading: isAppDataLoading, isRTL, handleLogout } = useAppData();
+  // Pass the list only once it has loaded, so an empty catalogue is reported as 'not found' instead of spinning forever.
+  const { experiment, isLoading: isExperimentDataLoading } = useExperimentPageData('quantum-tunneling', settings, user, isRTL, isAppDataLoading ? undefined : experiments);
+  const isPageLoading = isAppDataLoading || isExperimentDataLoading;
 
   const {
     parameters, setParameters, simulationStatus, simulationData, currentTime, playbackTime,
@@ -20,16 +23,7 @@ export default function QuantumTunnelingExperiment() {
     setParameters(newParamValues);
   }, [setParameters]);
 
-  const handleLogout = async () => {
-    try {
-      await User.logout();
-      window.location.reload();
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
-
-  if (isPageLoading || !experiment) {
+    if (isPageLoading || !experiment) {
     return <AppLoadingSpinner />;
   }
 

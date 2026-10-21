@@ -35,7 +35,7 @@ export function useExperimentForm() {
         }
     }, [experiment, initialExperiment]);
 
-    const handlers = useExperimentFormHandlers(experiment, setExperiment, navigate);
+    const handlers = useExperimentFormHandlers(experiment, setExperiment);
     const { presetTextValues, handlePresetValuesChange } = usePresetJsonManagement(experiment, handlers.handleNestedDynamicChange);
 
     const handleSubmit = useCallback(async (event) => {

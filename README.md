@@ -1,39 +1,53 @@
-**Welcome to your Base44 project** 
+# Experimenta
 
-**About**
+Virtual physics lab with interactive simulations (free fall, harmonic oscillator, quantum tunneling, double slit).
 
-View and Edit  your app on [Base44.com](http://Base44.com) 
+**Stack:** Vite + React 18 + React Router, Tailwind/shadcn UI, [Supabase](https://supabase.com) (Postgres + Auth), deployed on [Vercel](https://vercel.com).
 
-This project contains everything you need to run your app locally.
+## Local development
 
-**Edit the code in your local development environment**
-
-Any change pushed to the repo will also be reflected in the Base44 Builder.
-
-**Prerequisites:** 
-
-1. Clone the repository using the project's Git URL 
-2. Navigate to the project directory
-3. Install dependencies: `npm install`
-4. Create an `.env.local` file and set the right environment variables
-
-```
-VITE_BASE44_APP_ID=your_app_id
-VITE_BASE44_APP_BASE_URL=your_backend_url
-
-e.g.
-VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
-VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
+```bash
+npm install
+cp .env.example .env.local   # fill in your Supabase URL + anon key
+npm run dev
 ```
 
-Run the app: `npm run dev`
+| Script | Description |
+| --- | --- |
+| `npm run dev` | Start the Vite dev server |
+| `npm run build` | Production build into `dist/` |
+| `npm start` | Serve the production build (`vite preview`, honours `$PORT`) |
+| `npm run lint` | ESLint |
 
-**Publish your changes**
+## Supabase setup
 
-Open [Base44.com](http://Base44.com) and click on Publish.
+1. Create a Supabase project.
+2. Run [`schema.sql`](./schema.sql) in the SQL editor (or via the Supabase CLI/MCP). It creates:
+   - `profiles` — one row per auth user (`role`, `subscription_tier`, `locale_preference`), created by a trigger on sign-up.
+   - `experiment_templates` — the experiment catalogue (public read, admin write). `access_level` (`public` / `registered` / `premium`) is ready for gating experiments.
+   - `experiment_runs` — saved simulation runs, private to their owner.
+   - `app_settings` — global settings (single row).
+   - Row Level Security on every table, plus seed data for the four built-in experiments.
+3. Emails listed in `public.admin_emails` become admins automatically when they sign up. To promote an existing user:
+   ```sql
+   update public.profiles set role = 'admin' where email = 'someone@example.com';
+   ```
+4. In **Authentication → URL Configuration**, set the Site URL to your production domain and add `https://<your-domain>/**` (and `http://localhost:5173/**` for local dev) to the Redirect URLs.
 
-**Docs & Support**
+## Access model
 
-Documentation: [https://docs.base44.com/Integrations/Using-GitHub](https://docs.base44.com/Integrations/Using-GitHub)
+- Guests can browse every page and run the simulations, but nothing is stored for them.
+- Signed-in users can save runs and see them on the **Results** page.
+- Admins (`profiles.role = 'admin'`) manage the experiment catalogue under **AdminExperiments**.
 
-Support: [https://app.base44.com/support](https://app.base44.com/support)
+## Deploying to Vercel
+
+The repo includes `vercel.json` (Vite framework preset + SPA rewrite to `index.html`).
+Set these environment variables in the Vercel project for Production and Preview:
+
+```
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+```
+
+Because Vite inlines `VITE_*` variables at build time, redeploy after changing them.

@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { User as UserEntity } from "@/entities/all";
 import WorkspaceShell from "../components/simulation/workspace/WorkspaceShell";
 import DoubleSlitScene from "../components/simulation/scenes/DoubleSlitScene";
 import { calculateInterference } from "../components/simulation/engines/doubleSlitEngine";
+import { useAppData } from "../components/hooks/useAppData";
 import { useExperimentPageData } from "../components/hooks/useExperimentPageData";
 import AppLoadingSpinner from '../components/layout/AppLoadingSpinner';
 
 export default function DoubleSlitExperiment() {
-    const { experiment, settings, user, experiments, isLoading: isPageLoading, isRTL } = useExperimentPageData('double-slit');
+  const { settings, user, experiments, isLoading: isAppDataLoading, isRTL, handleLogout } = useAppData();
+  // Pass the list only once it has loaded, so an empty catalogue is reported as 'not found' instead of spinning forever.
+  const { experiment, isLoading: isExperimentDataLoading } = useExperimentPageData('double-slit', settings, user, isRTL, isAppDataLoading ? undefined : experiments);
+  const isPageLoading = isAppDataLoading || isExperimentDataLoading;
 
     const [parameters, setParameters] = useState({});
     const [simulationData, setSimulationData] = useState([]);
@@ -47,16 +50,7 @@ export default function DoubleSlitExperiment() {
         setParameters(newParamValues);
     }, []);
 
-    const handleLogout = async () => {
-        try {
-            await UserEntity.logout();
-            window.location.reload();
-        } catch (error) {
-            console.error("Logout error:", error);
-        }
-    };
-
-    const experimentsByCategory = experiments.reduce((acc, exp) => {
+        const experimentsByCategory = experiments.reduce((acc, exp) => {
         if (!acc[exp.category]) {
             acc[exp.category] = [];
         }

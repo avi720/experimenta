@@ -1,14 +1,17 @@
 
 import React, { useCallback } from "react";
+import { useAppData } from "../components/hooks/useAppData";
 import { useExperimentPageData } from "../components/hooks/useExperimentPageData";
 import { useShoSimulation } from "../components/hooks/shoSimulation/useShoSimulation";
 import WorkspaceShell from "../components/simulation/workspace/WorkspaceShell";
 import ShoScene from "../components/simulation/scenes/ShoScene";
 import AppLoadingSpinner from '../components/layout/AppLoadingSpinner';
-import { User } from '@/entities/User';
 
 export default function ShoExperiment() {
-  const { experiment, settings, user, experiments, isLoading: isPageLoading, isRTL } = useExperimentPageData('sho');
+  const { settings, user, experiments, isLoading: isAppDataLoading, isRTL, handleLogout } = useAppData();
+  // Pass the list only once it has loaded, so an empty catalogue is reported as 'not found' instead of spinning forever.
+  const { experiment, isLoading: isExperimentDataLoading } = useExperimentPageData('sho', settings, user, isRTL, isAppDataLoading ? undefined : experiments);
+  const isPageLoading = isAppDataLoading || isExperimentDataLoading;
 
   const {
     parameters,
@@ -44,16 +47,7 @@ export default function ShoExperiment() {
     }));
   }, [setParameters]);
 
-  const handleLogout = async () => {
-    try {
-      await User.logout();
-      window.location.reload();
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
-
-  if (isPageLoading || !experiment) {
+    if (isPageLoading || !experiment) {
     return <AppLoadingSpinner />;
   }
 
