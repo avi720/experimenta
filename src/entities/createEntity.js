@@ -24,8 +24,14 @@ const unwrap = ({ data, error }) => {
 /**
  * Creates a Supabase-backed entity exposing the same API the app's data hooks expect:
  * list(sort, limit), filter(criteria, sort, limit), get(id), create(data), update(id, data), delete(id).
+ * `onChange` runs after every successful write (e.g. to invalidate cached queries).
  */
-export function createEntity(table) {
+export function createEntity(table, { onChange } = {}) {
+  const afterWrite = (result) => {
+    onChange?.();
+    return result;
+  };
+
   return {
     async list(sort, limit) {
       let query = applySort(supabase.from(table).select('*'), sort);
@@ -44,15 +50,15 @@ export function createEntity(table) {
     },
 
     async create(data) {
-      return unwrap(await supabase.from(table).insert(stripReadOnly(data)).select().single());
+      return afterWrite(unwrap(await supabase.from(table).insert(stripReadOnly(data)).select().single()));
     },
 
     async update(id, data) {
-      return unwrap(await supabase.from(table).update(stripReadOnly(data)).eq('id', id).select().single());
+      return afterWrite(unwrap(await supabase.from(table).update(stripReadOnly(data)).eq('id', id).select().single()));
     },
 
     async delete(id) {
-      unwrap(await supabase.from(table).delete().eq('id', id));
+      afterWrite(unwrap(await supabase.from(table).delete().eq('id', id)));
     },
   };
 }

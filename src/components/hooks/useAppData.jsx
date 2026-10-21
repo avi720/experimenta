@@ -1,35 +1,31 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { AppSettings, ExperimentTemplate } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
+import { appQueryKeys } from "@/lib/query-client";
 
 const DEFAULT_SETTINGS = { virtual_lab_enabled: true, locale_default: 'he' };
 
 export function useAppData() {
     const { user, isLoadingAuth, logout, updateProfile, guestLocale, setGuestLocale } = useAuth();
-    const [settings, setSettings] = useState(null);
-    const [experiments, setExperiments] = useState([]);
-    const [isLoadingData, setIsLoadingData] = useState(true);
 
-    const loadData = useCallback(async () => {
-        setIsLoadingData(true);
-        try {
-            const [settingsList, experimentsList] = await Promise.all([
-                AppSettings.list().catch(() => []),
-                ExperimentTemplate.list().catch(() => [])
-            ]);
-            setSettings(settingsList[0] || DEFAULT_SETTINGS);
-            setExperiments(experimentsList.filter(exp => exp.is_active !== false));
-        } catch (error) {
-            console.error("Failed to load initial app data:", error);
-            setSettings(DEFAULT_SETTINGS);
-        } finally {
-            setIsLoadingData(false);
-        }
-    }, []);
+    const settingsQuery = useQuery({
+        queryKey: appQueryKeys.settings,
+        queryFn: async () => (await AppSettings.list())[0] || DEFAULT_SETTINGS,
+        staleTime: 5 * 60 * 1000,
+    });
 
-    useEffect(() => {
-        loadData();
-    }, [loadData]);
+    const experimentsQuery = useQuery({
+        queryKey: appQueryKeys.experiments,
+        queryFn: () => ExperimentTemplate.list(),
+        staleTime: 60 * 1000,
+    });
+
+    const settings = settingsQuery.isError ? DEFAULT_SETTINGS : settingsQuery.data ?? null;
+    const experiments = useMemo(
+        () => (experimentsQuery.data ?? []).filter(exp => exp.is_active !== false),
+        [experimentsQuery.data]
+    );
 
     const handleLogout = useCallback(async () => {
         try {
@@ -52,17 +48,23 @@ export function useAppData() {
     }, [user, updateProfile, setGuestLocale]);
 
     const locale = user?.locale_preference || guestLocale || settings?.locale_default || 'he';
-    const isRTL = useMemo(() => locale === 'he', [locale]);
+    const isRTL = locale === 'he';
+
+    // Portaled UI (dropdowns, dialogs, toasts) inherits direction from <html>.
+    useEffect(() => {
+        document.documentElement.lang = locale;
+        document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+    }, [locale, isRTL]);
 
     return {
         settings,
         user,
         experiments,
-        isLoading: isLoadingData || isLoadingAuth,
+        isLoading: settingsQuery.isPending || experimentsQuery.isPending || isLoadingAuth,
         isRTL,
         locale,
         handleLogout,
         handleLanguageChange,
-        reload: loadData
+        reload: experimentsQuery.refetch
     };
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { toast } from "sonner";
+import { canAccessExperiment } from "@/lib/access";
 
 /**
  * @param {string} experimentSlug - ה-slug של הניסוי (למשל: 'sho', 'free-fall', 'quantum-tunneling')
@@ -38,6 +39,13 @@ export function useExperimentPageData(experimentSlug, settings, user, isRTL, all
                 return;
             }
 
+            if (!canAccessExperiment(user, foundExperiment)) {
+                toast.error(isRTL ? 'הניסוי הזה זמין למשתמשים רשומים בלבד' : 'This experiment is available to registered users only');
+                setIsLoading(false);
+                navigate(`${createPageUrl("Login")}?redirect=${encodeURIComponent(window.location.pathname)}`);
+                return;
+            }
+
             setExperiment(foundExperiment);
 
         } catch (error) {
@@ -48,7 +56,7 @@ export function useExperimentPageData(experimentSlug, settings, user, isRTL, all
         } finally {
             setIsLoading(false);
         }
-    }, [experimentSlug, navigate, allExperimentsList, isRTL]);
+    }, [experimentSlug, navigate, allExperimentsList, isRTL, user]);
 
     useEffect(() => {
         loadData();

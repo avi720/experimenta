@@ -1,28 +1,46 @@
-import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/api/supabaseClient';
 import { User } from '@/entities/User';
 
 const AuthContext = createContext();
 
+// Minimal user built from the auth session, used if the profile row cannot be loaded.
+const userFromSession = (session) => ({
+  id: session.user.id,
+  email: session.user.email,
+  role: 'user',
+  subscription_tier: 'free',
+  locale_preference: null,
+});
+
 export const AuthProvider = ({ children }) => {
+  const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [authError, setAuthError] = useState(null);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   // Guests never persist anything, so their language choice lives in memory only.
   const [guestLocale, setGuestLocale] = useState(null);
+  // Only the latest profile request may update state (sign-in/out can overlap).
+  const profileRequestId = useRef(0);
 
   const loadProfile = useCallback(async (nextSession) => {
+    const requestId = ++profileRequestId.current;
     if (!nextSession?.user) {
       setUser(null);
       return;
     }
     try {
-      setUser(await User.me());
+      const profile = await User.me();
+      if (requestId !== profileRequestId.current) return;
+      setUser(profile);
       setAuthError(null);
     } catch (error) {
+      if (requestId !== profileRequestId.current) return;
       console.error('Failed to load user profile:', error);
-      setUser(null);
+      setUser(userFromSession(nextSession));
       setAuthError({ type: 'profile_load_failed', message: error.message });
     }
   }, []);
@@ -39,6 +57,7 @@ export const AuthProvider = ({ children }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession);
+      if (event === 'PASSWORD_RECOVERY') setIsPasswordRecovery(true);
       // Supabase advises against awaiting other supabase calls inside this callback.
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'SIGNED_OUT') {
         setTimeout(() => loadProfile(nextSession), 0);
@@ -55,6 +74,7 @@ export const AuthProvider = ({ children }) => {
   const signUp = useCallback((details) => User.signUp(details), []);
 
   const logout = useCallback(async () => {
+    profileRequestId.current++;
     await User.logout();
     setUser(null);
     setSession(null);
@@ -62,7 +82,12 @@ export const AuthProvider = ({ children }) => {
 
   const navigateToLogin = useCallback(() => {
     const redirect = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.assign(`/Login?redirect=${redirect}`);
+    navigate(`/Login?redirect=${redirect}`);
+  }, [navigate]);
+
+  const updatePassword = useCallback(async (password) => {
+    await User.updatePassword(password);
+    setIsPasswordRecovery(false);
   }, []);
 
   const updateProfile = useCallback(async (updates) => {
@@ -80,15 +105,17 @@ export const AuthProvider = ({ children }) => {
     isAdmin: user?.role === 'admin',
     isLoadingAuth,
     authError,
+    isPasswordRecovery,
     guestLocale,
     setGuestLocale,
     signIn,
     signUp,
     logout,
     navigateToLogin,
+    updatePassword,
     updateProfile,
     refreshUser,
-  }), [session, user, isLoadingAuth, authError, guestLocale, signIn, signUp, logout, navigateToLogin, updateProfile, refreshUser]);
+  }), [session, user, isLoadingAuth, authError, isPasswordRecovery, guestLocale, signIn, signUp, logout, navigateToLogin, updatePassword, updateProfile, refreshUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

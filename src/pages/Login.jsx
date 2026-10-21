@@ -20,7 +20,8 @@ export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = safeRedirect(searchParams.get("redirect"));
-  const { isAuthenticated, signIn, signUp } = useAuth();
+  const { isAuthenticated, isLoadingAuth, isPasswordRecovery, signIn, signUp, updatePassword } = useAuth();
+  const isRecovery = isPasswordRecovery || searchParams.get("mode") === "recovery";
   const { isRTL } = useAppData();
 
   const [tab, setTab] = useState("signin");
@@ -34,8 +35,8 @@ export default function Login() {
   const t = (he, en) => (isRTL ? he : en);
 
   useEffect(() => {
-    if (isAuthenticated) navigate(redirectTo, { replace: true });
-  }, [isAuthenticated, navigate, redirectTo]);
+    if (isAuthenticated && !isRecovery) navigate(redirectTo, { replace: true });
+  }, [isAuthenticated, isRecovery, navigate, redirectTo]);
 
   const resetFeedback = () => {
     setError("");
@@ -91,6 +92,63 @@ export default function Login() {
       setError(err.message);
     }
   };
+
+  const handleNewPassword = async (event) => {
+    event.preventDefault();
+    resetFeedback();
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(t(`הסיסמה חייבת להכיל לפחות ${MIN_PASSWORD_LENGTH} תווים`, `Password must be at least ${MIN_PASSWORD_LENGTH} characters`));
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await updatePassword(password);
+      navigate("/", { replace: true });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isRecovery) {
+    return (
+      <div className="flex items-center justify-center px-4 py-16" dir={isRTL ? "rtl" : "ltr"}>
+        <Card className="w-full max-w-md shadow-lg">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">{t("בחירת סיסמה חדשה", "Choose a new password")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            {isLoadingAuth ? (
+              <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400" />
+            ) : !isAuthenticated ? (
+              <p className="text-sm text-slate-600 text-center">
+                {t("הקישור לאיפוס אינו תקף או שפג תוקפו. בקשו קישור חדש ממסך ההתחברות.", "This reset link is invalid or has expired. Request a new one from the sign-in page.")}
+              </p>
+            ) : (
+              <form onSubmit={handleNewPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">{t("סיסמה חדשה", "New password")}</Label>
+                  <Input id="new-password" type="password" dir="ltr" autoComplete="new-password" required
+                    minLength={MIN_PASSWORD_LENGTH}
+                    value={password} onChange={(e) => setPassword(e.target.value)} />
+                </div>
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {t("שמור סיסמה", "Save password")}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center px-4 py-16" dir={isRTL ? "rtl" : "ltr"}>

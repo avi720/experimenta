@@ -24,6 +24,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ScatterChart, Scatter } from 'recharts';
 import { motion } from "framer-motion";
 import { format } from "date-fns";
+import { useAuth } from "@/lib/AuthContext";
 
 // נוסחאות פיזיקליות מוגדרות מראש
 const physicsFormulas = {
@@ -82,6 +83,7 @@ const physicsFormulas = {
 };
 
 export default function Results() {
+  const { user } = useAuth();
   const [runs, setRuns] = useState([]);
   const [experiments, setExperiments] = useState([]);
   const [settings, setSettings] = useState(null);
@@ -107,14 +109,15 @@ export default function Results() {
   const isRTL = settings?.locale_default === 'he';
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user?.id) loadData();
+  }, [user?.id]);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
+      // RLS lets admins read every run; this page shows only the current user's own runs.
       const [runsList, experimentsList, settingsList] = await Promise.all([
-        ExperimentRun.list('-created_date'),
+        ExperimentRun.filter({ created_by: user.id }, '-created_date'),
         ExperimentTemplate.list(),
         AppSettings.list()
       ]);

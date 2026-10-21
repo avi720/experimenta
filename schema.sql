@@ -282,6 +282,27 @@ create policy "settings: admin write" on public.app_settings
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
 
+-- =====================================================================
+-- Data API grants
+-- Explicit grants, so the schema works with "Automatically expose new
+-- tables" turned off. RLS above still decides which rows each role sees.
+-- =====================================================================
+revoke all on public.profiles, public.experiment_templates, public.experiment_runs,
+              public.app_settings, public.admin_emails
+  from anon, authenticated;
+
+grant usage on schema public to anon, authenticated;
+
+grant select                         on public.experiment_templates to anon, authenticated;
+grant insert, update, delete         on public.experiment_templates to authenticated;
+grant select                         on public.app_settings         to anon, authenticated;
+grant insert, update, delete         on public.app_settings         to authenticated;
+grant select, insert, update, delete on public.experiment_runs      to authenticated;
+grant select, update                 on public.profiles             to authenticated;
+-- admin_emails: no grants; only SECURITY DEFINER functions read it.
+
+grant execute on function public.is_admin() to anon, authenticated;
+
 -- Helper functions should not be callable directly by API clients.
 revoke execute on function public.handle_new_user() from public, anon, authenticated;
 revoke execute on function public.protect_profile_privileges() from public, anon, authenticated;

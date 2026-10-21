@@ -42,8 +42,9 @@ export const User = {
       .update(allowed)
       .eq('id', user.id)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
+    if (!data) throw new Error('Profile not found for the current user');
     return { ...data, email: user.email };
   },
 
@@ -68,8 +69,13 @@ export const User = {
 
   async resetPassword(email) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/Login`,
+      redirectTo: `${window.location.origin}/Login?mode=recovery`,
     });
+    if (error) throw error;
+  },
+
+  async updatePassword(password) {
+    const { error } = await supabase.auth.updateUser({ password });
     if (error) throw error;
   },
 

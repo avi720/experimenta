@@ -70,15 +70,15 @@ const AppRoutes = () => (
 function App() {
 
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
+    <QueryClientProvider client={queryClientInstance}>
+      <Router>
+        <AuthProvider>
           <AppRoutes />
-        </Router>
-        <Toaster />
-        <SonnerToaster position="top-center" richColors />
-      </QueryClientProvider>
-    </AuthProvider>
+        </AuthProvider>
+      </Router>
+      <Toaster />
+      <SonnerToaster position="top-center" richColors />
+    </QueryClientProvider>
   )
 }
 
