@@ -21,8 +21,8 @@ npm run dev
 
 ## Supabase setup
 
-1. Create a Supabase project.
-2. Run [`schema.sql`](./schema.sql) in the SQL editor (or via the Supabase CLI/MCP). It creates:
+1. Create a Supabase project and link it: `supabase link --project-ref <ref>`.
+2. Apply the migrations in [`supabase/migrations/`](./supabase/migrations) with `supabase db push`. The baseline migration creates:
    - `profiles` — one row per auth user (`role`, `subscription_tier`, `locale_preference`), created by a trigger on sign-up.
    - `experiment_templates` — the experiment catalogue (public read, admin write). `access_level` (`public` / `registered` / `premium`) is ready for gating experiments.
    - `experiment_runs` — saved simulation runs, private to their owner.

@@ -29,3 +29,5 @@ dist-ssr
 
 # keep the env template
 !.env.example
+.vercel
+supabase/.temp
