@@ -1,6 +1,5 @@
-
-import { createPageUrl } from '@/utils';
 import { Zap, Waves, Atom, Flame, Magnet, Glasses, Rocket } from "lucide-react";
+import { getExperimentWorkspaceUrl } from "@/components/simulation/experimentRegistry";
 
 export const categoryIcons = {
   "ClassicalMechanics": Zap,
@@ -15,35 +14,25 @@ export const categoryIcons = {
 export const categoryNames = {
   "ClassicalMechanics": { he: "מכניקה קלאסית", en: "Classical Mechanics" },
   "QuantumMechanics": { he: "מכניקת הקוונטים", en: "Quantum Mechanics" },
-  "FluidMechanics": {he: "מכניקת הנוזלים", en: "Fluid Mechanics"},
-  "ThermoDynamics": {he: "תרמו-דינמיקה", en: "Thermodynamics"},
-  "Electromagnetism and Electricity": { he: "אלקטרומגנטיות וחשמל", en: "Electromagnetism and electricity" },
+  "FluidMechanics": { he: "מכניקת הנוזלים", en: "Fluid Mechanics" },
+  "ThermoDynamics": { he: "תרמו-דינמיקה", en: "Thermodynamics" },
+  "Electromagnetism and Electricity": { he: "אלקטרומגנטיות וחשמל", en: "Electromagnetism and Electricity" },
   "Optics": { he: "אופטיקה", en: "Optics" },
   "General Relativity": { he: "יחסות כללית", en: "General Relativity" }
 };
 
-/*export const engineNames = {
-    "classicalMechanics": { he: "מכניקה קלאסית" },
-    "quantumMechanics": { he: "מכניקה קוונטית" },
-    "fluidMechanics": { he: "מכניקת זורמים" },
-    "thermodynamics": { he: "תרמודינמיקה" },
-    "electromagnetism": { he: "אלקטרומגנטיות" },
-    "optics": { he: "אופטיקה" },
-    "relativity": { he: "יחסות" }
-};*/
-
-export const getExperimentPageUrl = (slug) => {
-    const slugToPageMap = {
-        'free-fall': 'FreeFallExperiment',
-        'sho': 'ShoExperiment',
-        'quantum-tunneling': 'QuantumTunnelingExperiment',
-        'double-slit': 'DoubleSlitExperiment',
-        // Add other experiments here as they are created
-    };
-    const pageName = slugToPageMap[slug];
-    if (pageName) {
-        return createPageUrl(pageName);
+export const groupExperimentsByCategory = (experiments = []) => {
+  if (!Array.isArray(experiments)) {
+    return experiments && typeof experiments === "object" ? experiments : {};
+  }
+  return experiments.reduce((acc, exp) => {
+    if (!exp?.category) return acc;
+    if (!acc[exp.category]) {
+      acc[exp.category] = [];
     }
-    // Fallback for experiments not yet migrated
-    return createPageUrl('Lab');
+    acc[exp.category].push(exp);
+    return acc;
+  }, {});
 };
+
+export const getExperimentPageUrl = (slug) => getExperimentWorkspaceUrl(slug);

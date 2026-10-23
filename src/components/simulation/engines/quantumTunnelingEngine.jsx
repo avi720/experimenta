@@ -26,7 +26,7 @@ const VISUAL_SPEED_SCALE_FACTOR = 1.5e6; // Further reduced for higher overall s
  * @param {number} m_si - Mass of the particle (kg).
  * @returns {{transmission: number, reflection: number}} Transmission and reflection probabilities.
  */
-function calculateTransmissionReflection(E_si, V0_si, L_si, m_si) {
+export function calculateTransmissionReflection(E_si, V0_si, L_si, m_si) {
     // Ensure we have valid physical parameters
     if (E_si <= 0 || V0_si <= 0 || L_si <= 0 || m_si <= 0) {
         return { transmission: 0, reflection: 1 };
@@ -62,11 +62,13 @@ function calculateTransmissionReflection(E_si, V0_si, L_si, m_si) {
         
         // Transmission formula for E > V0
         const numerator = 4 * k1 * k1 * k2 * k2;
-        const denominator = (k1 * k1 + k2 * k2) * (k1 * k1 + k2 * k2) - (k1 * k1 - k2 * k2) * (k1 * k1 - k2 * k2) * sin_k2L * sin_k2L;
+        // T = 4k1²k2² / (4k1²k2² + (k1² − k2²)²·sin²(k2·L)), i.e. 1 / (1 + V0²·sin²(k2·L) / (4E(E − V0))).
+        // Resonances (T = 1) occur at k2·L = nπ.
+        const denominator = numerator + (k1 * k1 - k2 * k2) * (k1 * k1 - k2 * k2) * sin_k2L * sin_k2L;
         transmission = numerator / denominator;
     } else {
-        // Case E = V0: Edge case, typically small transmission
-        transmission = 0.5; // Simplified approximation
+        // Case E = V0: limit of both formulas as E → V0: T = 1 / (1 + m·V0·L² / (2ħ²))
+        transmission = 1 / (1 + (m_si * V0_si * L_si * L_si) / (2 * H_BAR * H_BAR));
     }
 
     // Ensure transmission is within valid bounds

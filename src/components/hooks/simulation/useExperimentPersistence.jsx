@@ -2,6 +2,19 @@ import { useCallback } from 'react';
 import { ExperimentRun } from '@/entities/ExperimentRun';
 import { useAuth } from '@/lib/AuthContext';
 
+function serializeCsvCell(val) {
+    if (typeof val === 'number') {
+        return Number.isFinite(val) ? val.toFixed(6) : '';
+    }
+    if (val && typeof val === 'object') {
+        if (typeof val.y === 'number') {
+            return val.y.toFixed(6);
+        }
+        return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
+    }
+    return val ?? '';
+}
+
 /**
  * Hook לניהול שמירה וייצוא של תוצאות ניסוי
  */
@@ -45,12 +58,12 @@ export function useExperimentPersistence(experiment, _user, parameters, simulati
         }
 
         try {
-            // יצירת CSV
-            const headers = Object.keys(simulationData[0]).join(',');
-            const rows = simulationData.map(point => 
-                Object.values(point).map(val => 
-                    typeof val === 'number' ? val.toFixed(6) : val
-                ).join(',')
+            const keys = Object.keys(simulationData[0]).filter(
+                (key) => key !== 'shouldStop' && key !== 'debug' && key !== 'pattern' && key !== 'parameters'
+            );
+            const headers = keys.join(',');
+            const rows = simulationData.map(point =>
+                keys.map(key => serializeCsvCell(point[key])).join(',')
             );
             const csv = [headers, ...rows].join('\n');
 

@@ -6,6 +6,27 @@ import SimulationControls from "./SimulationConsoleComp/SimulationControls";
 import SimulationTimeDisplay from "./SimulationConsoleComp/SimulationTimeDisplay";
 import CurrentValuesDisplay from "./SimulationConsoleComp/CurrentValuesDisplay";
 
+function findClosestDataPoint(simulationData, targetTime) {
+    if (!Array.isArray(simulationData) || simulationData.length === 0) {
+        return null;
+    }
+    if (typeof targetTime !== "number" || Number.isNaN(targetTime)) {
+        return simulationData[0];
+    }
+    let closest = simulationData[0];
+    let minDiff = Math.abs((closest?.time ?? 0) - targetTime);
+    for (let i = 1; i < simulationData.length; i++) {
+        const diff = Math.abs((simulationData[i]?.time ?? 0) - targetTime);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closest = simulationData[i];
+        } else if (diff > minDiff) {
+            break;
+        }
+    }
+    return closest;
+}
+
 export default function SimulationConsole({
     simulationState,
     onStart,
@@ -17,7 +38,8 @@ export default function SimulationConsole({
     onScrub,
     currentTime,
     playbackTime,
-    simulationData,
+    displayedDataPoint,
+    simulationData = [],
     experiment,
     isRTL,
     onFloat,
@@ -25,13 +47,12 @@ export default function SimulationConsole({
 }) {
     // חישוב הזמן המקסימלי שחושב בפועל
     const maxAvailableTime = simulationData && simulationData.length > 0 
-        ? simulationData[simulationData.length - 1].time 
+        ? simulationData[simulationData.length - 1].time ?? 0
         : 0;
 
     // נקודת הנתונים הנוכחית להצגה
-    const currentDataPoint = simulationData.find(d => 
-        Math.abs(d.time - playbackTime) < 0.0001
-    ) || (simulationData.length > 0 ? simulationData[0] : null);
+    const currentDataPoint =
+        displayedDataPoint || findClosestDataPoint(simulationData, playbackTime ?? currentTime);
 
     return (
         <Card className="p-4">
@@ -44,6 +65,7 @@ export default function SimulationConsole({
                         variant="ghost"
                         size="icon"
                         onClick={onFloat}
+                        aria-label={isRTL ? "פתח קונסולה בחלון צף" : "Float simulation console"}
                         className="text-slate-500 hover:text-slate-700"
                     >
                         <ExternalLink className="w-4 h-4" />
@@ -76,13 +98,12 @@ export default function SimulationConsole({
                 />
 
                 {/* תצוגת ערכים נוכחיים */}
-                {currentDataPoint && (
-                    <CurrentValuesDisplay
-                        dataPoint={currentDataPoint}
-                        experiment={experiment}
-                        isRTL={isRTL}
-                    />
-                )}
+                <CurrentValuesDisplay
+                    displayedDataPoint={currentDataPoint}
+                    dataPoint={currentDataPoint}
+                    experiment={experiment}
+                    isRTL={isRTL}
+                />
             </div>
         </Card>
     );
