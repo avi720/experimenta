@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { ExperimentRun } from "@/entities/ExperimentRun";
 import { ExperimentTemplate } from "@/entities/ExperimentTemplate";
@@ -25,67 +24,129 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { useAuth } from "@/lib/AuthContext";
+import { resolveExperimentRegistryEntry } from "@/components/simulation/experimentRegistry";
+import {
+  parseStoredSimulationSamples,
+  serializeSimulationSamples,
+} from "@/components/hooks/simulation/useExperimentPersistence";
 
-// נוסחאות פיזיקליות מוגדרות מראש
+const pickNum = (val, fallback) => {
+  const num = parseFloat(val);
+  return Number.isNaN(num) ? fallback : num;
+};
+
+// נוסחאות פיזיקליות מוגדרות מראש (ללא גרר/ריסון — להשוואה תיאורטית מול נתוני הסימולציה שנשמרו)
 const physicsFormulas = {
   'free-fall': [
     {
       id: 'position_vs_time',
-      name_he: 'מיקום כתלות בזמן',
-      name_en: 'Position vs Time',
+      name_he: 'מיקום כתלות בזמן (ריק)',
+      name_en: 'Position vs Time (Vacuum)',
       formula: 'h = h₀ + v₀t - ½gt²',
       axes: ['time', 'position', 'theoretical_position'],
-      calculate: (data, params) => data.map(point => ({
-        ...point,
-        theoretical_position: params.h0 + (params.v0 || 0) * point.time - 0.5 * params.g * Math.pow(point.time, 2)
-      }))
+      calculate: (data, params) => {
+        const h0 = pickNum(params.h0, 50);
+        const v0 = pickNum(params.v0, 0);
+        const g = pickNum(params.g, 9.81);
+        return data.map(point => ({
+          ...point,
+          theoretical_position: Math.max(0, h0 + v0 * point.time - 0.5 * g * Math.pow(point.time, 2))
+        }));
+      }
     },
     {
       id: 'velocity_vs_time',
-      name_he: 'מהירות כתלות בזמן',
-      name_en: 'Velocity vs Time',
+      name_he: 'מהירות כתלות בזמן (ריק)',
+      name_en: 'Velocity vs Time (Vacuum)',
       formula: 'v = v₀ - gt',
       axes: ['time', 'velocity', 'theoretical_velocity'],
-      calculate: (data, params) => data.map(point => ({
-        ...point,
-        theoretical_velocity: (params.v0 || 0) - params.g * point.time
-      }))
+      calculate: (data, params) => {
+        const v0 = pickNum(params.v0, 0);
+        const g = pickNum(params.g, 9.81);
+        return data.map(point => ({
+          ...point,
+          theoretical_velocity: v0 - g * point.time
+        }));
+      }
     },
     {
       id: 'energy_conservation',
-      name_he: 'שימור אנרגיה',
-      name_en: 'Energy Conservation',
-      formula: 'E = KE + PE = ½mv² + mgh',
-      axes: ['time', 'energy_kinetic', 'energy_potential', 'total_energy', 'theoretical_energy'],
-      calculate: (data, params) => data.map(point => ({
-        ...point,
-        total_energy: point.energy_kinetic + point.energy_potential,
-        theoretical_energy: params.m * params.g * params.h0
-      }))
+      name_he: 'שימור אנרגיה (ריק)',
+      name_en: 'Energy Conservation (Vacuum)',
+      formula: 'E₀ = ½mv₀² + mgh₀',
+      axes: ['time', 'energy_kinetic', 'energy_potential', 'energy_total', 'theoretical_energy'],
+      calculate: (data, params) => {
+        const h0 = pickNum(params.h0, 50);
+        const v0 = pickNum(params.v0, 0);
+        const g = pickNum(params.g, 9.81);
+        const m = pickNum(params.m, 1);
+        const initialEnergy = 0.5 * m * v0 * v0 + m * g * h0;
+        return data.map(point => ({
+          ...point,
+          energy_total: point.energy_total ?? (point.energy_kinetic + point.energy_potential),
+          theoretical_energy: initialEnergy
+        }));
+      }
     }
   ],
   'sho': [
     {
       id: 'sho_position',
-      name_he: 'מתנד הרמוני - מיקום',
-      name_en: 'SHO Position',
-      formula: 'x = A cos(ωt + φ)',
+      name_he: 'מתנד הרמוני אידיאלי - מיקום',
+      name_en: 'Ideal SHO Position',
+      formula: 'x = x₀ cos(ω₀t) + (v₀/ω₀) sin(ω₀t)',
       axes: ['time', 'position', 'theoretical_position'],
       calculate: (data, params) => {
-        const omega = Math.sqrt(params.k / params.m);
+        const k = pickNum(params.k, 10);
+        const m = pickNum(params.m, 1);
+        const x0 = pickNum(params.x0, 1);
+        const v0 = pickNum(params.v0, 0);
+        const omega = Math.sqrt(k / m);
         return data.map(point => ({
           ...point,
-          theoretical_position: params.x0 * Math.cos(omega * point.time)
+          theoretical_position: x0 * Math.cos(omega * point.time) + (omega > 0 ? (v0 / omega) * Math.sin(omega * point.time) : 0)
         }));
       }
     }
   ]
 };
 
+/**
+ * Reconstructs run samples from the real physics engine only for legacy rows
+ * that were saved before `results_url` stored the actual sample array.
+ */
+function reconstructLegacyRunSamples(experimentSlug, parameters) {
+  const entry = resolveExperimentRegistryEntry(experimentSlug);
+  if (!entry) return [];
+
+  if (entry.mode === 'static' && typeof entry.calculateStaticFn === 'function') {
+    const mergedParams = { ...(entry.defaultParameters || {}), ...(parameters || {}) };
+    const result = entry.calculateStaticFn(mergedParams);
+    return Array.isArray(result) ? serializeSimulationSamples(result) : [];
+  }
+
+  if (typeof entry.calculateStepFn === 'function') {
+    const parsedTMax = parseFloat(parameters?.t_max);
+    const maxTime = !Number.isNaN(parsedTMax) && parsedTMax > 0
+      ? parsedTMax
+      : entry.defaultMaxTime ?? 10;
+    const dt = 0.001;
+    const raw = [];
+    for (let t = 0; t <= maxTime + 1e-9; t += dt) {
+      const point = entry.calculateStepFn(Number(t.toFixed(6)), parameters || {});
+      raw.push(point);
+      if (point?.shouldStop) break;
+    }
+    return serializeSimulationSamples(raw);
+  }
+
+  return [];
+}
+
 export default function Results() {
   const { user } = useAuth();
   const [runs, setRuns] = useState([]);
-  const [experiments, setExperiments] = useState([]);
+  const [, setExperiments] = useState([]);
   const [settings, setSettings] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedRun, setSelectedRun] = useState(null);
@@ -151,55 +212,35 @@ export default function Results() {
   const loadRunData = async (run) => {
     setSelectedRun(run);
 
-    // Generate sample data based on parameters
-    // In a real app, this would load from the stored results_url
-    const parameters = JSON.parse(run.parameters_json || '{}');
-    const sampleData = generateSampleData(run.experiment_slug, parameters, run.samples_count);
+    let parameters = {};
+    try {
+      parameters = JSON.parse(run.parameters_json || '{}');
+    } catch {
+      parameters = {};
+    }
+
+    // Prefer the exact stored sample array in `results_url`; fall back to the real engine for legacy runs.
+    const storedSamples = parseStoredSimulationSamples(run.results_url);
+    const sampleData = storedSamples ?? reconstructLegacyRunSamples(run.experiment_slug, parameters);
     setSimulationData(sampleData);
 
-    // Set default chart config for experiment type
+    const firstPoint = sampleData[0] || {};
+    const defaultXAxis = typeof firstPoint.time === 'number' ? 'time' : Object.keys(firstPoint)[0] || 'time';
+    const availableNumericKeys = Object.keys(firstPoint).filter(
+      (k) => k !== defaultXAxis && typeof firstPoint[k] === 'number'
+    );
+    const formulaDefaultY = physicsFormulas[run.experiment_slug]?.[0]?.axes[1];
+    const defaultYAxis =
+      formulaDefaultY && availableNumericKeys.includes(formulaDefaultY)
+        ? formulaDefaultY
+        : availableNumericKeys[0] || 'position';
+
     setChartConfig(prev => ({
       ...prev,
       selectedFormula: physicsFormulas[run.experiment_slug]?.[0] || null,
-      xAxis: 'time',
-      yAxis: physicsFormulas[run.experiment_slug]?.[0]?.axes[1] || 'position'
+      xAxis: defaultXAxis,
+      yAxis: defaultYAxis
     }));
-  };
-
-  const generateSampleData = (experimentSlug, parameters, count) => {
-    const data = [];
-    const dt = 0.05; // Matched with LabWorkspace dt
-
-    for (let i = 0; i < count; i++) {
-      const t = i * dt;
-      let point = { time: t };
-
-      if (experimentSlug === 'free-fall') {
-        const h0 = parameters.h0 || 50;
-        const g = parameters.g || 9.81;
-        const m = parameters.m || 1;
-
-        point.position = Math.max(0, h0 - 0.5 * g * t * t);
-        point.velocity = -g * t;
-        point.energy_kinetic = 0.5 * m * point.velocity * point.velocity;
-        point.energy_potential = m * g * point.position;
-
-        if (point.position <= 0) break;
-      } else if (experimentSlug === 'sho') {
-        const k = parameters.k || 10;
-        const m = parameters.m || 1;
-        const x0 = parameters.x0 || 1;
-        const omega = Math.sqrt(k / m);
-
-        point.position = x0 * Math.cos(omega * t);
-        point.velocity = -x0 * omega * Math.sin(omega * t);
-        point.energy_total = 0.5 * k * x0 * x0;
-      }
-
-      data.push(point);
-    }
-
-    return data;
   };
 
   const getAvailableDataKeys = () => {
@@ -214,7 +255,7 @@ export default function Results() {
       // Filter theoretical axes to only include those present in the actual data's base keys
       return chartConfig.selectedFormula.axes.filter(key => {
         const baseKey = key.replace('theoretical_', '');
-        return simulationData.length > 0 && simulationData[0].hasOwnProperty(baseKey);
+        return simulationData.length > 0 && Object.prototype.hasOwnProperty.call(simulationData[0], baseKey);
       });
     }
     return getAvailableDataKeys().concat(['time']);
@@ -232,7 +273,7 @@ export default function Results() {
 
       // Add a 'theoretical_yAxis' key for the chart
       const yAxisKey = chartConfig.yAxis;
-      if (data.length > 0 && data[0].hasOwnProperty(`theoretical_${yAxisKey}`)) {
+      if (data.length > 0 && Object.prototype.hasOwnProperty.call(data[0], `theoretical_${yAxisKey}`)) {
         data = data.map(d => ({ ...d, theoretical_yAxis: d[`theoretical_${yAxisKey}`] }));
       }
     }
@@ -240,10 +281,10 @@ export default function Results() {
     return data;
   };
 
-  const exportRunData = (format) => {
+  const exportRunData = (exportFormat) => {
     if (!selectedRun || !simulationData.length) return;
 
-    if (format === 'csv') {
+    if (exportFormat === 'csv') {
       const headers = Object.keys(simulationData[0]).join(',');
       const rows = simulationData.map(row => Object.values(row).join(',')).join('\n');
       const csv = `${headers}\n${rows}`;
@@ -449,11 +490,15 @@ export default function Results() {
                     </div>
                     <div>
                       <Label className="text-sm text-slate-500">{isRTL ? "מספר דגימות" : "Samples Count"}</Label>
-                      <p className="font-medium">{selectedRun.samples_count}</p>
+                      <p className="font-medium">{simulationData.length || selectedRun.samples_count}</p>
                     </div>
                     <div>
                       <Label className="text-sm text-slate-500">{isRTL ? "משך הניסוי" : "Duration"}</Label>
-                      <p className="font-medium">{simulationData.length > 0 ? `${simulationData[simulationData.length - 1]?.time?.toFixed(3)}s` : 'N/A'}</p>
+                      <p className="font-medium">
+                        {simulationData.length > 0 && typeof simulationData[simulationData.length - 1]?.time === 'number'
+                          ? `${simulationData[simulationData.length - 1].time.toFixed(3)}s`
+                          : 'N/A'}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -467,7 +512,7 @@ export default function Results() {
                       {Object.entries(JSON.parse(selectedRun.parameters_json || '{}')).map(([key, value]) => (
                         <div key={key} className="p-3 bg-slate-50 rounded-lg">
                           <Label className="text-xs text-slate-500 uppercase">{key}</Label>
-                          <p className="font-mono text-lg">{typeof value === 'number' ? value.toFixed(3) : value}</p>
+                          <p className="font-mono text-lg">{typeof value === 'number' ? value.toFixed(3) : String(value)}</p>
                         </div>
                       ))}
                     </div>
@@ -503,7 +548,7 @@ export default function Results() {
                             <TableRow key={index}>
                               {Object.values(row).map((value, i) => (
                                 <TableCell key={i} className="text-xs">
-                                  {typeof value === 'number' ? value.toFixed(4) : value}
+                                  {typeof value === 'number' ? value.toFixed(4) : String(value ?? '')}
                                 </TableCell>
                               ))}
                               <TableCell>
@@ -558,13 +603,14 @@ export default function Results() {
                     <div>
                       <Label>{isRTL ? "נוסחה פיזיקלית" : "Physics Formula"}</Label>
                       <Select
-                        value={chartConfig.selectedFormula?.id || ''}
+                        value={chartConfig.selectedFormula?.id || 'none'}
                         onValueChange={(value) => {
-                          const formula = value ? physicsFormulas[selectedRun.experiment_slug]?.find(f => f.id === value) : null;
+                          const formula = value && value !== 'none'
+                            ? physicsFormulas[selectedRun.experiment_slug]?.find(f => f.id === value)
+                            : null;
                           setChartConfig(prev => ({
                             ...prev,
                             selectedFormula: formula,
-                            // Update axes to defaults for the formula if one is selected
                             xAxis: formula?.axes?.[0] || 'time',
                             yAxis: formula?.axes?.[1] || 'position'
                           }));
@@ -574,7 +620,7 @@ export default function Results() {
                           <SelectValue placeholder={isRTL ? "בחר נוסחה" : "Select Formula"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={null}>{isRTL ? "ללא" : "None"}</SelectItem>
+                          <SelectItem value="none">{isRTL ? "ללא" : "None"}</SelectItem>
                           {physicsFormulas[selectedRun.experiment_slug]?.map(formula => (
                             <SelectItem key={formula.id} value={formula.id}>
                               {isRTL ? formula.name_he : formula.name_en}
@@ -635,7 +681,7 @@ export default function Results() {
                             name={isRTL ? "נתוני ניסוי" : "Experimental Data"}
                             isAnimationActive={false}
                           />
-                          {chartConfig.showTheoretical && chartConfig.selectedFormula && getChartData().some(d => d.hasOwnProperty('theoretical_yAxis')) && (
+                          {chartConfig.showTheoretical && chartConfig.selectedFormula && getChartData().some(d => Object.prototype.hasOwnProperty.call(d, 'theoretical_yAxis')) && (
                             <Line
                               type="monotone"
                               dataKey="theoretical_yAxis"

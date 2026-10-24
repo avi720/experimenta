@@ -2,6 +2,13 @@
 
 Vite + React app on Supabase (Postgres + Auth), deployed on Vercel. Both CLIs are linked to this project (`vercel` → `experimenta`, `supabase` → ref `freuxiuhqjbtwolzyadc`).
 
+## Branching — `dev` is the working branch
+
+- `main` = production (Vercel deploys it). Never commit or push to `main` directly.
+- `dev` = active development branch. Commit and push work directly on `dev` (`origin/dev`), verify all changes locally (`npm run dev` → `http://localhost:5173`, `npm run lint`, `npm run build`, `npm run test:run`), and once verified open a PR from `dev` → `main` for release.
+- Every UI change is verified in a browser on the local dev server (`npm run dev` → `http://localhost:5173`) before opening a PR to `main`. Production is not a test environment.
+- Note: `Closes #N` in a commit or PR closes the issue when merged into `main`.
+
 ## Database changes — migration files only
 
 The schema's source of truth is `supabase/migrations/`. Never edit the production schema through the SQL editor or MCP `apply_migration`/`execute_sql` DDL.

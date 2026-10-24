@@ -13,19 +13,17 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { createPageUrl } from "@/utils";
-
-const categoryNames = {
-    "Classical": { he: "מכניקה קלאסית", en: "Classical Mechanics" },
-    "Waves": { he: "גלים ואופטיקה", en: "Waves & Optics" },
-    "Quantum": { he: "פיזיקה קוונטית", en: "Quantum Physics" },
-    "EM": { he: "אלקטרומגנטיות", en: "Electromagnetism" },
-    "Circuits": { he: "מעגלים חשמליים", en: "Electrical Circuits" }
-};
+import {
+  categoryNames,
+  getExperimentPageUrl,
+  groupExperimentsByCategory,
+} from "@/components/pagesComponents/lab/labConstants";
 
 export default function ExperimentHeader({
     experiment,
     user,
     isRTL,
+    experiments,
     experimentsByCategory,
     onToggleRightPanel,
     isRightPanelOpen,
@@ -36,9 +34,11 @@ export default function ExperimentHeader({
     canExport = false
 }) {
     const navigate = useNavigate();
+    const groupedExperiments = groupExperimentsByCategory(
+        experimentsByCategory ?? experiments ?? []
+    );
 
     const handleToggleClick = () => {
-        console.log('Header: Toggle clicked, current state:', isRightPanelOpen);
         if (onToggleRightPanel) {
             onToggleRightPanel();
         }
@@ -102,17 +102,28 @@ export default function ExperimentHeader({
                             <DropdownMenuContent className="w-64" align={isRTL ? "start" : "end"}>
                                 <DropdownMenuLabel>{isRTL ? "קטגוריות" : "Categories"}</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                {experimentsByCategory && Object.keys(experimentsByCategory).length > 0 ? (
-                                    Object.entries(experimentsByCategory).map(([category, exps]) => (
-                                        <DropdownMenuItem 
-                                            key={category}
-                                            onClick={() => navigate(createPageUrl(`Lab?category=${category}`))}
-                                        >
-                                            <div className="flex justify-between w-full">
-                                                <span>{isRTL ? categoryNames[category]?.he : categoryNames[category]?.en}</span>
-                                                <span className="text-xs text-slate-400">({exps.length})</span>
-                                            </div>
-                                        </DropdownMenuItem>
+                                {Object.keys(groupedExperiments).length > 0 ? (
+                                    Object.entries(groupedExperiments).map(([category, exps]) => (
+                                        <div key={category}>
+                                            <DropdownMenuItem 
+                                                onClick={() => navigate(createPageUrl(`Lab?category=${category}`))}
+                                            >
+                                                <div className="flex justify-between w-full font-medium">
+                                                    <span>{isRTL ? categoryNames[category]?.he || category : categoryNames[category]?.en || category}</span>
+                                                    <span className="text-xs text-slate-400">({exps.length})</span>
+                                                </div>
+                                            </DropdownMenuItem>
+                                            {exps.map((exp) => (
+                                                <DropdownMenuItem
+                                                    key={exp.id || exp.slug}
+                                                    onClick={() => navigate(getExperimentPageUrl(exp.slug), { state: { experiment: exp } })}
+                                                    className="ps-6 text-xs text-slate-600"
+                                                >
+                                                    <Beaker className="w-3 h-3 me-2 text-blue-500 flex-shrink-0" />
+                                                    <span className="truncate">{isRTL ? exp.i18n_texts?.he?.title || exp.slug : exp.i18n_texts?.en?.title || exp.slug}</span>
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </div>
                                     ))
                                 ) : (
                                     <DropdownMenuItem disabled>

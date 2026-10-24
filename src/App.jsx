@@ -6,6 +6,7 @@ import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { AppErrorFallback, ErrorBoundary } from '@/components/layout/ErrorBoundary';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -70,15 +71,17 @@ const AppRoutes = () => (
 function App() {
 
   return (
-    <QueryClientProvider client={queryClientInstance}>
-      <Router>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </Router>
-      <Toaster />
-      <SonnerToaster position="top-center" richColors />
-    </QueryClientProvider>
+    <ErrorBoundary fallback={() => <AppErrorFallback />}>
+      <QueryClientProvider client={queryClientInstance}>
+        <Router>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </Router>
+        <Toaster />
+        <SonnerToaster position="top-center" richColors />
+      </QueryClientProvider>
+    </ErrorBoundary>
   )
 }
 

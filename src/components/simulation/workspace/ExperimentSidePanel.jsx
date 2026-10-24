@@ -27,6 +27,7 @@ export default function ExperimentSidePanel({
     onScrub,
     currentTime,
     playbackTime,
+    displayedDataPoint,
     simulationData,
     validationState,
     onFloatConsole,
@@ -46,7 +47,7 @@ export default function ExperimentSidePanel({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: isRTL ? -400 : 400, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className={`absolute top-0 ${isRTL ? 'left-0' : 'right-0'} h-full w-96 bg-white/95 backdrop-blur-sm shadow-2xl border-${isRTL ? 'r' : 'l'} border-slate-200 z-30 flex flex-col`}
+            className={`absolute top-0 ${isRTL ? 'left-0 border-r' : 'right-0 border-l'} h-full w-96 bg-white/95 backdrop-blur-sm shadow-2xl border-slate-200 z-30 flex flex-col`}
         >
             <Tabs value={activeTab} onValueChange={onTabChange} className="flex-1 flex flex-col overflow-hidden">
                 <div className="border-b border-slate-200 px-4 py-3 flex-shrink-0">
@@ -89,7 +90,9 @@ export default function ExperimentSidePanel({
                                 onScrub={onScrub}
                                 currentTime={currentTime}
                                 playbackTime={playbackTime}
+                                displayedDataPoint={displayedDataPoint}
                                 simulationData={simulationData}
+                                experiment={experiment}
                                 isRTL={isRTL}
                                 onFloat={onFloatConsole}
                                 maxSimulationTime={maxSimulationTime}
