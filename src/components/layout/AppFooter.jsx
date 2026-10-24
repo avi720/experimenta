@@ -2,19 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Beaker } from 'lucide-react';
 import { createPageUrl } from '@/utils';
+import { FULL_SCREEN_PAGES } from '@/pages.config';
 import { Facebook, Twitter, Instagram, Linkedin, Mail } from 'lucide-react';
 
 export default function AppFooter({ isRTL, currentPageName }) {
-    const pagesWithoutFooter = [
-        'LabWorkspace', 
-        'AdminExperimentForm', 
-        'FreeFallExperiment', 
-        'ShoExperiment', 
-        'QuantumTunnelingExperiment', 
-        'DoubleSlitExperiment'
-    ];
-    
-    if (pagesWithoutFooter.includes(currentPageName)) {
+    if (FULL_SCREEN_PAGES.includes(currentPageName)) {
         return null;
     }
 
@@ -68,8 +60,8 @@ export default function AppFooter({ isRTL, currentPageName }) {
                             <span className="text-2xl font-bold text-white">Experimenta</span>
                         </div>
                         <p className="text-sm text-slate-400 leading-relaxed">
-                            {isRTL 
-                                ? "פלטפורמה חדשנית לסימולציות פיזיקליות אינטראקטיביות" 
+                            {isRTL
+                                ? "פלטפורמה חדשנית לסימולציות פיזיקליות אינטראקטיביות"
                                 : "Innovative platform for interactive physics simulations"
                             }
                         </p>
@@ -130,12 +122,12 @@ export default function AppFooter({ isRTL, currentPageName }) {
                 <div className="mt-12 pt-8 border-t border-slate-800">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-400">
                         <p>
-                            © {new Date().getFullYear()} Experimenta. 
+                            © {new Date().getFullYear()} Experimenta.
                             {isRTL ? " כל הזכויות שמורות." : " All rights reserved."}
                         </p>
                         <p className="text-xs">
-                            {isRTL 
-                                ? "נבנה עם אהבה למדע ולחינוך" 
+                            {isRTL
+                                ? "נבנה עם אהבה למדע ולחינוך"
                                 : "Built with love for science and education"
                             }
                         </p>

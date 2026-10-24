@@ -1,6 +1,8 @@
+import { categoryNames } from '@/components/pagesComponents/lab/labConstants';
+
 export const emptyExperiment = {
   slug: '',
-  category: 'Classical',
+  category: 'ClassicalMechanics',
   visualization_type: '3d',
   //engine: 'classicalMechanics',
   parameters: [],
@@ -15,15 +17,10 @@ export const emptyExperiment = {
   is_active: true,
 };
 
-export const categoryOptions = [
-  { value: 'ClassicalMechanics', label: 'מכניקה קלאסית' },
-  { value: 'QuantumMechanics', label: 'מכניקת הקוונטים' },
-  { value: 'FluidMechanics', label: 'מכניקת הנוזלים' },
-  { value: 'ThermoDynamics', label: 'תרמו-דינמיקה' },
-  { value: 'Electromagnetism and Electricity', label: 'חשמל ומגנטיות' },
-  { value: 'Optics', label: 'אופטיקה' },
-  { value: 'General Relativity', label: 'יחסות כללית' }
-];
+export const categoryOptions = Object.entries(categoryNames).map(([value, labels]) => ({
+  value,
+  label: labels.he,
+}));
 
 // export const engineOptions = [
 //   { value: 'classicalMechanics', label: 'מכניקה קלאסית' },

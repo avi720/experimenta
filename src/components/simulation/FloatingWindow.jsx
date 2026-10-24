@@ -3,19 +3,56 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { X, Minimize2 } from 'lucide-react';
 
-export default function FloatingWindow({ title, position, onPositionChange, onClose, children, isMinimized, onMinimize, isRTL, size = "normal" }) {
+export default function FloatingWindow({
+  title,
+  position: controlledPosition,
+  defaultPosition = { x: 20, y: 100 },
+  onPositionChange,
+  defaultSize,
+  onClose,
+  children,
+  isMinimized: controlledMinimized,
+  onMinimize,
+  size = "normal"
+}) {
+  const [internalPosition, setInternalPosition] = useState(defaultPosition);
+  const [internalMinimized, setInternalMinimized] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isResizing, setIsResizing] = useState(false);
   const [resizeType, setResizeType] = useState('');
-  const [windowSize, setWindowSize] = useState(size === "large" ? { width: 600, height: 400 } : { width: 400, height: 300 });
+  const [windowSize, setWindowSize] = useState(
+    defaultSize || (size === "large" ? { width: 600, height: 400 } : { width: 400, height: 300 })
+  );
+
+  const position = controlledPosition || internalPosition;
+  const setPosition = useCallback(
+    (updater) => {
+      if (onPositionChange) {
+        onPositionChange(updater);
+      } else {
+        setInternalPosition(updater);
+      }
+    },
+    [onPositionChange]
+  );
+
+  const isMinimized =
+    typeof controlledMinimized === "boolean" ? controlledMinimized : internalMinimized;
+  const handleMinimize = useCallback(() => {
+    if (onMinimize) {
+      onMinimize();
+    } else {
+      setInternalMinimized((prev) => !prev);
+    }
+  }, [onMinimize]);
 
   const constrainPosition = useCallback((pos, width, height) => {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     return {
-      x: Math.max(0, Math.min(pos.x, viewportWidth - width)),
-      y: Math.max(0, Math.min(pos.y, viewportHeight - height)),
+      x: Math.max(0, Math.min(pos.x, Math.max(0, viewportWidth - width))),
+      y: Math.max(0, Math.min(pos.y, Math.max(0, viewportHeight - height))),
     };
   }, []);
 
@@ -33,7 +70,7 @@ export default function FloatingWindow({ title, position, onPositionChange, onCl
   const handleMouseMove = useCallback((e) => {
     if (isDragging) {
       const newPosition = { x: e.clientX - dragOffset.x, y: e.clientY - dragOffset.y };
-      onPositionChange(constrainPosition(newPosition, windowSize.width, windowSize.height));
+      setPosition(constrainPosition(newPosition, windowSize.width, windowSize.height));
     } else if (isResizing) {
       const minWidth = 300, minHeight = 200;
       const viewportWidth = window.innerWidth, viewportHeight = window.innerHeight;
@@ -47,7 +84,7 @@ export default function FloatingWindow({ title, position, onPositionChange, onCl
         const newX = position.x + e.movementX;
         if (newX >= 0) {
           setWindowSize(prev => ({ ...prev, width: newWidth }));
-          onPositionChange(prev => ({ ...prev, x: newX }));
+          setPosition(prev => ({ ...prev, x: newX }));
         }
       }
       if (resizeType.includes('bottom')) {
@@ -55,17 +92,17 @@ export default function FloatingWindow({ title, position, onPositionChange, onCl
         setWindowSize(prev => ({ ...prev, height: newHeight }));
       }
     }
-  }, [isDragging, isResizing, dragOffset, position, windowSize, resizeType, onPositionChange, constrainPosition]);
+  }, [isDragging, isResizing, dragOffset, position, windowSize, resizeType, setPosition, constrainPosition]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false); setIsResizing(false); setResizeType('');
   }, []);
 
   useEffect(() => {
-    const handleResize = () => onPositionChange(prevPos => constrainPosition(prevPos, windowSize.width, windowSize.height));
+    const handleResize = () => setPosition(prevPos => constrainPosition(prevPos, windowSize.width, windowSize.height));
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [windowSize, onPositionChange, constrainPosition]);
+  }, [windowSize, setPosition, constrainPosition]);
 
   useEffect(() => {
     if (isDragging || isResizing) {
@@ -83,8 +120,8 @@ export default function FloatingWindow({ title, position, onPositionChange, onCl
       <div className={`flex items-center justify-between p-3 border-b border-slate-200 bg-slate-50/80 rounded-t-lg select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`} onMouseDown={handleMouseDown}>
         <h4 className="font-semibold text-sm pointer-events-none">{title}</h4>
         <div className="window-controls flex space-x-1 rtl:space-x-reverse">
-          <Button size="sm" variant="ghost" onClick={onMinimize} className="h-6 w-6 p-0"><Minimize2 className="w-3 h-3" /></Button>
-          <Button size="sm" variant="ghost" onClick={onClose} className="h-6 w-6 p-0"><X className="w-3 h-3" /></Button>
+          <Button size="sm" variant="ghost" onClick={handleMinimize} aria-label="Minimize" className="h-6 w-6 p-0"><Minimize2 className="w-3 h-3" /></Button>
+          <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close" className="h-6 w-6 p-0"><X className="w-3 h-3" /></Button>
         </div>
       </div>
       {!isMinimized && <div className="flex-1 overflow-auto p-4">{children}</div>}

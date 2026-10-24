@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +9,7 @@ import { getExperimentPageUrl } from './labConstants';
 
 export default function ExperimentCard({ experiment, isRTL, delay, categoryIcons }) {
     const CategoryIcon = categoryIcons[experiment.category] || BookOpen;
-    
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -27,7 +26,7 @@ export default function ExperimentCard({ experiment, isRTL, delay, categoryIcons
                             {experiment.category}
                         </Badge>
                     </div>
-                    
+
                     <CardTitle className="text-xl leading-tight group-hover:text-blue-600 transition-colors">
                         {isRTL ? experiment.i18n_texts?.he?.title || experiment.slug : experiment.i18n_texts?.en?.title || experiment.slug}
                     </CardTitle>
@@ -47,9 +46,9 @@ export default function ExperimentCard({ experiment, isRTL, delay, categoryIcons
 
                     {/* Action Button */}
                     <div className="mt-auto">
-                        <Link 
-                            to={`${getExperimentPageUrl(experiment.slug)}?id=${encodeURIComponent(experiment.slug)}`}
-                            state={{ experiment }} 
+                        <Link
+                            to={getExperimentPageUrl(experiment.slug)}
+                            state={{ experiment }}
                             className="block"
                         >
                             <Button className="w-full h-12 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 shadow-lg hover:shadow-xl transition-all duration-300">

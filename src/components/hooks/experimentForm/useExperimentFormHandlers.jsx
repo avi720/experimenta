@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 
 export function useExperimentFormHandlers(experiment, setExperiment) {
@@ -77,9 +76,22 @@ export function useExperimentFormHandlers(experiment, setExperiment) {
     const handleNestedDynamicChange = useCallback((arrayName, index, nestedField, nestedIndex, field, value) => {
         setExperiment(prev => {
             const array = [...(prev[arrayName] || [])];
-            const nestedArray = [...(array[index][nestedField] || [])];
-            nestedArray[nestedIndex] = { ...nestedArray[nestedIndex], [field]: value };
-            array[index] = { ...array[index], [nestedField]: nestedArray };
+            const item = array[index] || {};
+
+            if (nestedIndex === null || nestedIndex === undefined) {
+                // Direct replacement of an object field (e.g. preset `values`) when `field` is also null,
+                // or updating a single key on an object field (e.g. `i18n_labels.he`, `tooltip.en`).
+                const updatedNested =
+                    field === null || field === undefined
+                        ? value
+                        : { ...(item[nestedField] || {}), [field]: value };
+                array[index] = { ...item, [nestedField]: updatedNested };
+            } else {
+                const nestedArray = [...(item[nestedField] || [])];
+                nestedArray[nestedIndex] = { ...nestedArray[nestedIndex], [field]: value };
+                array[index] = { ...item, [nestedField]: nestedArray };
+            }
+
             return { ...prev, [arrayName]: array };
         });
     }, [setExperiment]);
