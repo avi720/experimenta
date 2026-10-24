@@ -5,10 +5,9 @@ Vite + React app on Supabase (Postgres + Auth), deployed on Vercel. Both CLIs ar
 ## Branching — `dev` is the working branch
 
 - `main` = production (Vercel deploys it). Never commit or push to `main` directly.
-- `dev` = integration branch. Feature / remediation branches (e.g. `tech-debt/phase-1`) are cut from `dev` and merged back into `dev` via PR.
-- Every UI change is verified in a browser on the local dev server (`npm run dev` → `http://localhost:5173`) before it is pushed. Production is not a test environment.
-- `dev` → `main` is a separate PR, opened only after the work on `dev` has been verified locally and the owner approves the release.
-- Note: `Closes #N` in a commit closes the issue only when it reaches `main`.
+- `dev` = active development branch. Commit and push work directly on `dev` (`origin/dev`), verify all changes locally (`npm run dev` → `http://localhost:5173`, `npm run lint`, `npm run build`, `npm run test:run`), and once verified open a PR from `dev` → `main` for release.
+- Every UI change is verified in a browser on the local dev server (`npm run dev` → `http://localhost:5173`) before opening a PR to `main`. Production is not a test environment.
+- Note: `Closes #N` in a commit or PR closes the issue when merged into `main`.
 
 ## Database changes — migration files only
 
