@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { categoryOptions, /*engineOptions*/ } from './adminFormConstants';
+import { categoryOptions, accessLevelOptions } from './adminFormConstants';
 
 export default function GeneralSettingsTab({ experiment, handleInputChange, errors }) {
   return (
@@ -16,13 +16,13 @@ export default function GeneralSettingsTab({ experiment, handleInputChange, erro
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Label className="text-base font-medium">מזהה ניסוי (Slug) *</Label>
-          <Input 
-            value={experiment.slug} 
+          <Input
+            value={experiment.slug}
             onChange={e => handleInputChange('slug', e.target.value)}
-            placeholder="free-fall, sho, quantum_1d"
+            placeholder="free-fall, sho, quantum-tunneling"
             className={errors.slug ? 'border-red-500' : ''}
           />
-          {errors.slug && <p className="text-red-500 text-sm mt-1">{errors.slug}</p>}
+          {errors.slug && <p className="text-red-500 text-sm mt-1" role="alert">{errors.slug}</p>}
           <p className="text-xs text-slate-500 mt-1">
             מזהה ייחודי באנגלית בלבד (אותיות קטנות, מספרים, מקפים)
           </p>
@@ -44,22 +44,6 @@ export default function GeneralSettingsTab({ experiment, handleInputChange, erro
           </Select>
         </div>
 
-        {/*<div>
-          <Label className="text-base font-medium">מנוע סימולציה</Label>
-          <Select value={experiment.engine} onValueChange={val => handleInputChange('engine', val)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {engineOptions.map(option => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>*/}
-
         <div>
           <Label className="text-base font-medium">סוג תצוגה</Label>
           <Select value={experiment.visualization_type} onValueChange={val => handleInputChange('visualization_type', val)}>
@@ -69,6 +53,25 @@ export default function GeneralSettingsTab({ experiment, handleInputChange, erro
             <SelectContent>
               <SelectItem value="2d">דו מימדי (2D)</SelectItem>
               <SelectItem value="3d">תלת מימדי (3D)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label className="text-base font-medium">רמת גישה (Access Level)</Label>
+          <Select
+            value={experiment.access_level || 'public'}
+            onValueChange={val => handleInputChange('access_level', val)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {accessLevelOptions.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

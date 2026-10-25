@@ -14,14 +14,7 @@ export default function ParameterControls({
     validationState,
     isRTL
 }) {
-    console.log('ParameterControls: Rendering', { 
-        parametersCount: parameters?.length,
-        paramValues,
-        onParameterChange: typeof onParameterChange
-    });
-
     const handleParamChange = (key, value) => {
-        console.log('ParameterControls: handleParamChange called', { key, value });
         if (onParameterChange) {
             const newValues = { ...paramValues, [key]: value };
             onParameterChange(newValues);
@@ -75,6 +68,7 @@ export default function ParameterControls({
                             value={paramValues?.[param.key]}
                             onChange={(value) => handleParamChange(param.key, value)}
                             error={validationState?.errors?.[param.key]}
+                            validationState={validationState?.byKey?.[param.key]}
                             isRTL={isRTL}
                         />
                     ))}

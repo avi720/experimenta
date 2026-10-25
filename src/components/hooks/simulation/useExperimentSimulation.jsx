@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { resolveExperimentRegistryEntry } from "@/components/simulation/experimentRegistry";
+import { validateExperimentParameters } from "@/components/simulation/parameters/parameterValidation";
 import { useExperimentParameters } from "./useExperimentParameters";
 import { useSimulationManager } from "./useSimulationManager";
 import { useExperimentPersistence } from "./useExperimentPersistence";
@@ -9,7 +10,7 @@ const NOOP_STEP = (t) => ({ time: t, shouldStop: true });
 /**
  * Single simulation hook driving all experiments via EXPERIMENT_REGISTRY.
  */
-export function useExperimentSimulation(experiment, user) {
+export function useExperimentSimulation(experiment, user, isRTL = true) {
     const registryEntry = useMemo(
         () => resolveExperimentRegistryEntry(experiment),
         [experiment]
@@ -24,6 +25,16 @@ export function useExperimentSimulation(experiment, user) {
         applyPreset,
     } = useExperimentParameters(experiment, registryEntry?.defaultParameters);
 
+    const validationState = useMemo(
+        () =>
+            validateExperimentParameters(
+                experiment?.parameters,
+                parameters,
+                isRTL
+            ),
+        [experiment?.parameters, parameters, isRTL]
+    );
+
     const maxSimulationTime = useMemo(() => {
         const fromParam = parseFloat(parameters?.t_max);
         if (Number.isFinite(fromParam) && fromParam > 0) {
@@ -37,6 +48,13 @@ export function useExperimentSimulation(experiment, user) {
         parameters,
         maxSimulationTime,
     });
+
+    const guardedStartSimulation = useCallback(() => {
+        if (!validationState.isAllValid) {
+            return;
+        }
+        manager.startSimulation();
+    }, [validationState.isAllValid, manager.startSimulation]);
 
     // Clear stale completed/paused time-series results when parameters change after a run.
     const prevParametersRef = useRef(null);
@@ -68,7 +86,12 @@ export function useExperimentSimulation(experiment, user) {
     const [staticDisplayedPoint, setStaticDisplayedPoint] = useState(null);
 
     useEffect(() => {
-        if (!isStaticMode || !experiment || Object.keys(parameters).length === 0) {
+        if (
+            !isStaticMode ||
+            !experiment ||
+            Object.keys(parameters).length === 0 ||
+            !validationState.isAllValid
+        ) {
             return;
         }
         const calculateStatic = registryEntry?.calculateStaticFn;
@@ -77,7 +100,7 @@ export function useExperimentSimulation(experiment, user) {
             setStaticData(pattern);
             setStaticDisplayedPoint({ parameters, pattern });
         }
-    }, [isStaticMode, experiment, parameters, registryEntry]);
+    }, [isStaticMode, experiment, parameters, registryEntry, validationState.isAllValid]);
 
     const timeDisplayedDataPoint = useMemo(() => {
         if (isStaticMode) return null;
@@ -117,7 +140,7 @@ export function useExperimentSimulation(experiment, user) {
             currentTime: 0,
             playbackTime: 0,
             displayedDataPoint,
-            validationState: {},
+            validationState,
             maxSimulationTime: 0,
             startSimulation: noop,
             pauseSimulation: noop,
@@ -143,9 +166,9 @@ export function useExperimentSimulation(experiment, user) {
         currentTime: manager.playbackTime,
         playbackTime: manager.playbackTime,
         displayedDataPoint,
-        validationState: {},
+        validationState,
         maxSimulationTime,
-        startSimulation: manager.startSimulation,
+        startSimulation: guardedStartSimulation,
         pauseSimulation: manager.pauseSimulation,
         continueSimulation: manager.continueSimulation,
         resetSimulation: manager.resetSimulation,

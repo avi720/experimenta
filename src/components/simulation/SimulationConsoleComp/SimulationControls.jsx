@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Play, Pause, SkipBack, SkipForward, RotateCcw, Loader2} from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, RotateCcw, Loader2 } from "lucide-react";
 
 export default function SimulationControls({
     simulationState,
@@ -15,25 +15,20 @@ export default function SimulationControls({
     playbackTime,
     maxAvailableTime,
     simulationData,
-    isRTL
+    isRTL,
+    isValid = true
 }) {
     const hasData = simulationData && simulationData.length > 0 && maxAvailableTime > 0;
-    const isIdle = simulationState === 'idle' //|| simulationState === 'initializing';
+    const isIdle = simulationState === 'idle';
     const isRunning = simulationState === 'running';
     const isPaused = simulationState === 'paused';
     const isCompleted = simulationState === 'completed';
     const isCalculating = simulationState === 'calculating';
 
-    // כפתורים step ו-reset מושבתים כשאין נתונים
-    const disableStepAndReset = !hasData || isCalculating || isRunning;
-    // קביעת טווח הסליידר. אם אין נתונים זמינים, הטקסט יתאר 0 שניות.
+    // כפתורי step מושבתים כשאין נתונים או בזמן חישוב/ריצה; כפתור reset זמין גם בזמן חישוב/ריצה (T23)
+    const disableStep = !hasData || isCalculating || isRunning;
+    const disableReset = isIdle && !hasData;
     const sliderMax = hasData ? maxAvailableTime : 0;
-
-    // const handleSliderChange = (value) => {
-    //     if (hasData && onScrub) {
-    //         onScrub(value[0]);
-    //     }
-    // };
 
     return (
         <div className="flex flex-col gap-4">
@@ -43,18 +38,23 @@ export default function SimulationControls({
                     variant="ghost"
                     size="icon"
                     onClick={onStepBackward}
-                    disabled={disableStepAndReset || playbackTime === 0}
-                    className="flex-shrink-0" //"text-slate-600 hover:text-slate-900"
+                    disabled={disableStep || playbackTime === 0}
+                    aria-label={isRTL ? "צעד אחורה" : "Step backward"}
+                    className="flex-shrink-0"
                 >
                     <SkipBack className="w-4 h-4" />
                 </Button>
 
                 {isIdle ? (
-                    <Button className="flex-grow flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white" onClick={onStart}>
+                    <Button
+                        className="flex-grow flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+                        onClick={onStart}
+                        disabled={!isValid}
+                    >
                         <Play className="w-4 h-4" />
                         {isRTL ? "התחל" : "Start"}
                     </Button>
-                ): isCalculating ? (
+                ) : isCalculating ? (
                     <Button className="flex-grow flex items-center justify-center gap-2 bg-blue-600 text-white" disabled>
                         <Loader2 className="w-4 h-4 animate-spin" />
                         {isRTL ? "מחשב..." : "Calculating..."}
@@ -79,8 +79,9 @@ export default function SimulationControls({
                     variant="ghost"
                     size="icon"
                     onClick={onStepForward}
-                    disabled={disableStepAndReset || playbackTime >= maxAvailableTime}
-                    className="flex-shrink-0" //"text-slate-600 hover:text-slate-900"
+                    disabled={disableStep || playbackTime >= maxAvailableTime}
+                    aria-label={isRTL ? "צעד קדימה" : "Step forward"}
+                    className="flex-shrink-0"
                 >
                     <SkipForward className="w-4 h-4" />
                 </Button>
@@ -89,12 +90,21 @@ export default function SimulationControls({
                     variant="ghost"
                     size="icon"
                     onClick={onReset}
-                    disabled={disableStepAndReset}
-                    className="flex-shrink-0" //"text-slate-600 hover:text-slate-900"
+                    disabled={disableReset}
+                    aria-label={isRTL ? "אפס סימולציה" : "Reset simulation"}
+                    className="flex-shrink-0"
                 >
                     <RotateCcw className="w-4 h-4" />
                 </Button>
             </div>
+
+            {!isValid && (
+                <p className="text-xs text-red-500 text-center" role="alert">
+                    {isRTL
+                        ? "יש לתקן את ערכי הפרמטרים לפני הפעלת הסימולציה"
+                        : "Please fix parameter errors before starting the simulation"}
+                </p>
+            )}
 
             {/* בר הזמן - מוצג תמיד, מושבת כשאין נתונים */}
             <Slider

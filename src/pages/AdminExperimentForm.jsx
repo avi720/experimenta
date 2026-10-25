@@ -1,5 +1,9 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, AlertTriangle } from 'lucide-react';
+import { createPageUrl } from '@/utils';
 import { useExperimentForm } from '../components/hooks/useExperimentForm';
 
 // Import UI components
@@ -24,6 +28,7 @@ export default function AdminExperimentForm() {
     errors,
     presetTextValues,
     isEditMode,
+    notFound,
     navigate,
     hasChanges,
     handleInputChange,
@@ -51,6 +56,35 @@ export default function AdminExperimentForm() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           <p className="text-slate-600">טוען...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (notFound || !experiment) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16" dir="rtl">
+        <Card className="border-red-200 shadow-sm">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-3">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <CardTitle className="text-2xl text-slate-900">הניסוי לא נמצא</CardTitle>
+            <CardDescription className="text-base text-slate-600">
+              לא נמצא ניסוי עם המזהה המבוקש. ייתכן שהניסוי נמחק או שהקישור שגוי.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate(createPageUrl('AdminExperiments'))}
+              className="gap-2"
+            >
+              <ArrowRight className="w-4 h-4" />
+              חזרה לרשימת הניסויים
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -146,8 +180,8 @@ export default function AdminExperimentForm() {
       </Tabs>
 
       {/* Floating Save Button */}
-      <ExperimentFormFloatingSaveButton 
-        isSaving={isSaving} 
+      <ExperimentFormFloatingSaveButton
+        isSaving={isSaving}
         handleSubmit={handleSubmit}
         hasChanges={hasChanges}
         isEditMode={isEditMode}

@@ -20,6 +20,7 @@ export default function FloatingWindowsManager({
     displayedDataPoint,
     simulationData,
     maxSimulationTime,
+    validationState,
     onToggleConsole,
     onToggleCharts
 }) {
@@ -49,6 +50,7 @@ export default function FloatingWindowsManager({
                         experiment={experiment}
                         isRTL={isRTL}
                         maxSimulationTime={maxSimulationTime}
+                        validationState={validationState}
                     />
                 </FloatingWindow>
             )}

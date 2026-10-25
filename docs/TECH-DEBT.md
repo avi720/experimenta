@@ -32,6 +32,7 @@ experimenta is a bilingual (Hebrew-first, English) virtual physics lab. Visitors
 - Each finding is **outcome-driven**: it states what is wrong and what "fixed" looks like, but **not** how to implement it. The implementer chooses the approach.
 - Work top-down by phase. **Do not skip Phase 1.** Phase 1 contains issues that block the next release — today three of the four experiment pages do not produce a working simulation.
 - Phase 1 fixes the simulation pipeline in place. Phase 2 (T17–T19) then replaces the four copy-paste experiment pages with one generic page; if the owner answers Open Question 1 with "yes" before Phase 1 starts, T1–T5, T9 and T11–T14 can be satisfied directly by that rewrite — the Acceptance clauses still apply unchanged.
+- A phase holds **at most 15 findings** so each milestone stays focused. When a phase would exceed that, move the lowest-priority items to the next phase (or a new one) rather than growing it. T-numbers stay global and do not change when an item moves, so a phase may list them out of order. (Rebalanced 2026-10-25: the old Phase 2/3 were split into Phases 2–5.)
 - Tick the box only when the **Acceptance** clause is satisfied — not when the change is merely written.
 - When an item lands, flip `[ ]` → `[x]` on the heading line. Empty boxes mean unfinished; ticked boxes mean Acceptance met. This lets anyone (or any session) skim the file and trust the state without re-deriving what shipped.
 - If a finding turns out to be invalid in context, leave the box unchecked and add a `~~strikethrough~~` note explaining why.
@@ -165,7 +166,7 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 
 ---
 
-### Phase 2 — Important (correctness & integrity)
+### Phase 2 — Correctness & Security (security, runtime correctness & admin integrity)
 
 #### [x] T17. Remove the dead simulation hooks and components ([#20](https://github.com/avi720/experimenta/issues/20))
 - **Where:** `src/components/hooks/simulation/useSimulationEngine.jsx` (162 lines, header says unused), `useSimulationControls.jsx` (65, header says unused), `useSimulationState.jsx` (39), `parameters/useParameterValidation.jsx` (116, only imported by the dead `useSimulationState`); `src/components/simulation/workspace/ExperimentCanvas.jsx` (an 8-line div that ignores its props)
@@ -191,85 +192,47 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 - **Acceptance:** Page → simulation hook → manager/engine is at most two hook layers deep, with no function whose body only forwards its arguments; verified by reading the call chain and by running all four experiments.
 - **Done 2026-10-23:** Deleted `useSimulationControlsLogic.jsx` and `useSimulationDataDisplay.jsx`; `LabWorkspace` calls `useExperimentSimulation`, which talks directly to `useSimulationManager` and `useExperimentPersistence`.
 
-#### [ ] T21. Standardise data fetching on TanStack Query ([#24](https://github.com/avi720/experimenta/issues/24))
-- **Where:** `src/components/hooks/useAppData.jsx:18` (TanStack); manual `useEffect` fetchers in `src/components/hooks/useLabData.jsx:8-24`, `adminExperiments/useExperimentListFetching.jsx:8-19`, `experimentForm/useExperimentDataLoading.jsx:45`, `src/pages/Results.jsx:121-122`
-- **Issue:** `experiment_templates` is fetched five different ways and `app_settings` twice; `useQuery` appears in exactly 1 file and `useMutation` in 0. `/Lab` fires two requests for the same table (`useAppData` + `useLabData`), and the manual fetchers miss the `onChange` cache invalidation, so lists can be stale after admin edits. Page-level `isLoading` spinners in Dashboard and Lab are unreachable because Layout already blocks on the query.
-- **Acceptance:** Each table is read through one shared query hook and written through mutations that invalidate it; visiting `/Lab` issues one `experiment_templates` request (verified in the browser network panel); grep finds no `useEffect`-based fetch of Supabase data.
-
-#### [ ] T22. Split Results.jsx into data, domain and view pieces ([#25](https://github.com/avi720/experimenta/issues/25))
-- **Where:** `src/pages/Results.jsx` (734 lines)
-- **Issue:** One component mixes manual fetching (refetching 3 tables after every delete), a physics formula table (`:30-83`), a sample generator duplicating the engines (`:169-203`), a CSV exporter duplicating `useExperimentPersistence.exportData` (`:243-259`), statistics (`:664-681`) and 4 tab views; `getChartData()` is recomputed 3+ times per render, and the CSV function's `format` parameter shadows the date-fns import.
-- **Acceptance:** No file under the Results feature exceeds ~250 lines; CSV export uses one shared utility; derived chart data is computed once per selected run (verified with React DevTools profiler or a render counter); Results behaves identically in a browser.
-
-#### [ ] T23. Experiment playback loop and cancellation are unsound ([#26](https://github.com/avi720/experimenta/issues/26))
+#### [x] T23. Experiment playback loop and cancellation are unsound ([#26](https://github.com/avi720/experimenta/issues/26))
 - **Where:** `src/components/hooks/simulation/useSimulationManager.jsx:53-100,120-124`; `useSimulationEngineLogic.jsx:96-109`
 - **Issue:** The playback effect depends on `playbackTime` and on an unmemoised `getMaxAvailableTime`, so the interval is torn down and rebuilt every 16 ms tick; `setIsPlaying`/`setSimulationStatus` run inside a `setPlaybackTime` updater; Reset or unmount during calculation does not stop `runEngine`, whose completion callback then overwrites the reset status; `continueSimulation` never calls the engine's continue.
 - **Acceptance:** During playback the interval/rAF is created once per play (verified by instrumenting or profiling), pressing Reset mid-calculation leaves status "idle" with no data, and navigating away mid-run produces no state-update warnings in the console.
+- **Done 2026-10-25:** Removed `playbackTime` from the playback effect dependency array via `playbackTimeRef`, memoised `getMaxAvailableTime`/`stopSimulation`/`resetSimulation`/`continueSimulation`, moved state transitions out of the `setPlaybackTime` updater, wired `continueSimulation` to `engineContinueSimulation`, and added `runIdRef` + `isMountedRef` cancellation guards across `useSimulationEngineLogic.jsx`. Verified via unit tests (`useSimulationManager.test.js`) and in Chrome on `/FreeFallExperiment`.
 
-#### [ ] T24. Simulation datasets are unbounded and looked up linearly ([#27](https://github.com/avi720/experimenta/issues/27))
-- **Where:** `src/components/hooks/simulation/useSimulationEngineLogic.jsx:5,27-46,111-133`
-- **Issue:** **Confirmed** (Node run). Every 1 ms step is stored — an SHO run at t_max 60 yields 60,002 points and overshoots t_max by one step — and the whole array flows into React state, recharts and CSV without downsampling; `getDataPointAtTime` is an O(n) scan every frame although `index = round(t/dt)` would do. The old `parameters.dt` sampling was lost.
-- **Acceptance:** A 60 s SHO run stores at most a bounded number of samples (e.g. ≤ 5,000), never exceeds t_max, and frame lookup is O(1); playback stays smooth (no long tasks > 50 ms in the Performance panel) on a mid-range laptop.
-
-#### [ ] T25. FreeFallScene leaks a render loop and GPU resources on every visit ([#28](https://github.com/avi720/experimenta/issues/28))
+#### [x] T25. FreeFallScene leaks a render loop and GPU resources on every visit ([#28](https://github.com/avi720/experimenta/issues/28))
 - **Where:** `src/components/simulation/scenes/FreeFallScene.jsx:264-270,277,299-304`
 - **Issue:** The `requestAnimationFrame` id is never stored or cancelled, so each visit leaves a loop rendering against a disposed renderer forever; cleanup at `:277` calls `addEventListener('contextmenu')` instead of removing it; rebuilding the building on `h0` change never disposes its ~8 geometries per floor (~400 at h0 = 500).
 - **Acceptance:** Navigating to Free Fall and away 10 times leaves no running rAF loop and a stable `renderer.info.memory.geometries` count when changing h0 back and forth (verified in DevTools Performance / a debug log).
+- **Done 2026-10-25:** Stored and cancelled `animationFrameId` on unmount, shared window `BoxGeometry` instances across building floors, and added `disposeObject3D` when rebuilding the building on `h0` changes and on scene teardown. Verified via unit test (`FreeFallScene.test.js`) and rAF instrumentation in Chrome (`rafsAfterUnmount: 0`).
 
-#### [ ] T26. Other scenes and orbit controls do not dispose resources ([#29](https://github.com/avi720/experimenta/issues/29))
-- **Where:** `src/components/simulation/scenes/QuantumTunnelingScene.jsx:210-223`; `ShoScene.jsx:136-142,169-186`; `sceneUtils.jsx:42-51`; `src/components/simulation/controls/orbitControls.jsx:72-78`
-- **Issue:** The QT scene disposes none of its geometries or materials, SHO disposes only the spring and rebuilds a `TubeGeometry` inside the rAF loop on every frame while oscillating, and `orbitControls.dispose()` leaves document `pointermove`/`pointerup` listeners attached if called mid-drag.
-- **Acceptance:** Same check as T25 for SHO and QT: no growth in `renderer.info.memory` across repeated visits or a 60 s SHO playback, and no document listeners left after unmount (verified with `getEventListeners(document)` in DevTools).
-
-#### [ ] T27. Remove debug logging from simulation hot paths ([#30](https://github.com/avi720/experimenta/issues/30))
-- **Where:** `src/components/simulation/engines/freeFallEngine.jsx:13,79`; `src/components/hooks/simulation/useSimulationEngineLogic.jsx:32`; `useSimulationManager.jsx:10`; `src/components/simulation/ParameterControls.jsx:17,24`; the experiment pages
-- **Issue:** **Confirmed** (Node run). A 3.2 s free fall makes 9,586 `console.log` calls for 3,194 points, each retaining its object in DevTools; 36 active logs sit in the simulation layer alone.
-- **Acceptance:** A full Free Fall run prints nothing to the console in a production build (verified in the browser console), and lint fails on new `console.log` outside an explicit allow-list.
-
-#### [ ] T28. Parameter validation errors never reach the inputs ([#31](https://github.com/avi720/experimenta/issues/31))
+#### [x] T28. Parameter validation errors never reach the inputs ([#31](https://github.com/avi720/experimenta/issues/31))
 - **Where:** `src/components/simulation/ParameterControls.jsx:77`; `src/components/simulation/parameters/ParameterInput.jsx:13,28-56`
 - **Issue:** `ParameterControls` passes `error=` while `ParameterInput` reads `validationState`; the hooks return `validationState: undefined`. `ParameterInput` re-implements the rules of `useParameterValidation` (two copies), and Start is never gated on valid input.
 - **Acceptance:** Entering an out-of-range value (e.g. mass 0 on Free Fall) shows an inline localized error on that field and disables Start until corrected; validation rules exist in one module.
+- **Done 2026-10-25:** Consolidated runtime parameter validation into `src/components/simulation/parameters/parameterValidation.js`, wired `validationState` from `useExperimentSimulation` through `WorkspaceShell`, `ExperimentSidePanel`, `ParameterControls`, `ParameterInput`, and `SimulationControls`, and disabled Start when any parameter is invalid. Verified via unit tests (`parameterValidation.test.js`) and in Chrome on `/FreeFallExperiment`.
 
-#### [ ] T29. Remove 14 unused npm dependencies, including vulnerable ones ([#32](https://github.com/avi720/experimenta/issues/32))
-- **Where:** `package.json` dependencies
-- **Issue:** **Confirmed** (grep + `npm audit`). `@hello-pangea/dnd`, `@hookform/resolvers`, `@radix-ui/react-toast`, `@stripe/react-stripe-js`, `@stripe/stripe-js`, `canvas-confetti`, `html2canvas`, `jspdf`, `lodash`, `react-hot-toast`, `react-leaflet`, `react-markdown`, `react-quill`, `zod` have zero imports. `npm audit --omit=dev` reports 25 vulnerabilities (1 critical, 16 high); the critical (jspdf) and several highs/moderates (lodash, quill, mdast) come from these unused packages. Depends on Open Question 9 for anything planned.
-- **Acceptance:** The unused packages are removed (or each one kept is justified in Open Question 9's answer); `npm audit --omit=dev` shows no critical and no high advisory in a runtime dependency; build passes.
-
-#### [ ] T30. Ship experiment code only to visitors who open an experiment ([#33](https://github.com/avi720/experimenta/issues/33))
-- **Where:** `src/pages.config.js:1-15`; `src/App.jsx:52-64`
-- **Issue:** **Confirmed** (`vite build --logLevel info`). All 15 pages are imported eagerly into a single 1,953.58 kB chunk (543.92 kB gzip); three (484 kB), recharts (260 kB) and framer-motion (109 kB) are downloaded by every Dashboard visitor although three/recharts are used only on experiment pages and Results.
-- **Acceptance:** The entry chunk loaded on `/` is ≤ 250 kB gzip and does not contain three or recharts (verified with the build output / a bundle visualiser), and experiment pages still load in a browser.
-
-#### [ ] T31. Build hides bundle-size warnings ([#34](https://github.com/avi720/experimenta/issues/34))
-- **Where:** `vite.config.js:9` (`logLevel: 'error'`)
-- **Issue:** **Confirmed.** `npm run build` prints no chunk sizes and suppresses Vite's ">500 kB chunk" warning, so CI and Vercel logs never surface bundle regressions such as T30.
-- **Acceptance:** `npm run build` output in CI lists chunk sizes and would show Vite's chunk-size warning when a chunk exceeds the limit.
-
-#### [ ] T32. Admin "create experiment" starts from invalid defaults ([#35](https://github.com/avi720/experimenta/issues/35))
+#### [x] T32. Admin "create experiment" starts from invalid defaults ([#35](https://github.com/avi720/experimenta/issues/35))
 - **Where:** `src/components/hooks/experimentForm/useExperimentDataLoading.jsx:6-21`; `src/components/pagesComponents/admin/AdminExperimentForm/GeneralSettingsTab.jsx:47-61`
 - **Issue:** The new-experiment defaults use category `'Classical'` (not in `categoryOptions`, so the Select renders blank) and engine `'classicalMechanics'` (matches no engine); the engine field is commented out, and `access_level` is not editable anywhere in the form (grep finds it only in `src/lib/access.js`). A created experiment therefore cannot run. Depends on Open Question 5.
 - **Acceptance:** Either a newly created experiment saved with the form's defaults appears in the Lab and opens a working simulation, or the "create" path is removed and the form is edit-only (per Open Question 5); verified as an admin in a browser.
+- **Done 2026-10-25:** Updated `createEmptyExperiment()` to default to `category: 'ClassicalMechanics'` and `access_level: 'public'`, and added the `access_level` selector (`public` / `registered` / `premium`) to `GeneralSettingsTab.jsx` (per OQ 5, creating a new experiment row in the DB is designed to trigger an external Claude Code routine that implements the experiment code).
 
-#### [ ] T33. Admin form validation lets invalid templates reach the database ([#36](https://github.com/avi720/experimenta/issues/36))
+#### [x] T33. Admin form validation lets invalid templates reach the database ([#36](https://github.com/avi720/experimenta/issues/36))
 - **Where:** `src/components/hooks/experimentForm/useExperimentValidation.jsx:10-60`; `src/components/hooks/useExperimentForm.jsx:88-90`
 - **Issue:** Slug is only checked for non-empty (the UI hint promises lowercase/digits/dashes; format and uniqueness are not enforced); a select parameter's default need not be among its options; preset keys need not match parameter keys; numeric types are not checked. A duplicate slug hits the DB unique constraint and the user sees only the generic toast "אירעה שגיאה בשמירת הניסוי".
 - **Acceptance:** Each of these cases (bad slug format, duplicate slug, select default not in options, preset key not a parameter) shows a specific inline error and blocks Save; verified as an admin in a browser.
+- **Done 2026-10-25:** Expanded `useExperimentValidation.jsx` and `useExperimentForm.jsx` to validate slug format (`^[a-z0-9]+(?:-[a-z0-9]+)*$`) and uniqueness against existing templates, numeric parameter bounds (`min <= default <= max`, `step > 0`), `select` parameter default membership in options, preset JSON syntax, and preset keys matching defined parameter keys; automatically switches to the first tab containing an error on Save. Verified via unit tests (`useExperimentValidation.test.js`).
 
-#### [ ] T34. Invalid preset JSON is dropped silently and in-progress edits are overwritten ([#37](https://github.com/avi720/experimenta/issues/37))
+#### [x] T34. Invalid preset JSON is dropped silently and in-progress edits are overwritten ([#37](https://github.com/avi720/experimenta/issues/37))
 - **Where:** `src/components/hooks/experimentForm/usePresetJsonManagement.jsx:7-26`; `src/components/pagesComponents/admin/AdminExperimentForm/PresetsEditorTab.jsx:69-89`
 - **Issue:** A JSON parse error is swallowed and `validateForm` does not check it, so Save succeeds with the old values despite the "won't be saved" warning; the effect re-serialises all preset text whenever presets change, overwriting edits in progress; `presetTextValues[index] || JSON.stringify(...)` makes a textarea impossible to clear.
 - **Acceptance:** With invalid JSON in any preset, Save is blocked with an error on that preset; editing one preset's text never changes another's; a textarea can be emptied; verified as an admin.
+- **Done 2026-10-25:** Updated `usePresetJsonManagement.jsx` and `PresetsEditorTab.jsx` so preset text is initialised once per template load (and only for newly added preset indices), uses `index in presetTextValues` so a textarea can be cleared, preserves edits across presets, and blocks Save via `useExperimentValidation.jsx` when any preset has invalid JSON. Verified in `useExperimentValidation.test.js`.
 
-#### [ ] T35. Admin edit page silently switches to "create" when the id is not found ([#38](https://github.com/avi720/experimenta/issues/38))
+#### [x] T35. Admin edit page silently switches to "create" when the id is not found ([#38](https://github.com/avi720/experimenta/issues/38))
 - **Where:** `src/components/hooks/experimentForm/useExperimentDataLoading.jsx:33,45-46`
 - **Issue:** The edit page lists every template and `.find(id)`s it (the entity's `get(id)` has 0 callers), reads `window.location.search` once instead of using router search params, and on a missing id falls back to create mode — an admin can believe they are editing while inserting a new row. `useExperimentActions.handleEdit` navigates with `?id=${slug}`, which would trigger exactly that.
 - **Acceptance:** `/AdminExperimentForm?id=<unknown>` shows a "not found" state with no Save button; editing fetches one row; verified in a browser.
-
-#### [ ] T36. Admin list "Export data" button does nothing ([#39](https://github.com/avi720/experimenta/issues/39))
-- **Where:** `src/components/hooks/useAdminExperiments.jsx:26`; `src/pages/AdminExperiments.jsx:61`
-- **Issue:** `useAdminExperiments` destructures `exportExperiments` from `useExperimentActions`, which never returns it, so the button's `onClick` is `undefined`.
-- **Acceptance:** The button either exports the currently filtered templates as a file that re-imports cleanly, or is removed; verified as an admin.
+- **Done 2026-10-25:** Switched `useExperimentDataLoading.jsx` to `useSearchParams()` and `ExperimentTemplate.get(experimentId)`, fixed `useExperimentActions.handleEdit` to navigate with `?id=${experiment.id}`, and rendered a dedicated "הניסוי לא נמצא" view with no Save button in `AdminExperimentForm.jsx` when `notFound` is true.
 
 #### [x] T37. Admin auto-promotion trusts unverified sign-ups ([#40](https://github.com/avi720/experimenta/issues/40))
 - **Where:** `supabase/migrations/20261022073402_baseline_schema.sql:65-91` (`handle_new_user`)
@@ -277,15 +240,32 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 - **Acceptance:** Admin role is granted only to a confirmed email (or only manually); verified on a branch/local database by signing up with an `admin_emails` address without confirming and observing `role = 'user'`.
 - **Done 2026-10-25:** Admins are promoted manually only. Migration `20261025132942_drop_admin_emails.sql` makes `handle_new_user` always insert `role = 'user'` and drops `admin_emails`; verified in production with a rolled-back test insert into `auth.users` (profile created with `role = 'user'`).
 
-#### [ ] T38. Premium and inactive templates are readable by anyone through the API ([#41](https://github.com/avi720/experimenta/issues/41))
+#### [x] T38. Premium and inactive templates are readable by anyone through the API ([#41](https://github.com/avi720/experimenta/issues/41))
 - **Where:** `supabase/migrations/20261022073402_baseline_schema.sql:229-232` (`"templates: public read" … to anon, authenticated using (true)`)
 - **Issue:** The policy comment states gating happens in the UI by `access_level`. Inactive drafts (`is_active = false`) and `premium` templates are fully readable by `anon` via the REST endpoint. Harmless while every seed is `public`, a leak as soon as premium content exists. Depends on Open Question 3.
 - **Acceptance:** An anonymous `GET /rest/v1/experiment_templates` returns only active templates whose access level the caller may see (verified with curl and the anon key), or the owner records that access levels are cosmetic and the column/UI is removed.
+- **Done 2026-10-25:** Per OQ 3, migration `20261025144100_restrict_inactive_templates_rls.sql` updated `"templates: public read"` on `public.experiment_templates` to `using (is_active = true or (select public.is_admin()))`, hiding inactive templates (`is_active = false`) from anonymous and non-admin callers while keeping active templates across all `access_level` tiers visible in the Lab catalogue (with running gated by `access_level` in `useExperimentPageData.jsx`). Applied via `supabase db push` and verified in `pg_policies`.
 
-#### [ ] T39. Signed-in users loop between an experiment and the login page ([#42](https://github.com/avi720/experimenta/issues/42))
+#### [x] T39. Signed-in users loop between an experiment and the login page ([#42](https://github.com/avi720/experimenta/issues/42))
 - **Where:** `src/components/hooks/useExperimentPageData.jsx:42-46`; `src/pages/Login.jsx:37-39`
 - **Issue:** When `canAccessExperiment` fails, the hook always sends the user to `/Login?redirect=…`, even when already signed in; Login immediately navigates back because `isAuthenticated` is true, and the cycle repeats. The toast says "registered users only" even for premium. Latent until a non-public template exists (T32/T38).
 - **Acceptance:** A signed-in user without access to a premium experiment sees a localized "requires premium" message and stays on a stable page; verified by temporarily setting a template's `access_level` to premium on a local/branch DB.
+- **Done 2026-10-25:** Updated `useExperimentPageData.jsx` and `LabWorkspace.jsx` so signed-in users lacking access to a `premium` experiment stay on a stable localized "דרוש מנוי פרימיום / Premium Subscription Required" view instead of redirecting to `/Login`. Verified via `src/lib/access.test.js`.
+
+#### [x] T43. Header navigation does not work on phones or by keyboard ([#46](https://github.com/avi720/experimenta/issues/46))
+- **Where:** `src/components/layout/app-header/DesktopNavigation.jsx:12`; `src/components/layout/AppHeader.jsx:9-31`; `src/components/layout/app-header/ExperimentsDropdown.jsx:75`
+- **Issue:** The logo, five nav items and the user menu sit in one `space-x-8` row with no responsive breakpoints or mobile menu, and the category flyout opens only on CSS `group-hover`, so it is unreachable by touch or keyboard. The experiment side panel is fixed at `w-96`. Depends on Open Question 8.
+- **Acceptance:** At 375 px width every nav destination is reachable without horizontal scrolling, and the experiments category menu opens by tap and by keyboard (Tab + Enter/Arrow); verified in a browser at mobile width.
+- **Done 2026-10-25:** Added a mobile navigation drawer (`< md`) in `AppHeader.jsx`, replaced the CSS `group-hover`-only category flyout in `ExperimentsDropdown.jsx` with an expandable menu item operable by tap and keyboard (`Enter`/`ArrowLeft`/`ArrowRight`), and made `ExperimentSidePanel.jsx` responsive (`w-full sm:w-96`). Verified in Chrome at `375x812` (`scrollWidth === 375`, drawer and keyboard category expansion working).
+
+---
+
+### Phase 3 — UX & Localisation (user-facing behaviour, i18n & error handling)
+
+#### [ ] T36. Admin list "Export data" button does nothing ([#39](https://github.com/avi720/experimenta/issues/39))
+- **Where:** `src/components/hooks/useAdminExperiments.jsx:26`; `src/pages/AdminExperiments.jsx:61`
+- **Issue:** `useAdminExperiments` destructures `exportExperiments` from `useExperimentActions`, which never returns it, so the button's `onClick` is `undefined`.
+- **Acceptance:** The button either exports the currently filtered templates as a file that re-imports cleanly, or is removed; verified as an admin.
 
 #### [ ] T40. Results ignores the user's language, hides load errors and offers dead controls ([#43](https://github.com/avi720/experimenta/issues/43))
 - **Where:** `src/pages/Results.jsx:109` (`isRTL = settings?.locale_default === 'he'`), `:128-131` (catch only logs), `:261,265-269,327-340` (date filter, row delete, `compareRuns`)
@@ -301,21 +281,6 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 - **Where:** repo-wide — 179 `isRTL ?` ternaries across 36 files; category label maps in 3 places; physical `mr-2`/`ml-2` spacing on icons
 - **Issue:** **Confirmed** (grep). There is no dictionary or translation layer; every component branches on `isRTL`, labels drift apart (T7), and RTL mirroring relies on physical margins. Every new string doubles the code path. Depends on Open Question 7.
 - **Acceptance:** UI strings come from one per-language source (grep finds no `isRTL ? '` string ternaries in components), and icon spacing uses logical properties; switching language in a browser updates all chrome strings.
-
-#### [ ] T43. Header navigation does not work on phones or by keyboard ([#46](https://github.com/avi720/experimenta/issues/46))
-- **Where:** `src/components/layout/app-header/DesktopNavigation.jsx:12`; `src/components/layout/AppHeader.jsx:9-31`; `src/components/layout/app-header/ExperimentsDropdown.jsx:75`
-- **Issue:** The logo, five nav items and the user menu sit in one `space-x-8` row with no responsive breakpoints or mobile menu, and the category flyout opens only on CSS `group-hover`, so it is unreachable by touch or keyboard. The experiment side panel is fixed at `w-96`. Depends on Open Question 8.
-- **Acceptance:** At 375 px width every nav destination is reachable without horizontal scrolling, and the experiments category menu opens by tap and by keyboard (Tab + Enter/Arrow); verified in a browser at mobile width.
-
-#### [ ] T44. ESLint skips the app shell and does not check hook dependencies ([#47](https://github.com/avi720/experimenta/issues/47))
-- **Where:** `eslint.config.js:9-14`; `package.json:11` (`eslint . --quiet`)
-- **Issue:** **Confirmed.** The config only matches `src/components`, `src/pages` and `src/Layout.jsx`; `App.jsx`, `main.jsx` and `src/lib/*.jsx` report "File ignored because no matching configuration", and `.js` files in `lib`, `entities`, `api` get no rules. `react-hooks/exhaustive-deps` is off (enabling it adds 4 warnings — relevant to T23), and `--quiet` hides the 26 existing warnings in CI.
-- **Acceptance:** `npx eslint src` lints every `.js`/`.jsx` file under `src/` with hooks rules enabled and exits 0 with zero warnings; CI fails on warnings.
-
-#### [ ] T45. No automated tests; CI only lints and builds ([#48](https://github.com/avi720/experimenta/issues/48))
-- **Where:** `.github/workflows/ci.yml`; repo (0 test files, no runner)
-- **Issue:** **Confirmed.** Physics engines, access-control routing and the data layer have no coverage, which is how T5, T6 and T15 shipped. Depends on Open Question 15 for priority.
-- **Acceptance:** CI runs a test step that covers at least every engine (analytic checks as in T6/T15) and `canAccessExperiment`; a deliberately broken engine formula fails CI.
 
 #### [ ] T46. Guest language choice is lost on reload ([#49](https://github.com/avi720/experimenta/issues/49))
 - **Where:** `src/lib/AuthContext.jsx:25`; `src/components/hooks/useAppData.jsx:38-51`
@@ -339,13 +304,6 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 
 ---
 
-### Phase 3 — Polish (consistency / hygiene)
-
-#### [ ] T50. Remove unused shadcn components and the dependencies only they use ([#53](https://github.com/avi720/experimenta/issues/53))
-- **Where:** `src/components/ui/` — 24 files with 0 importers (accordion, aspect-ratio, avatar, breadcrumb, calendar, carousel, chart, collapsible, command, context-menu, drawer, form, hover-card, input-otp, menubar, navigation-menu, pagination, popover, progress, radio-group, resizable, scroll-area, sidebar, toggle-group) + 5 used only by those (dialog, sheet, skeleton, toggle, tooltip); `src/hooks/use-mobile.jsx`; `sidebar` tokens in `tailwind.config.js`
-- **Issue:** **Confirmed** (grep). 29 of 49 ui files are dead, and 23 packages (cmdk, embla-carousel-react, input-otp, react-day-picker, react-hook-form, react-resizable-panels, vaul and 16 Radix packages) are imported only by them. With T29 that is ~37 of 64 runtime dependencies. shadcn can re-add any component on demand.
-- **Acceptance:** Every file in `src/components/ui/` has at least one importer outside the folder, and no dependency in `package.json` lacks an import; build passes.
-
 #### [ ] T51. Two toast systems are mounted; one can never show anything ([#54](https://github.com/avi720/experimenta/issues/54))
 - **Where:** `src/App.jsx:1-2,79-80`; `src/components/ui/toaster.jsx`, `toast.jsx`, `use-toast.jsx`, `sonner.jsx`
 - **Issue:** **Confirmed** (grep). Both the shadcn `<Toaster/>` and `<SonnerToaster/>` are rendered, but code only calls sonner's `toast()`; the shadcn trio is dead. `sonner.jsx` calls next-themes `useTheme` without a `ThemeProvider`.
@@ -355,16 +313,6 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 - **Where:** `src/components/hooks/simulation/useExperimentPersistence.jsx:14,20,33,36,43,70`; `src/pages/Results.jsx:135,147`
 - **Issue:** Save/export/delete feedback uses `window.alert`/`window.confirm` (unstyled, not localized in direction, blocking), while the rest of the app uses sonner toasts and the alert-dialog component.
 - **Acceptance:** Grep finds no `alert(` / `confirm(` in `src/`; save, export and delete show in-app toasts/dialogs in the active language.
-
-#### [ ] T53. Delete dead admin code, dead exports and commented-out blocks ([#56](https://github.com/avi720/experimenta/issues/56))
-- **Where:** `src/components/hooks/adminExperiments/useConfirmationDialog.jsx` (0 importers); `adminFormConstants.jsx:1,45` (`emptyExperiment`, `emptyParameter`); `src/lib/utils.js:9` (`isIframe`); `useExperimentActions.jsx:70-80` (`handleEdit`, `isDeleting`, `isToggling`); `AuthContext.jsx:99,107` (`refreshUser`, `authError` consumers); `createEntity.js:48`; commented code in `GeneralSettingsTab.jsx:47-61`, `adminFormConstants.jsx:28-36`, `labConstants.jsx:25-33`, `ExperimentPreviewCard.jsx:30`, `AdminExperiments.jsx:12,19,22,41,86,90`; `selectedEngine` state still filtered in `useAdminExperiments`
-- **Issue:** **Confirmed** (grep). Each item has 0 consumers or is commented out; `emptyExperiment`/`emptyParameter` are duplicated by `createEmptyExperiment` and an inline literal in `ParametersEditorTab.jsx:44-56`. Dead state (`selectedEngine`) still participates in filtering.
-- **Acceptance:** The listed exports/blocks are gone, `npx eslint src` (after T44) reports no unused exports/vars, and admin list/form behave unchanged.
-
-#### [ ] T54. Remove leftover debug logging from admin and data code ([#57](https://github.com/avi720/experimenta/issues/57))
-- **Where:** `src/components/pagesComponents/admin/AdminExperiment/AdminExperimentCard.jsx:19-21,60`; `src/components/hooks/experimentForm/useExperimentDataLoading.jsx:36-64`
-- **Issue:** 8 emoji-prefixed `console.log` calls run on every admin card render and edit-page load.
-- **Acceptance:** Production build prints nothing to the console when opening the admin list and the edit form.
 
 #### [ ] T55. Admin card and form small correctness issues ([#58](https://github.com/avi720/experimenta/issues/58))
 - **Where:** `src/components/hooks/adminExperiments/useExperimentActions.jsx:29-32`; `src/components/pagesComponents/admin/AdminExperimentForm/ExperimentFormFloatingSaveButton.jsx:8-9`; `ExperimentFormHeaderActions.jsx:42`; `AdminExperimentCard.jsx:60`
@@ -386,51 +334,80 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 - **Issue:** `JSON.parse(parameters_json)` runs during render without a guard, non-number values are rendered raw (an object value would crash React), and `<SelectItem value={null}>` relies on Radix tolerating `null`.
 - **Acceptance:** A run row with malformed `parameters_json` (inserted on a local/branch DB) shows a per-run error instead of crashing the page.
 
-#### [ ] T59. Bound user-supplied run data ([#62](https://github.com/avi720/experimenta/issues/62))
-- **Where:** `supabase/migrations/20261022073402_baseline_schema.sql:166-178`
-- **Issue:** `experiment_runs.notes` and `parameters_json` are unbounded `text`, so a user can store arbitrarily large rows; `parameters_json` is text rather than `jsonb` (a Base44 carry-over), forcing `JSON.parse` everywhere (T58). Depends on Open Question 16.
-- **Acceptance:** A new migration enforces size limits (insert of a > 64 kB notes value is rejected — verified with `supabase db push --dry-run` then a test insert on a branch/local DB) and the parameter column type is decided per Open Question 16.
-
-#### [ ] T60. Remove Base44 routing leftovers ([#63](https://github.com/avi720/experimenta/issues/63))
-- **Where:** `src/pages.config.js`; `src/utils/index.ts:1` (`createPageUrl`, 30 call sites in 14 files); `src/App.jsx:10-12`
-- **Issue:** Routes are generated from a PascalCase map (`/Lab`, `/AdminExperimentForm`); `createPageUrl` lives in the project's only TypeScript file and is misused for query strings (`createPageUrl('Lab?category=...')`); `App.jsx:12` falls back to `<></>` (an element, not a component), which is unreachable; `/` and `/Dashboard` render the same page. Depends on Open Question 6.
-- **Acceptance:** Routes are declared explicitly in one place, no `.ts` file remains (or TS is adopted per Open Question 14), and every old PascalCase URL either still works or redirects; verified by visiting each in a browser.
-
-#### [ ] T61. Fix file extensions and folder conventions ([#64](https://github.com/avi720/experimenta/issues/64))
-- **Where:** `src/components/hooks/**` (28 hook files), engines, `orbitControls.jsx`, `sceneUtils.jsx`, `adminFormConstants.jsx`, `labConstants.jsx`; `src/hooks/` vs `src/components/hooks/`; `src/lib/PageNotFound.jsx`; `src/api` vs `src/entities`
-- **Issue:** **Confirmed** (grep). Files with no JSX use `.jsx`; hooks live in two roots; engines and controls sit under `components/`; a page lives in `lib/`; imports mix `@/…` and deep relative paths.
-- **Acceptance:** No `.jsx` file lacks JSX; hooks have one root; non-component modules live outside `components/`; imports use the `@/` alias; build and lint pass.
-
-#### [ ] T62. Unify three.js scene setup and camera controls ([#65](https://github.com/avi720/experimenta/issues/65))
-- **Where:** `src/components/simulation/scenes/FreeFallScene.jsx`, `QuantumTunnelingScene.jsx`, `ShoScene.jsx`, `sceneUtils.jsx`; `src/components/simulation/controls/orbitControls.jsx`
-- **Issue:** `setupBasicScene` is used only by ShoScene; FreeFall and QT each inline ~60 lines of scene/camera/renderer/lights setup; FreeFallScene has its own ~90-line mouse controller and `orbitControls` hand-rolls what three's bundled OrbitControls provides; resize is window-only in FF/QT vs `ResizeObserver` in SHO. Depends on Open Question 17.
-- **Acceptance:** All scenes share one setup/teardown path and one camera-control implementation, and resize correctly when the side panel opens/closes; verified in a browser for each experiment.
-
-#### [ ] T63. Remove dead simulation props, returns and status strings ([#66](https://github.com/avi720/experimenta/issues/66))
-- **Where:** `FIXED_DT_ENGINE` (returned by every hook, always undefined); `initializeParameters` passed to `WorkspaceShell`; manager reads of `currentTime`, `currentData`, `maxSimulationTime`, `validationState`, `isAllValid`; `SimulationConsole` `maxSimulationTime`; `ExperimentSidePanel` `isOpen`; `src/components/simulation/charts/SimulationCharts.jsx:96` (button without `onClick`); unreachable floating-charts branch; `src/components/simulation/engines/shoEngine.jsx:20-23`
-- **Issue:** Props and return keys that no one provides or consumes; status vocabulary differs across files (`initializing` never set, `ended` vs `completed`); `shoEngine` calls `m.toString()` (throws on null) and detects critical damping with float equality; SHO resets on parameter change but Free Fall shows stale results after edits; Double Slit hard-codes defaults in two places.
-- **Acceptance:** One status enum is used everywhere; every prop passed is consumed; changing a parameter after a run clears stale results on every experiment; SHO critical damping is detected with a tolerance (unit test).
-
 #### [x] T64. Replace dynamic Tailwind class in the experiment side panel ([#67](https://github.com/avi720/experimenta/issues/67))
 - **Where:** `src/components/simulation/workspace/ExperimentSidePanel.jsx:49`
 - **Issue:** `border-${isRTL ? 'r' : 'l'}` cannot be detected by the Tailwind JIT, so the border class may be missing from the CSS.
 - **Acceptance:** The panel's separating border renders in both languages in a production build.
 - **Done 2026-10-23:** Replaced `border-${isRTL ? 'r' : 'l'}` with static `${isRTL ? 'left-0 border-r' : 'right-0 border-l'}` in `ExperimentSidePanel.jsx`.
 
+---
+
+### Phase 4 — Performance & Tooling (performance, data layer, lint & tests)
+
+#### [ ] T21. Standardise data fetching on TanStack Query ([#24](https://github.com/avi720/experimenta/issues/24))
+- **Where:** `src/components/hooks/useAppData.jsx:18` (TanStack); manual `useEffect` fetchers in `src/components/hooks/useLabData.jsx:8-24`, `adminExperiments/useExperimentListFetching.jsx:8-19`, `experimentForm/useExperimentDataLoading.jsx:45`, `src/pages/Results.jsx:121-122`
+- **Issue:** `experiment_templates` is fetched five different ways and `app_settings` twice; `useQuery` appears in exactly 1 file and `useMutation` in 0. `/Lab` fires two requests for the same table (`useAppData` + `useLabData`), and the manual fetchers miss the `onChange` cache invalidation, so lists can be stale after admin edits. Page-level `isLoading` spinners in Dashboard and Lab are unreachable because Layout already blocks on the query.
+- **Acceptance:** Each table is read through one shared query hook and written through mutations that invalidate it; visiting `/Lab` issues one `experiment_templates` request (verified in the browser network panel); grep finds no `useEffect`-based fetch of Supabase data.
+
+#### [ ] T22. Split Results.jsx into data, domain and view pieces ([#25](https://github.com/avi720/experimenta/issues/25))
+- **Where:** `src/pages/Results.jsx` (734 lines)
+- **Issue:** One component mixes manual fetching (refetching 3 tables after every delete), a physics formula table (`:30-83`), a sample generator duplicating the engines (`:169-203`), a CSV exporter duplicating `useExperimentPersistence.exportData` (`:243-259`), statistics (`:664-681`) and 4 tab views; `getChartData()` is recomputed 3+ times per render, and the CSV function's `format` parameter shadows the date-fns import.
+- **Acceptance:** No file under the Results feature exceeds ~250 lines; CSV export uses one shared utility; derived chart data is computed once per selected run (verified with React DevTools profiler or a render counter); Results behaves identically in a browser.
+
+#### [ ] T24. Simulation datasets are unbounded and looked up linearly ([#27](https://github.com/avi720/experimenta/issues/27))
+- **Where:** `src/components/hooks/simulation/useSimulationEngineLogic.jsx:5,27-46,111-133`
+- **Issue:** **Confirmed** (Node run). Every 1 ms step is stored — an SHO run at t_max 60 yields 60,002 points and overshoots t_max by one step — and the whole array flows into React state, recharts and CSV without downsampling; `getDataPointAtTime` is an O(n) scan every frame although `index = round(t/dt)` would do. The old `parameters.dt` sampling was lost.
+- **Acceptance:** A 60 s SHO run stores at most a bounded number of samples (e.g. ≤ 5,000), never exceeds t_max, and frame lookup is O(1); playback stays smooth (no long tasks > 50 ms in the Performance panel) on a mid-range laptop.
+
+#### [ ] T26. Other scenes and orbit controls do not dispose resources ([#29](https://github.com/avi720/experimenta/issues/29))
+- **Where:** `src/components/simulation/scenes/QuantumTunnelingScene.jsx:210-223`; `ShoScene.jsx:136-142,169-186`; `sceneUtils.jsx:42-51`; `src/components/simulation/controls/orbitControls.jsx:72-78`
+- **Issue:** The QT scene disposes none of its geometries or materials, SHO disposes only the spring and rebuilds a `TubeGeometry` inside the rAF loop on every frame while oscillating, and `orbitControls.dispose()` leaves document `pointermove`/`pointerup` listeners attached if called mid-drag.
+- **Acceptance:** Same check as T25 for SHO and QT: no growth in `renderer.info.memory` across repeated visits or a 60 s SHO playback, and no document listeners left after unmount (verified with `getEventListeners(document)` in DevTools).
+
+#### [ ] T27. Remove debug logging from simulation hot paths ([#30](https://github.com/avi720/experimenta/issues/30))
+- **Where:** `src/components/simulation/engines/freeFallEngine.jsx:13,79`; `src/components/hooks/simulation/useSimulationEngineLogic.jsx:32`; `useSimulationManager.jsx:10`; `src/components/simulation/ParameterControls.jsx:17,24`; the experiment pages
+- **Issue:** **Confirmed** (Node run). A 3.2 s free fall makes 9,586 `console.log` calls for 3,194 points, each retaining its object in DevTools; 36 active logs sit in the simulation layer alone.
+- **Acceptance:** A full Free Fall run prints nothing to the console in a production build (verified in the browser console), and lint fails on new `console.log` outside an explicit allow-list.
+
+#### [ ] T29. Remove 14 unused npm dependencies, including vulnerable ones ([#32](https://github.com/avi720/experimenta/issues/32))
+- **Where:** `package.json` dependencies
+- **Issue:** **Confirmed** (grep + `npm audit`). `@hello-pangea/dnd`, `@hookform/resolvers`, `@radix-ui/react-toast`, `@stripe/react-stripe-js`, `@stripe/stripe-js`, `canvas-confetti`, `html2canvas`, `jspdf`, `lodash`, `react-hot-toast`, `react-leaflet`, `react-markdown`, `react-quill`, `zod` have zero imports. `npm audit --omit=dev` reports 25 vulnerabilities (1 critical, 16 high); the critical (jspdf) and several highs/moderates (lodash, quill, mdast) come from these unused packages. Depends on Open Question 9 for anything planned.
+- **Acceptance:** The unused packages are removed (or each one kept is justified in Open Question 9's answer); `npm audit --omit=dev` shows no critical and no high advisory in a runtime dependency; build passes.
+
+#### [ ] T30. Ship experiment code only to visitors who open an experiment ([#33](https://github.com/avi720/experimenta/issues/33))
+- **Where:** `src/pages.config.js:1-15`; `src/App.jsx:52-64`
+- **Issue:** **Confirmed** (`vite build --logLevel info`). All 15 pages are imported eagerly into a single 1,953.58 kB chunk (543.92 kB gzip); three (484 kB), recharts (260 kB) and framer-motion (109 kB) are downloaded by every Dashboard visitor although three/recharts are used only on experiment pages and Results.
+- **Acceptance:** The entry chunk loaded on `/` is ≤ 250 kB gzip and does not contain three or recharts (verified with the build output / a bundle visualiser), and experiment pages still load in a browser.
+
+#### [ ] T31. Build hides bundle-size warnings ([#34](https://github.com/avi720/experimenta/issues/34))
+- **Where:** `vite.config.js:9` (`logLevel: 'error'`)
+- **Issue:** **Confirmed.** `npm run build` prints no chunk sizes and suppresses Vite's ">500 kB chunk" warning, so CI and Vercel logs never surface bundle regressions such as T30.
+- **Acceptance:** `npm run build` output in CI lists chunk sizes and would show Vite's chunk-size warning when a chunk exceeds the limit.
+
+#### [ ] T44. ESLint skips the app shell and does not check hook dependencies ([#47](https://github.com/avi720/experimenta/issues/47))
+- **Where:** `eslint.config.js:9-14`; `package.json:11` (`eslint . --quiet`)
+- **Issue:** **Confirmed.** The config only matches `src/components`, `src/pages` and `src/Layout.jsx`; `App.jsx`, `main.jsx` and `src/lib/*.jsx` report "File ignored because no matching configuration", and `.js` files in `lib`, `entities`, `api` get no rules. `react-hooks/exhaustive-deps` is off (enabling it adds 4 warnings — relevant to T23), and `--quiet` hides the 26 existing warnings in CI.
+- **Acceptance:** `npx eslint src` lints every `.js`/`.jsx` file under `src/` with hooks rules enabled and exits 0 with zero warnings; CI fails on warnings.
+
+#### [ ] T45. No automated tests; CI only lints and builds ([#48](https://github.com/avi720/experimenta/issues/48))
+- **Where:** `.github/workflows/ci.yml`; repo (0 test files, no runner)
+- **Issue:** **Confirmed.** Physics engines, access-control routing and the data layer have no coverage, which is how T5, T6 and T15 shipped. Depends on Open Question 15 for priority.
+- **Acceptance:** CI runs a test step that covers at least every engine (analytic checks as in T6/T15) and `canAccessExperiment`; a deliberately broken engine formula fails CI.
+
+#### [ ] T59. Bound user-supplied run data ([#62](https://github.com/avi720/experimenta/issues/62))
+- **Where:** `supabase/migrations/20261022073402_baseline_schema.sql:166-178`
+- **Issue:** `experiment_runs.notes` and `parameters_json` are unbounded `text`, so a user can store arbitrarily large rows; `parameters_json` is text rather than `jsonb` (a Base44 carry-over), forcing `JSON.parse` everywhere (T58). Depends on Open Question 16.
+- **Acceptance:** A new migration enforces size limits (insert of a > 64 kB notes value is rejected — verified with `supabase db push --dry-run` then a test insert on a branch/local DB) and the parameter column type is decided per Open Question 16.
+
+#### [ ] T62. Unify three.js scene setup and camera controls ([#65](https://github.com/avi720/experimenta/issues/65))
+- **Where:** `src/components/simulation/scenes/FreeFallScene.jsx`, `QuantumTunnelingScene.jsx`, `ShoScene.jsx`, `sceneUtils.jsx`; `src/components/simulation/controls/orbitControls.jsx`
+- **Issue:** `setupBasicScene` is used only by ShoScene; FreeFall and QT each inline ~60 lines of scene/camera/renderer/lights setup; FreeFallScene has its own ~90-line mouse controller and `orbitControls` hand-rolls what three's bundled OrbitControls provides; resize is window-only in FF/QT vs `ResizeObserver` in SHO. Depends on Open Question 17.
+- **Acceptance:** All scenes share one setup/teardown path and one camera-control implementation, and resize correctly when the side panel opens/closes; verified in a browser for each experiment.
+
 #### [ ] T65. Make `npm run typecheck` meaningful or remove it ([#68](https://github.com/avi720/experimenta/issues/68))
 - **Where:** `jsconfig.json:16-17`; `package.json:12`
 - **Issue:** **Confirmed.** It exits 2 with 1,253 errors — 578 from `node_modules/three` and most of the rest JS/shadcn `forwardRef` artefacts — while `include` globs only `src/components/**/*.js` although the components are `.jsx`. CI does not run it. Depends on Open Question 14.
 - **Acceptance:** Either `npm run typecheck` exits 0 on a defined scope and runs in CI, or the script and the unused `typescript`/`@types/*` devDependencies are removed.
-
-#### [ ] T66. Standardise on one date library ([#69](https://github.com/avi720/experimenta/issues/69))
-- **Where:** `src/components/pagesComponents/admin/AdminExperiment/AdminExperimentCard.jsx:12,49` (moment); `src/pages/Results.jsx:26` (date-fns)
-- **Issue:** moment (61 kB, moderate advisory) is used at one call site while date-fns is used elsewhere.
-- **Acceptance:** `moment` is removed from `package.json`; the admin card shows the same relative date as before.
-
-#### [ ] T67. Small duplication in data hooks ([#70](https://github.com/avi720/experimenta/issues/70))
-- **Where:** `src/components/hooks/useExperimentPageData.jsx:16-63`; `src/components/hooks/useLabData.jsx:38-50` vs `adminExperiments/useExperimentFiltering.jsx:20-43`; `useAdminExperiments` + 4 sub-hooks, `useExperimentForm` + 4 sub-hooks
-- **Issue:** One experiment is derived from an already-loaded list via `useEffect` + `useState` + a loading flag (a memo would do, and its try/catch is unreachable); title/tag search logic is duplicated between Lab and admin; the admin hooks are split into thin sub-hooks that fragment code without adding abstraction.
-- **Acceptance:** Search/filter logic exists once and is used by Lab and admin; derived values are computed without effects; Lab search and admin filters behave unchanged in a browser.
 
 #### [ ] T68. Load the fonts the CSS asks for, without per-render style injection ([#71](https://github.com/avi720/experimenta/issues/71))
 - **Where:** `src/Layout.jsx:39-42`; `index.html`
@@ -442,10 +419,56 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 - **Issue:** **Confirmed.** Every build warns that `baseline-browser-mapping` data is over two months old and caniuse-lite is 13 months old; `@tanstack/react-query` 5.89 → 5.104 and others are behind within range. Majors (Vite 8, Tailwind 4, React 19, Router 7, recharts 3) are available but not urgent.
 - **Acceptance:** `npm run build` prints no stale-data warnings and `npm outdated` shows no "wanted" drift.
 
+---
+
+### Phase 5 — Cleanup (dead code, conventions & docs)
+
+#### [ ] T50. Remove unused shadcn components and the dependencies only they use ([#53](https://github.com/avi720/experimenta/issues/53))
+- **Where:** `src/components/ui/` — 24 files with 0 importers (accordion, aspect-ratio, avatar, breadcrumb, calendar, carousel, chart, collapsible, command, context-menu, drawer, form, hover-card, input-otp, menubar, navigation-menu, pagination, popover, progress, radio-group, resizable, scroll-area, sidebar, toggle-group) + 5 used only by those (dialog, sheet, skeleton, toggle, tooltip); `src/hooks/use-mobile.jsx`; `sidebar` tokens in `tailwind.config.js`
+- **Issue:** **Confirmed** (grep). 29 of 49 ui files are dead, and 23 packages (cmdk, embla-carousel-react, input-otp, react-day-picker, react-hook-form, react-resizable-panels, vaul and 16 Radix packages) are imported only by them. With T29 that is ~37 of 64 runtime dependencies. shadcn can re-add any component on demand.
+- **Acceptance:** Every file in `src/components/ui/` has at least one importer outside the folder, and no dependency in `package.json` lacks an import; build passes.
+
+#### [ ] T53. Delete dead admin code, dead exports and commented-out blocks ([#56](https://github.com/avi720/experimenta/issues/56))
+- **Where:** `src/components/hooks/adminExperiments/useConfirmationDialog.jsx` (0 importers); `adminFormConstants.jsx:1,45` (`emptyExperiment`, `emptyParameter`); `src/lib/utils.js:9` (`isIframe`); `useExperimentActions.jsx:70-80` (`handleEdit`, `isDeleting`, `isToggling`); `AuthContext.jsx:99,107` (`refreshUser`, `authError` consumers); `createEntity.js:48`; commented code in `GeneralSettingsTab.jsx:47-61`, `adminFormConstants.jsx:28-36`, `labConstants.jsx:25-33`, `ExperimentPreviewCard.jsx:30`, `AdminExperiments.jsx:12,19,22,41,86,90`; `selectedEngine` state still filtered in `useAdminExperiments`
+- **Issue:** **Confirmed** (grep). Each item has 0 consumers or is commented out; `emptyExperiment`/`emptyParameter` are duplicated by `createEmptyExperiment` and an inline literal in `ParametersEditorTab.jsx:44-56`. Dead state (`selectedEngine`) still participates in filtering.
+- **Acceptance:** The listed exports/blocks are gone, `npx eslint src` (after T44) reports no unused exports/vars, and admin list/form behave unchanged.
+
+#### [ ] T54. Remove leftover debug logging from admin and data code ([#57](https://github.com/avi720/experimenta/issues/57))
+- **Where:** `src/components/pagesComponents/admin/AdminExperiment/AdminExperimentCard.jsx:19-21,60`; `src/components/hooks/experimentForm/useExperimentDataLoading.jsx:36-64`
+- **Issue:** 8 emoji-prefixed `console.log` calls run on every admin card render and edit-page load.
+- **Acceptance:** Production build prints nothing to the console when opening the admin list and the edit form.
+
+#### [ ] T60. Remove Base44 routing leftovers ([#63](https://github.com/avi720/experimenta/issues/63))
+- **Where:** `src/pages.config.js`; `src/utils/index.ts:1` (`createPageUrl`, 30 call sites in 14 files); `src/App.jsx:10-12`
+- **Issue:** Routes are generated from a PascalCase map (`/Lab`, `/AdminExperimentForm`); `createPageUrl` lives in the project's only TypeScript file and is misused for query strings (`createPageUrl('Lab?category=...')`); `App.jsx:12` falls back to `<></>` (an element, not a component), which is unreachable; `/` and `/Dashboard` render the same page. Depends on Open Question 6.
+- **Acceptance:** Routes are declared explicitly in one place, no `.ts` file remains (or TS is adopted per Open Question 14), and every old PascalCase URL either still works or redirects; verified by visiting each in a browser.
+
+#### [ ] T61. Fix file extensions and folder conventions ([#64](https://github.com/avi720/experimenta/issues/64))
+- **Where:** `src/components/hooks/**` (28 hook files), engines, `orbitControls.jsx`, `sceneUtils.jsx`, `adminFormConstants.jsx`, `labConstants.jsx`; `src/hooks/` vs `src/components/hooks/`; `src/lib/PageNotFound.jsx`; `src/api` vs `src/entities`
+- **Issue:** **Confirmed** (grep). Files with no JSX use `.jsx`; hooks live in two roots; engines and controls sit under `components/`; a page lives in `lib/`; imports mix `@/…` and deep relative paths.
+- **Acceptance:** No `.jsx` file lacks JSX; hooks have one root; non-component modules live outside `components/`; imports use the `@/` alias; build and lint pass.
+
+#### [ ] T63. Remove dead simulation props, returns and status strings ([#66](https://github.com/avi720/experimenta/issues/66))
+- **Where:** `FIXED_DT_ENGINE` (returned by every hook, always undefined); `initializeParameters` passed to `WorkspaceShell`; manager reads of `currentTime`, `currentData`, `maxSimulationTime`, `validationState`, `isAllValid`; `SimulationConsole` `maxSimulationTime`; `ExperimentSidePanel` `isOpen`; `src/components/simulation/charts/SimulationCharts.jsx:96` (button without `onClick`); unreachable floating-charts branch; `src/components/simulation/engines/shoEngine.jsx:20-23`
+- **Issue:** Props and return keys that no one provides or consumes; status vocabulary differs across files (`initializing` never set, `ended` vs `completed`); `shoEngine` calls `m.toString()` (throws on null) and detects critical damping with float equality; SHO resets on parameter change but Free Fall shows stale results after edits; Double Slit hard-codes defaults in two places.
+- **Acceptance:** One status enum is used everywhere; every prop passed is consumed; changing a parameter after a run clears stale results on every experiment; SHO critical damping is detected with a tolerance (unit test).
+
+#### [ ] T66. Standardise on one date library ([#69](https://github.com/avi720/experimenta/issues/69))
+- **Where:** `src/components/pagesComponents/admin/AdminExperiment/AdminExperimentCard.jsx:12,49` (moment); `src/pages/Results.jsx:26` (date-fns)
+- **Issue:** moment (61 kB, moderate advisory) is used at one call site while date-fns is used elsewhere.
+- **Acceptance:** `moment` is removed from `package.json`; the admin card shows the same relative date as before.
+
+#### [ ] T67. Small duplication in data hooks ([#70](https://github.com/avi720/experimenta/issues/70))
+- **Where:** `src/components/hooks/useExperimentPageData.jsx:16-63`; `src/components/hooks/useLabData.jsx:38-50` vs `adminExperiments/useExperimentFiltering.jsx:20-43`; `useAdminExperiments` + 4 sub-hooks, `useExperimentForm` + 4 sub-hooks
+- **Issue:** One experiment is derived from an already-loaded list via `useEffect` + `useState` + a loading flag (a memo would do, and its try/catch is unreachable); title/tag search logic is duplicated between Lab and admin; the admin hooks are split into thin sub-hooks that fragment code without adding abstraction.
+- **Acceptance:** Search/filter logic exists once and is used by Lab and admin; derived values are computed without effects; Lab search and admin filters behave unchanged in a browser.
+
 #### [ ] T70. Bring README and env docs in line with the repo ([#73](https://github.com/avi720/experimenta/issues/73))
 - **Where:** `.env.example:2`; `src/lib/access.js:1`; `README.md:15-21`; `package.json:9`
 - **Issue:** `.env.example` and `access.js` point to a `schema.sql` that no longer exists (schema is in `supabase/migrations/`); the README scripts table omits `lint:fix`, `typecheck`, `preview` and the absence of tests; `start` uses `${PORT:-4173}`, which does not expand in cmd.exe (npm's default shell on Windows).
 - **Acceptance:** Every path and script named in README / `.env.example` exists and works on this Windows machine; verified by running each script listed.
+
+---
 
 ---
 
@@ -458,9 +481,11 @@ Items that surfaced during the audit but need a product, security, or business d
 2. **What is a saved run?** Should saving store the actual simulation samples (jsonb or Supabase Storage via `results_url`), or should Results stop presenting data as "the user's run" and instead re-run the same engine on the saved parameters? (T16)
    - **Answered 2026-10-24:** Store the actual simulation samples when saving a run so opening Results always displays the exact original dataset consistently. Implemented in `useExperimentPersistence.jsx` + `Results.jsx` (T16).
 3. **Is `access_level` real gating?** If `registered`/`premium` must be enforced, it needs a server-side policy and an admin field; if not, should the column and UI be removed? Should inactive templates be hidden from anonymous visitors? (T38, T39)
+   - **Answered 2026-10-25:** Only admins may read inactive templates (`is_active = false`), while guests and standard users only read active templates (`is_active = true`) via RLS. Active templates across all `access_level` tiers (`public`, `registered`, `premium`) remain readable in the Lab catalogue so locked experiments are listed; running an experiment is gated by `access_level` in the workspace (`T39`), and an `access_level` field is exposed in the Admin form (`T32`, `T38`).
 4. **Admin bootstrap:** Is "Confirm email" ON in production Supabase Auth? Keep the `admin_emails` auto-promotion, or promote admins manually with SQL and drop the owner email from the migration? (T37)
    - **Answered 2026-10-25:** Promote admins manually with SQL; `admin_emails` dropped (T37).
 5. **Should admins be able to create new experiments?** Experiment pages are hard-coded per slug and the engine field is commented out. If creation is not meant to work, should the form become edit-only and block slug renames (a rename breaks the per-slug pages)? (T32)
+   - **Answered 2026-10-25:** Creating a new experiment in the Admin form is only meant to insert a row in the database, which will trigger an external Claude Code routine to design and implement the experiment code. Fixed the invalid default category (`ClassicalMechanics`) and `access_level` (`public`) in `createEmptyExperiment()` (`T32`).
 6. **URL scheme:** keep the Base44 PascalCase paths (`/Lab`, `/AdminExperimentForm`), or move to kebab-case (`/lab`, `/experiments/free-fall`) with redirects? (T60)
 7. **i18n:** adopt a real translation mechanism and translate the seven Hebrew-only pages, or declare the site Hebrew-first and drop the English toggle from content pages? (T41, T42)
 8. **Mobile:** is phone support in scope for the site and for the experiment workspace (side panel is fixed at 384 px)? If desktop-only, should the site say so on small screens? (T43)

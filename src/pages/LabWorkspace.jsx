@@ -1,5 +1,9 @@
 import React, { useCallback, useMemo } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Lock, ArrowLeft, ArrowRight } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { createPageUrl } from "@/utils";
 import { useAppData } from "../components/hooks/useAppData";
 import { useExperimentPageData } from "../components/hooks/useExperimentPageData";
 import { useExperimentSimulation } from "../components/hooks/simulation/useExperimentSimulation";
@@ -9,6 +13,7 @@ import AppLoadingSpinner from "../components/layout/AppLoadingSpinner";
 
 export default function LabWorkspace({ forcedSlug = null }) {
     const location = useLocation();
+    const navigate = useNavigate();
     const params = useParams();
 
     const resolvedSlug = useMemo(() => {
@@ -37,7 +42,12 @@ export default function LabWorkspace({ forcedSlug = null }) {
         handleLogout,
     } = useAppData();
 
-    const { experiment, isLoading: isExperimentDataLoading } = useExperimentPageData(
+    const {
+        experiment,
+        blockedExperiment,
+        accessDeniedReason,
+        isLoading: isExperimentDataLoading,
+    } = useExperimentPageData(
         resolvedSlug,
         settings,
         user,
@@ -69,7 +79,7 @@ export default function LabWorkspace({ forcedSlug = null }) {
         scrubTime,
         saveRun,
         exportData,
-    } = useExperimentSimulation(experiment, user);
+    } = useExperimentSimulation(experiment, user, isRTL);
 
     const handleParamChange = useCallback(
         (keyOrObject, maybeValue) => {
@@ -85,7 +95,51 @@ export default function LabWorkspace({ forcedSlug = null }) {
         [setParameters]
     );
 
-    if (isPageLoading || !experiment) {
+    if (isPageLoading) {
+        return <AppLoadingSpinner />;
+    }
+
+    if (accessDeniedReason === "premium") {
+        const expTitle = isRTL
+            ? blockedExperiment?.i18n_texts?.he?.title || blockedExperiment?.slug
+            : blockedExperiment?.i18n_texts?.en?.title || blockedExperiment?.slug;
+        const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+
+        return (
+            <div
+                className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-16"
+                dir={isRTL ? "rtl" : "ltr"}
+            >
+                <Card className="w-full max-w-md shadow-lg border-amber-200">
+                    <CardHeader className="text-center">
+                        <div className="mx-auto w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-3">
+                            <Lock className="w-6 h-6 text-amber-600" />
+                        </div>
+                        <CardTitle className="text-2xl text-slate-900">
+                            {isRTL ? "דרוש מנוי פרימיום" : "Premium Subscription Required"}
+                        </CardTitle>
+                        <CardDescription className="text-base text-slate-600 mt-2">
+                            {isRTL
+                                ? `הניסוי "${expTitle}" זמין למנויי פרימיום בלבד.`
+                                : `The experiment "${expTitle}" requires a premium subscription.`}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex justify-center pt-2">
+                        <Button
+                            type="button"
+                            onClick={() => navigate(createPageUrl("Lab"))}
+                            className="gap-2"
+                        >
+                            <BackIcon className="w-4 h-4" />
+                            {isRTL ? "חזרה למעבדה" : "Back to Lab"}
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    if (!experiment) {
         return <AppLoadingSpinner />;
     }
 

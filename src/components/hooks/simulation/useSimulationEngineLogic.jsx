@@ -1,112 +1,138 @@
 // קובץ שאחראי על הלוגיקה של מנוע הסימולציה. כלומר, חישוב הנתונים בסימולציה בצעדים קבועים.
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 // קבוע: צעד זמן קבוע עבור מנוע הסימולציה (בשניות)
 const FIXED_DT_ENGINE = 0.001;
 
-export function useSimulationEngineLogic({ calculateStepFn, onSimulationComplete}) {
+export function useSimulationEngineLogic({ calculateStepFn, onSimulationComplete }) {
     const [isSimulating, setIsSimulating] = useState(false);
     const [simulationData, setSimulationData] = useState([]);
     const shouldStopRef = useRef(false);
+    const isMountedRef = useRef(true);
+    const runIdRef = useRef(0);
+    const onCompleteRef = useRef(onSimulationComplete);
+
+    useEffect(() => {
+        onCompleteRef.current = onSimulationComplete;
+    }, [onSimulationComplete]);
+
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+            shouldStopRef.current = true;
+            runIdRef.current += 1;
+        };
+    }, []);
 
     /**
      * מנהל את ריצת מנוע הסימולציה
      * מחשב נתונים בצעדים קבועים (FIXED_DT_ENGINE) עד למקסימום הזמן
      */
-    const runEngine = useCallback(async (parameters, maxSimulationTime) => {
-        console.log('[useSimulationEngineLogic] runEngine started', { parameters, maxSimulationTime });
+    const runEngine = useCallback(async (parameters, maxSimulationTime, initialData = []) => {
+        const currentRunId = ++runIdRef.current;
         shouldStopRef.current = false;
-        const tempSimulationData = [];
-        
-        let currentStep = 0;
-        let currentTime = 0.0;
+        const tempSimulationData = Array.isArray(initialData) ? [...initialData] : [];
+
+        let currentStep = tempSimulationData.length;
+        let currentTime = currentStep * FIXED_DT_ENGINE;
         let yieldCounter = 0;
         const YIELD_EVERY_N_STEPS = 1000;
 
+        const isCancelled = () =>
+            shouldStopRef.current ||
+            !isMountedRef.current ||
+            runIdRef.current !== currentRunId;
+
         try {
-            while (currentTime <= maxSimulationTime && !shouldStopRef.current) {
+            while (currentTime <= maxSimulationTime && !isCancelled()) {
                 currentTime = currentStep * FIXED_DT_ENGINE;
-                
-                const dataPoint = calculateStepFn(currentTime, parameters);
-                tempSimulationData.push(dataPoint);
-                console.log("tempData: ", tempSimulationData.length," maxSimulationTime: ", maxSimulationTime);
-                
-                if (dataPoint.shouldStop) {
-                    console.log('[useSimulationEngineLogic] shouldStop triggered at', currentTime);
+                if (currentTime > maxSimulationTime + 1e-12) {
                     break;
                 }
-                
+
+                const dataPoint = calculateStepFn(currentTime, parameters);
+                tempSimulationData.push(dataPoint);
+
+                if (dataPoint.shouldStop) {
+                    break;
+                }
+
                 currentStep++;
-                
+                currentTime = currentStep * FIXED_DT_ENGINE;
+
                 if (yieldCounter >= YIELD_EVERY_N_STEPS) {
                     await new Promise(resolve => setTimeout(resolve, 0));
+                    if (isCancelled()) {
+                        return;
+                    }
                     yieldCounter = 0;
                 }
                 yieldCounter++;
             }
-            
-            console.log('[useSimulationEngineLogic] runEngine completed', { 
-                dataPointsCalculated: tempSimulationData.length,
-                finalTime: tempSimulationData.length > 0 ? tempSimulationData[tempSimulationData.length - 1].time : 0
-            });
-            
-            setSimulationData(tempSimulationData); // <--- הנתונים נשמרים כאן
-            setIsSimulating(false); // <--- הסימולציה סיימה לחשב
-            if (onSimulationComplete) {
-                onSimulationComplete(tempSimulationData);
+
+            if (isCancelled()) {
+                return;
             }
 
+            setSimulationData(tempSimulationData);
+            setIsSimulating(false);
+            if (onCompleteRef.current) {
+                onCompleteRef.current(tempSimulationData);
+            }
         } catch (error) {
             console.error('[useSimulationEngineLogic] Simulation engine error:', error);
-            setSimulationData(tempSimulationData); // גם בשגיאה נשמור את מה שהצלחנו לחשב
+            if (isCancelled()) {
+                return;
+            }
+            setSimulationData(tempSimulationData);
             setIsSimulating(false);
-            if (onSimulationComplete) {
-                onSimulationComplete(tempSimulationData);
+            if (onCompleteRef.current) {
+                onCompleteRef.current(tempSimulationData);
             }
         }
-    }, [calculateStepFn, onSimulationComplete]);
+    }, [calculateStepFn]);
 
     const startSimulation = useCallback((parameters, maxSimulationTime) => {
-        console.log('[useSimulationEngineLogic] startSimulation called', { 
-            parameters, 
-            maxSimulationTime, 
-            isSimulating 
-        });
-        
         if (isSimulating) {
-            console.log('[useSimulationEngineLogic] startSimulation blocked - already simulating');
             return;
         }
-        
+
         setIsSimulating(true);
         setSimulationData([]);
-        
-        runEngine(parameters, maxSimulationTime); // הסרנו את ה-onComplete מכאן
-    }, [isSimulating, runEngine]);
 
+        runEngine(parameters, maxSimulationTime, []);
+    }, [isSimulating, runEngine]);
 
     const continueSimulation = useCallback((parameters, toTime) => {
         if (isSimulating) return;
-        
+
         setIsSimulating(true);
-        
-        runEngine(parameters, toTime); // הסרנו את ה-onComplete מכאן
-    }, [isSimulating, runEngine]);
 
-    const stopSimulation = () => {
+        runEngine(parameters, toTime, simulationData);
+    }, [isSimulating, runEngine, simulationData]);
+
+    const stopSimulation = useCallback(() => {
         shouldStopRef.current = true;
-        setIsSimulating(false);
-    };
+        runIdRef.current += 1;
+        if (isMountedRef.current) {
+            setIsSimulating(false);
+        }
+    }, []);
 
-    const resetSimulation = () => {
-        stopSimulation();
-        setSimulationData([]);
-    };
+    const resetSimulation = useCallback(() => {
+        shouldStopRef.current = true;
+        runIdRef.current += 1;
+        if (isMountedRef.current) {
+            setIsSimulating(false);
+            setSimulationData([]);
+        }
+    }, []);
 
-    const getMaxAvailableTime = () => {
+    const getMaxAvailableTime = useCallback(() => {
         if (simulationData.length === 0) return 0;
-        return simulationData[simulationData.length - 1].time;
-    };
+        return simulationData[simulationData.length - 1].time ?? 0;
+    }, [simulationData]);
 
     const getDataPointAtTime = useCallback((requestedTime) => {
         if (simulationData.length === 0) {

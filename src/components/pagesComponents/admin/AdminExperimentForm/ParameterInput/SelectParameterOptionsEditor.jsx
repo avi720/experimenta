@@ -5,14 +5,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Trash2 } from 'lucide-react';
 
-export default function SelectParameterOptionsEditor({ 
-  param, 
-  index, 
+export default function SelectParameterOptionsEditor({
+  param,
+  index,
   handleDynamicArrayChange,
-  handleNestedDynamicChange, 
-  addNestedToArray, 
-  removeNestedFromArray, 
-  errors 
+  handleNestedDynamicChange,
+  addNestedToArray,
+  removeNestedFromArray,
+  errors
 }) {
   const options = param.options || [];
 
@@ -49,6 +49,9 @@ export default function SelectParameterOptionsEditor({
             </div>
           ))}
         </div>
+        {errors[`param_${index}_options`] && (
+          <p className="text-red-500 text-xs mt-1" role="alert">{errors[`param_${index}_options`]}</p>
+        )}
         <Button
           type="button"
           variant="outline"
@@ -66,19 +69,21 @@ export default function SelectParameterOptionsEditor({
           value={param.default || ''}
           onValueChange={val => handleDynamicArrayChange('parameters', index, 'default', val)}
         >
-          <SelectTrigger>
+          <SelectTrigger className={errors[`param_${index}_default`] ? 'border-red-500' : ''}>
             <SelectValue placeholder="בחר ערך ברירת מחדל" />
           </SelectTrigger>
           <SelectContent>
-            {options.map((option, optIndex) => (
-              <SelectItem key={optIndex} value={option.value || ''}>
-                {option.label_he || option.value}
-              </SelectItem>
-            ))}
+            {options
+              .filter(option => option.value && option.value.trim() !== '')
+              .map((option, optIndex) => (
+                <SelectItem key={optIndex} value={option.value}>
+                  {option.label_he || option.value}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
         {errors[`param_${index}_default`] && (
-          <p className="text-red-500 text-xs mt-1">{errors[`param_${index}_default`]}</p>
+          <p className="text-red-500 text-xs mt-1" role="alert">{errors[`param_${index}_default`]}</p>
         )}
       </div>
     </div>

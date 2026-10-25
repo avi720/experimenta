@@ -35,9 +35,9 @@ export default function ExperimentSidePanel({
     maxSimulationTime
 }) {
     // סינון פרמטרים - הצגת רק פרמטרים פעילים ותקינים
-    const activeParameters = (parameters || []).filter(param => 
-        param && 
-        param.key && 
+    const activeParameters = (parameters || []).filter(param =>
+        param &&
+        param.key &&
         param.is_active !== false
     );
 
@@ -47,7 +47,7 @@ export default function ExperimentSidePanel({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: isRTL ? -400 : 400, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className={`absolute top-0 ${isRTL ? 'left-0 border-r' : 'right-0 border-l'} h-full w-96 bg-white/95 backdrop-blur-sm shadow-2xl border-slate-200 z-30 flex flex-col`}
+            className={`absolute top-0 ${isRTL ? 'left-0 border-r' : 'right-0 border-l'} h-full w-full sm:w-96 bg-white/95 backdrop-blur-sm shadow-2xl border-slate-200 z-30 flex flex-col`}
         >
             <Tabs value={activeTab} onValueChange={onTabChange} className="flex-1 flex flex-col overflow-hidden">
                 <div className="border-b border-slate-200 px-4 py-3 flex-shrink-0">
@@ -96,12 +96,13 @@ export default function ExperimentSidePanel({
                                 isRTL={isRTL}
                                 onFloat={onFloatConsole}
                                 maxSimulationTime={maxSimulationTime}
+                                validationState={validationState}
                             />
                         ) : (
                             <Card className="p-6 text-center">
                                 <p className="text-slate-500">
-                                    {isRTL 
-                                        ? "הקונסולה מוצגת בחלון צף" 
+                                    {isRTL
+                                        ? "הקונסולה מוצגת בחלון צף"
                                         : "Console is shown in floating window"
                                     }
                                 </p>

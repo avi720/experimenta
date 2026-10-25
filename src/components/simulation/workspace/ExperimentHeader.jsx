@@ -46,66 +46,71 @@ export default function ExperimentHeader({
 
     return (
         <header className="bg-white/90 backdrop-blur-lg border-b border-slate-200/80 sticky top-0 z-50 flex-shrink-0">
-            <div className="max-w-full mx-auto px-4">
-                <div className="flex justify-between items-center h-16">
+            <div className="max-w-full mx-auto px-2 sm:px-4">
+                <div className="flex justify-between items-center h-14 sm:h-16 gap-1 sm:gap-2">
                     {/* Left Section - Back button and experiment name */}
-                    <div className="flex items-center space-x-4 rtl:space-x-reverse">
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
+                    <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={isRTL ? "חזרה למעבדה" : "Back to Lab"}
                             onClick={() => navigate(createPageUrl("Lab"))}
                         >
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
-                        <span className="w-px h-6 bg-slate-300"></span>
-                        <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-lg flex items-center justify-center">
+                        <span className="w-px h-6 bg-slate-300 hidden sm:block"></span>
+                        <div className="flex items-center gap-2 min-w-0">
+                           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
                                <Beaker className="w-5 h-5 text-white" />
                            </div>
-                           <h1 className="text-lg font-semibold text-slate-800 hidden sm:block">
+                           <h1 className="text-lg font-semibold text-slate-800 hidden sm:block truncate">
                                {isRTL ? experiment?.i18n_texts?.he?.title : experiment?.i18n_texts?.en?.title}
                            </h1>
                         </div>
                     </div>
 
                     {/* Middle Section - Save and Export buttons */}
-                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                        <Button 
-                            variant="outline" 
-                            size="sm" 
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
                             onClick={onExport}
                             disabled={!canExport}
+                            aria-label={isRTL ? "ייצא" : "Export"}
+                            className="px-2 sm:px-3"
                         >
-                           <Download className="w-4 h-4 mr-2 rtl:ml-2" />
-                           <span>{isRTL ? "ייצא" : "Export"}</span>
+                           <Download className="w-4 h-4 sm:me-2" />
+                           <span className="hidden sm:inline">{isRTL ? "ייצא" : "Export"}</span>
                         </Button>
-                        <Button 
-                            variant="outline" 
-                            size="sm" 
+                        <Button
+                            variant="outline"
+                            size="sm"
                             onClick={onSave}
                             disabled={!canSave}
+                            aria-label={isRTL ? "שמור" : "Save"}
+                            className="px-2 sm:px-3"
                         >
-                           <Save className="w-4 h-4 mr-2 rtl:ml-2" />
-                           <span>{isRTL ? "שמור" : "Save"}</span>
+                           <Save className="w-4 h-4 sm:me-2" />
+                           <span className="hidden sm:inline">{isRTL ? "שמור" : "Save"}</span>
                         </Button>
                     </div>
 
                     {/* Right Section - Experiments dropdown, user menu, settings */}
-                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                          <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" className="flex items-center">
+                                <Button variant="outline" size="sm" className="flex items-center px-2.5 sm:px-3">
                                     <span>{isRTL ? "ניסויים" : "Experiments"}</span>
-                                    <ChevronDown className="w-4 h-4 ml-2 rtl:mr-2" />
+                                    <ChevronDown className="w-4 h-4 ms-1.5" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-64" align={isRTL ? "start" : "end"}>
+                            <DropdownMenuContent className="w-64 max-w-[calc(100vw-2rem)]" align={isRTL ? "start" : "end"}>
                                 <DropdownMenuLabel>{isRTL ? "קטגוריות" : "Categories"}</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 {Object.keys(groupedExperiments).length > 0 ? (
                                     Object.entries(groupedExperiments).map(([category, exps]) => (
                                         <div key={category}>
-                                            <DropdownMenuItem 
+                                            <DropdownMenuItem
                                                 onClick={() => navigate(createPageUrl(`Lab?category=${category}`))}
                                             >
                                                 <div className="flex justify-between w-full font-medium">
@@ -133,12 +138,12 @@ export default function ExperimentHeader({
                             </DropdownMenuContent>
                         </DropdownMenu>
 
-                        <div className="w-px h-6 bg-slate-300"></div>
+                        <div className="w-px h-6 bg-slate-300 hidden sm:block"></div>
 
                         {user && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="rounded-full">
+                                    <Button variant="ghost" size="icon" className="rounded-full" aria-label={isRTL ? "תפריט משתמש" : "User menu"}>
                                         <User className="w-5 h-5" />
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -146,20 +151,21 @@ export default function ExperimentHeader({
                                     <DropdownMenuLabel>{user.full_name || user.email}</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => navigate(createPageUrl("Dashboard"))}>
-                                        <Home className="w-4 h-4 mr-2 rtl:ml-2" />
+                                        <Home className="w-4 h-4 me-2" />
                                         <span>{isRTL ? "דף הבית" : "Home"}</span>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={onLogout}>
-                                        <LogOut className="w-4 h-4 mr-2 rtl:ml-2" />
+                                        <LogOut className="w-4 h-4 me-2" />
                                         <span>{isRTL ? "התנתק" : "Logout"}</span>
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         )}
-                        
-                        <Button 
-                            variant={isRightPanelOpen ? "secondary" : "outline"} 
-                            size="icon" 
+
+                        <Button
+                            variant={isRightPanelOpen ? "secondary" : "outline"}
+                            size="icon"
+                            aria-label={isRTL ? "הצג/הסתר פאנל צד" : "Toggle side panel"}
                             onClick={handleToggleClick}
                         >
                             <Settings className="w-5 h-5" />
