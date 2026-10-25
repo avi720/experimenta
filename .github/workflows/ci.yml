@@ -13,6 +13,10 @@ jobs:
   lint-and-build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # Placeholders: unit tests and build only need defined env vars; no live network calls happen.
+      VITE_SUPABASE_URL: https://example.supabase.co
+      VITE_SUPABASE_ANON_KEY: ci-placeholder-key
     steps:
       - uses: actions/checkout@v4
 
@@ -31,10 +35,6 @@ jobs:
 
       - name: Build
         run: npm run build
-        env:
-          # Placeholders: the build only inlines these; no network calls happen at build time.
-          VITE_SUPABASE_URL: https://example.supabase.co
-          VITE_SUPABASE_ANON_KEY: ci-placeholder-key
 
       - name: Ensure no Base44 references remain
         run: |

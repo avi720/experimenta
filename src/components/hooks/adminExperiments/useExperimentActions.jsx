@@ -4,10 +4,37 @@ import { ExperimentTemplate } from '@/entities/all';
 import { createPageUrl } from '@/utils';
 import { toast } from 'sonner';
 
-export function useExperimentActions(loadExperiments) {
+export function useExperimentActions(loadExperiments, filteredExperiments = []) {
     const navigate = useNavigate();
     const [isDeleting, setIsDeleting] = useState(false);
     const [isToggling, setIsToggling] = useState(false);
+
+    const exportExperiments = useCallback(() => {
+        if (!Array.isArray(filteredExperiments) || filteredExperiments.length === 0) {
+            toast.error('אין ניסויים לייצוא');
+            return;
+        }
+        try {
+            const cleanTemplates = filteredExperiments.map(
+                ({ id: _id, created_date: _createdDate, updated_date: _updatedDate, created_by: _createdBy, ...rest }) => rest
+            );
+            const dataStr = JSON.stringify(cleanTemplates, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const dateStamp = new Date().toISOString().slice(0, 10);
+            a.download = `experiments_export_${dateStamp}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            toast.success(`יוצאו ${cleanTemplates.length} ניסויים בהצלחה`);
+        } catch (error) {
+            console.error('Error exporting experiments:', error);
+            toast.error('אירעה שגיאה בייצוא הניסויים');
+        }
+    }, [filteredExperiments]);
 
     const handleDelete = useCallback(async (experimentId) => {
         setIsDeleting(true);
@@ -27,7 +54,6 @@ export function useExperimentActions(loadExperiments) {
         setIsToggling(true);
         try {
             await ExperimentTemplate.update(experiment.id, {
-                ...experiment,
                 is_active: !experiment.is_active
             });
             toast.success(experiment.is_active ? 'הניסוי הושבת' : 'הניסוי הופעל');
@@ -77,6 +103,7 @@ export function useExperimentActions(loadExperiments) {
         handleDelete,
         toggleActive,
         handleDuplicate,
-        handleEdit
+        handleEdit,
+        exportExperiments
     };
 }

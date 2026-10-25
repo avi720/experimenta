@@ -58,7 +58,7 @@ export default function AdminExperiments() {
           <p className="text-slate-500 mt-1">יצירה, עריכה וניהול של תבניות הניסויים במערכת.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={exportExperiments}><FileDown className="w-4 h-4 ml-2" />ייצא נתונים</Button>
+          <Button variant="outline" onClick={exportExperiments} disabled={!filteredExperiments || filteredExperiments.length === 0}><FileDown className="w-4 h-4 ml-2" />ייצא נתונים</Button>
           <Button onClick={() => navigate(createPageUrl("AdminExperimentForm"))}><PlusCircle className="w-4 h-4 ml-2" />צור ניסוי חדש</Button>
         </div>
       </div>

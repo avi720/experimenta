@@ -1,13 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+export function resolveSupabaseConfig(env = import.meta.env) {
+  const supabaseUrl = env?.VITE_SUPABASE_URL;
+  const supabaseAnonKey = env?.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error(
-    'Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in your Supabase project values.'
-  );
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      'Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY. Copy .env.example to .env.local and fill in your Supabase project values.'
+    );
+  }
+
+  return { supabaseUrl, supabaseAnonKey };
 }
+
+const { supabaseUrl, supabaseAnonKey } = resolveSupabaseConfig();
 
 // In environments where native WebSocket is not available (e.g. headless unit tests or Node < 22),
 // provide a dummy transport so client instantiation doesn't throw.
@@ -23,7 +29,7 @@ const realtimeOptions =
       }
     : undefined;
 
-export const supabase = createClient(supabaseUrl ?? 'http://localhost', supabaseAnonKey ?? 'missing-anon-key', {
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,

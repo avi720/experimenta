@@ -18,10 +18,59 @@ const safeRedirect = (value) => (value && value.startsWith("/") && !value.starts
 
 // OAuth failures come back as error_description in the query string or the hash.
 const oauthErrorFromUrl = () => {
+  if (typeof window === "undefined") return "";
   const hashParams = new URLSearchParams(window.location.hash.slice(1));
   const queryParams = new URLSearchParams(window.location.search);
   return hashParams.get("error_description") || queryParams.get("error_description") || "";
 };
+
+/**
+ * Translates raw Supabase Auth error messages into localized user-facing strings.
+ */
+export function localizeAuthError(errOrMessage, isRTL = true) {
+  const raw = typeof errOrMessage === "string"
+    ? errOrMessage
+    : errOrMessage?.message || "";
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+
+  const lower = trimmed.toLowerCase();
+  const t = (he, en) => (isRTL ? he : en);
+
+  if (lower.includes("invalid login credentials") || lower.includes("invalid credentials")) {
+    return t("אימייל או סיסמה שגויים", "Invalid email or password");
+  }
+  if (lower.includes("email not confirmed")) {
+    return t("האימייל טרם אומת. בדוק את תיבת הדואר הנכנס שלך.", "Email not confirmed. Please check your inbox.");
+  }
+  if (lower.includes("user already registered") || lower.includes("already registered")) {
+    return t("משתמש עם כתובת אימייל זו כבר רשום במערכת", "A user with this email is already registered");
+  }
+  if (lower.includes("password should be at least")) {
+    return t(`הסיסמה חייבת להכיל לפחות ${MIN_PASSWORD_LENGTH} תווים`, `Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+  }
+  if (lower.includes("new password should be different")) {
+    return t("הסיסמה החדשה חייבת להיות שונה מהסיסמה הנוכחית", "New password must be different from the current password");
+  }
+  if (
+    lower.includes("rate limit") ||
+    lower.includes("too many requests") ||
+    lower.includes("for security purposes")
+  ) {
+    return t("בוצעו יותר מדי ניסיונות. אנא המתן מעט ונסה שוב.", "Too many attempts. Please wait a moment and try again.");
+  }
+  if (lower.includes("unable to validate email") || lower.includes("invalid email")) {
+    return t("כתובת האימייל אינה תקינה", "Please enter a valid email address");
+  }
+  if (lower.includes("signup is disabled") || lower.includes("signups not allowed")) {
+    return t("ההרשמה למערכת מושבתת כעת", "Sign-ups are currently disabled");
+  }
+  if (lower.includes("failed to fetch") || lower.includes("network")) {
+    return t("שגיאת תקשורת עם השרת. בדוק את החיבור לאינטרנט ונסה שוב.", "Network error. Please check your internet connection and try again.");
+  }
+
+  return isRTL ? "אירעה שגיאה בתהליך האימות. אנא נסה שוב." : trimmed;
+}
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden="true">
@@ -37,15 +86,22 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const redirectTo = safeRedirect(searchParams.get("redirect"));
   const { isAuthenticated, isLoadingAuth, isPasswordRecovery, signIn, signUp, signInWithGoogle, updatePassword } = useAuth();
-  const isRecovery = isPasswordRecovery || searchParams.get("mode") === "recovery";
   const { isRTL } = useAppData();
+
+  // Only show the password change form after an actual PASSWORD_RECOVERY event.
+  const isRecovery = Boolean(isPasswordRecovery);
+  const isExpiredRecoveryLink = !isPasswordRecovery && !isAuthenticated && !isLoadingAuth && searchParams.get("mode") === "recovery";
 
   const [tab, setTab] = useState("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState(oauthErrorFromUrl);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [error, setError] = useState(() => {
+    const raw = oauthErrorFromUrl();
+    return raw ? localizeAuthError(raw, isRTL) : "";
+  });
   const [message, setMessage] = useState("");
 
   const t = (he, en) => (isRTL ? he : en);
@@ -66,9 +122,7 @@ export default function Login() {
     try {
       await signIn({ email, password });
     } catch (err) {
-      setError(err.message === "Invalid login credentials"
-        ? t("אימייל או סיסמה שגויים", "Invalid email or password")
-        : err.message);
+      setError(localizeAuthError(err, isRTL));
     } finally {
       setIsSubmitting(false);
     }
@@ -89,7 +143,7 @@ export default function Login() {
         setTab("signin");
       }
     } catch (err) {
-      setError(err.message);
+      setError(localizeAuthError(err, isRTL));
     } finally {
       setIsSubmitting(false);
     }
@@ -102,22 +156,26 @@ export default function Login() {
       // On success the browser leaves the page, so isSubmitting stays true until then.
       await signInWithGoogle(redirectTo);
     } catch (err) {
-      setError(err.message);
+      setError(localizeAuthError(err, isRTL));
       setIsSubmitting(false);
     }
   };
 
   const handleResetPassword = async () => {
+    if (isSubmitting || isResettingPassword) return;
     resetFeedback();
     if (!email) {
       setError(t("הזן אימייל כדי לאפס סיסמה", "Enter your email to reset your password"));
       return;
     }
+    setIsResettingPassword(true);
     try {
       await User.resetPassword(email);
       setMessage(t("נשלח אימייל לאיפוס סיסמה", "Password reset email sent"));
     } catch (err) {
-      setError(err.message);
+      setError(localizeAuthError(err, isRTL));
+    } finally {
+      setIsResettingPassword(false);
     }
   };
 
@@ -133,13 +191,13 @@ export default function Login() {
       await updatePassword(password);
       navigate("/", { replace: true });
     } catch (err) {
-      setError(err.message);
+      setError(localizeAuthError(err, isRTL));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isRecovery) {
+  if (isRecovery || isExpiredRecoveryLink) {
     return (
       <div className="flex items-center justify-center px-4 py-16" dir={isRTL ? "rtl" : "ltr"}>
         <Card className="w-full max-w-md shadow-lg">
@@ -154,7 +212,7 @@ export default function Login() {
             )}
             {isLoadingAuth ? (
               <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400" />
-            ) : !isAuthenticated ? (
+            ) : !isRecovery || !isAuthenticated ? (
               <p className="text-sm text-slate-600 text-center">
                 {t("הקישור לאיפוס אינו תקף או שפג תוקפו. בקשו קישור חדש ממסך ההתחברות.", "This reset link is invalid or has expired. Request a new one from the sign-in page.")}
               </p>
@@ -177,6 +235,8 @@ export default function Login() {
       </div>
     );
   }
+
+  const isBusy = isSubmitting || isResettingPassword;
 
   return (
     <div className="flex items-center justify-center px-4 py-16" dir={isRTL ? "rtl" : "ltr"}>
@@ -205,7 +265,7 @@ export default function Login() {
               </Alert>
             )}
 
-            <Button type="button" variant="outline" className="w-full" disabled={isSubmitting} onClick={handleGoogleSignIn}>
+            <Button type="button" variant="outline" className="w-full" disabled={isBusy} onClick={handleGoogleSignIn}>
               <GoogleIcon />
               {tab === "signup" ? t("הרשמה עם Google", "Sign up with Google") : t("התחברות עם Google", "Sign in with Google")}
             </Button>
@@ -227,12 +287,17 @@ export default function Login() {
                   <Input id="signin-password" type="password" dir="ltr" autoComplete="current-password" required
                     value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                <Button type="submit" className="w-full" disabled={isBusy}>
                   {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                   {t("התחבר", "Sign in")}
                 </Button>
-                <button type="button" onClick={handleResetPassword}
-                  className="w-full text-sm text-slate-500 hover:text-slate-800 underline-offset-4 hover:underline">
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={handleResetPassword}
+                  className="w-full text-sm text-slate-500 hover:text-slate-800 underline-offset-4 hover:underline disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isResettingPassword && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   {t("שכחתי סיסמה", "Forgot password?")}
                 </button>
               </form>
@@ -256,7 +321,7 @@ export default function Login() {
                     minLength={MIN_PASSWORD_LENGTH}
                     value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                <Button type="submit" className="w-full" disabled={isBusy}>
                   {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                   {t("צור חשבון", "Create account")}
                 </Button>

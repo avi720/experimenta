@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -14,11 +13,6 @@ import { categoryNames } from '../../lab/labConstants';
 
 export default function AdminExperimentCard({ experiment, index, handleDelete, handleDuplicate, toggleActive }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
-  // DEBUG: Log experiment ID and edit URL
-  console.log(`📝 AdminExperimentCard - Experiment: "${experiment.i18n_texts?.he?.title}", ID: ${experiment.id}`);
-  const editUrl = createPageUrl(`AdminExperimentForm?id=${experiment.id}`);
-  console.log(`📝 AdminExperimentCard - Edit URL:`, editUrl);
 
   return (
     <motion.div
@@ -57,12 +51,12 @@ export default function AdminExperimentCard({ experiment, index, handleDelete, h
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <Link to={createPageUrl(`AdminExperimentForm?id=${experiment.id}`)} onClick={() => console.log(`🔗 AdminExperimentCard - Edit link clicked for ID: ${experiment.id}`)}>
-                  <DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to={createPageUrl(`AdminExperimentForm?id=${experiment.id}`)}>
                     <Edit className="w-4 h-4 ml-2" />
                     <span>עריכה</span>
-                  </DropdownMenuItem>
-                </Link>
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleDuplicate(experiment)}>
                   <Copy className="w-4 h-4 ml-2" />
                   <span>שכפול</span>
@@ -101,7 +95,7 @@ export default function AdminExperimentCard({ experiment, index, handleDelete, h
           <AlertDialogHeader>
             <AlertDialogTitle>אישור מחיקת ניסוי</AlertDialogTitle>
             <AlertDialogDescription>
-              האם אתה בטוח שברצונך למחוק את הניסוי "{experiment.i18n_texts?.he?.title || experiment.slug}"?
+              האם אתה בטוח שברצונך למחוק את הניסוי &quot;{experiment.i18n_texts?.he?.title || experiment.slug}&quot;?
               לא ניתן לשחזר פעולה זו.
             </AlertDialogDescription>
           </AlertDialogHeader>

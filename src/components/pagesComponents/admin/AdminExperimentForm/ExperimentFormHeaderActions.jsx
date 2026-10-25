@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, Save, Eye, FileDown } from 'lucide-react';
 import { createPageUrl } from '@/utils';
+import { getExperimentWorkspaceUrl } from '@/components/simulation/experimentRegistry';
 
 export default function ExperimentFormHeaderActions({ 
   isEditMode, 
@@ -39,7 +40,7 @@ export default function ExperimentFormHeaderActions({
         <Button
           type="button"
           variant="outline"
-          onClick={() => window.open(`/lab?experiment=${experiment.slug}`, '_blank')}
+          onClick={() => window.open(getExperimentWorkspaceUrl(experiment.slug), '_blank')}
           disabled={!experiment.slug}
           className="gap-2"
         >

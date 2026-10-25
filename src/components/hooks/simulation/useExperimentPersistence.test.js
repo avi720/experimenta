@@ -1,22 +1,40 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const toastMocks = vi.hoisted(() => ({
+    info: vi.fn(),
+    warning: vi.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
+}));
+const authMock = vi.hoisted(() => ({
+    isAuthenticated: true,
+    navigateToLogin: vi.fn(),
+    user: { locale_preference: "he" },
+    guestLocale: null,
+}));
 
 vi.mock("react", () => ({
     useCallback: (fn) => fn,
+}));
+vi.mock("sonner", () => ({
+    toast: toastMocks,
 }));
 vi.mock("@/entities/ExperimentRun", () => ({
     ExperimentRun: { create: vi.fn() },
 }));
 vi.mock("@/lib/AuthContext", () => ({
-    useAuth: () => ({ isAuthenticated: true, navigateToLogin: vi.fn() }),
+    useAuth: () => authMock,
 }));
 
 import {
     serializeSimulationSamples,
     parseStoredSimulationSamples,
+    useExperimentPersistence,
 } from "./useExperimentPersistence.jsx";
+import { ExperimentRun } from "@/entities/ExperimentRun";
 import { calculateFreeFallStep } from "@/components/simulation/engines/freeFallEngine.jsx";
 
-describe("useExperimentPersistence sample serialization (T16)", () => {
+describe("useExperimentPersistence sample serialization (T16, T52)", () => {
     it("flattens nested position.y, strips internal keys, and preserves exact final impact point", () => {
         const params = { h0: 20, v0: -5, g: 9.81, m: 2, c: 0.4 };
         const raw = [];
@@ -49,5 +67,33 @@ describe("useExperimentPersistence sample serialization (T16)", () => {
         expect(parseStoredSimulationSamples(null)).toBeNull();
         expect(parseStoredSimulationSamples("")).toBeNull();
         expect(parseStoredSimulationSamples("https://example.com/data.csv")).toBeNull();
+    });
+
+    describe("in-app toast notifications (T52)", () => {
+        beforeEach(() => {
+            vi.clearAllMocks();
+            authMock.isAuthenticated = true;
+            authMock.user = { locale_preference: "en" };
+        });
+
+        it("shows a localized sign-in action toast when a guest attempts to save", async () => {
+            authMock.isAuthenticated = false;
+            const { saveRun } = useExperimentPersistence({ slug: "free-fall" }, null, {}, [{ time: 0, position: 10 }]);
+            await saveRun();
+            expect(toastMocks.info).toHaveBeenCalledTimes(1);
+            const [message, options] = toastMocks.info.mock.calls[0];
+            expect(message).toContain("registered users only");
+            expect(options.action.label).toBe("Sign in");
+            options.action.onClick();
+            expect(authMock.navigateToLogin).toHaveBeenCalledTimes(1);
+        });
+
+        it("shows a success toast after saving a run", async () => {
+            ExperimentRun.create.mockResolvedValueOnce({ id: "run-1" });
+            const { saveRun } = useExperimentPersistence({ slug: "free-fall" }, null, { h0: 10 }, [{ time: 0, position: 10 }]);
+            await saveRun();
+            expect(ExperimentRun.create).toHaveBeenCalledTimes(1);
+            expect(toastMocks.success).toHaveBeenCalledWith("Run saved successfully!");
+        });
     });
 });
