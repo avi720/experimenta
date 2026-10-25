@@ -68,7 +68,7 @@ export function useExperimentActions(loadExperiments) {
     }, [loadExperiments]);
 
     const handleEdit = useCallback((experiment) => {
-        navigate(createPageUrl('AdminExperimentForm') + `?id=${experiment.slug}`, { state: { experiment } });
+        navigate(createPageUrl('AdminExperimentForm') + `?id=${experiment.id}`, { state: { experiment } });
     }, [navigate]);
 
     return {

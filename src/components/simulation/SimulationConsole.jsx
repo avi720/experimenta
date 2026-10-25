@@ -43,16 +43,19 @@ export default function SimulationConsole({
     experiment,
     isRTL,
     onFloat,
-    maxSimulationTime
+    maxSimulationTime,
+    validationState
 }) {
     // חישוב הזמן המקסימלי שחושב בפועל
-    const maxAvailableTime = simulationData && simulationData.length > 0 
+    const maxAvailableTime = simulationData && simulationData.length > 0
         ? simulationData[simulationData.length - 1].time ?? 0
         : 0;
 
     // נקודת הנתונים הנוכחית להצגה
     const currentDataPoint =
         displayedDataPoint || findClosestDataPoint(simulationData, playbackTime ?? currentTime);
+
+    const isValid = validationState?.isAllValid !== false;
 
     return (
         <Card className="p-4">
@@ -88,6 +91,7 @@ export default function SimulationConsole({
                     maxAvailableTime={maxAvailableTime}
                     simulationData={simulationData}
                     isRTL={isRTL}
+                    isValid={isValid}
                 />
 
                 {/* תצוגת זמן */}

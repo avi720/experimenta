@@ -1,12 +1,13 @@
-
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ExperimentTemplate } from '@/entities/all';
 
-// Helper function to create an empty experiment object
-const createEmptyExperiment = () => ({
+// Helper function to create an empty experiment object with valid defaults (T32)
+export const createEmptyExperiment = () => ({
     slug: '',
-    category: 'Classical',
+    category: 'ClassicalMechanics',
     visualization_type: '3d',
+    access_level: 'public',
     engine: 'classicalMechanics',
     parameters: [],
     outputs: [],
@@ -21,61 +22,61 @@ const createEmptyExperiment = () => ({
 });
 
 export function useExperimentDataLoading() {
+    const [searchParams] = useSearchParams();
+    const experimentId = searchParams.get('id');
+
     const [experiment, setExperiment] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isEditMode, setIsEditMode] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(Boolean(experimentId));
+    const [notFound, setNotFound] = useState(false);
 
     useEffect(() => {
+        let cancelled = false;
+
         const loadExperiment = async () => {
             setIsLoading(true);
-
-            // Get ID from URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const experimentId = urlParams.get('id');
-
-            console.log(`📋 useExperimentDataLoading - URL params:`, window.location.search);
-            console.log(`📋 useExperimentDataLoading - Extracted ID:`, experimentId);
+            setNotFound(false);
 
             if (experimentId) {
-                console.log(`📋 useExperimentDataLoading - Edit mode detected, loading experiment ID: ${experimentId}`);
                 setIsEditMode(true);
                 try {
-                    // Fetch all experiments and find the one with the matching ID
-                    // NOTE: This assumes ExperimentTemplate.list() returns items with an 'id' field
-                    const experiments = await ExperimentTemplate.list();
-                    const foundExperiment = experiments.find(exp => exp.id === experimentId);
+                    const foundExperiment = await ExperimentTemplate.get(experimentId);
+                    if (cancelled) return;
 
-                    console.log(`📋 useExperimentDataLoading - Found experiment:`, foundExperiment ? 'Yes' : 'No');
-
-                    if (foundExperiment) {
+                    if (foundExperiment && foundExperiment.id) {
                         setExperiment(foundExperiment);
                     } else {
-                        console.error(`❌ useExperimentDataLoading - Experiment with ID ${experimentId} not found`);
-                        // Optionally, navigate to an error page or creation page
-                        setExperiment(createEmptyExperiment()); // Fallback to empty if not found
-                        setIsEditMode(false);
+                        setExperiment(null);
+                        setNotFound(true);
                     }
                 } catch (error) {
-                    console.error('❌ useExperimentDataLoading - Error loading experiment:', error);
-                    setExperiment(createEmptyExperiment()); // Fallback to empty on error
-                    setIsEditMode(false);
+                    if (cancelled) return;
+                    console.error('useExperimentDataLoading - Experiment not found or failed to load:', error);
+                    setExperiment(null);
+                    setNotFound(true);
                 }
             } else {
-                console.log(`📋 useExperimentDataLoading - Create mode (no ID in URL)`);
                 setIsEditMode(false);
                 setExperiment(createEmptyExperiment());
             }
 
-            setIsLoading(false);
+            if (!cancelled) {
+                setIsLoading(false);
+            }
         };
 
         loadExperiment();
-    }, []); // Empty dependency array means this effect runs once on mount
+
+        return () => {
+            cancelled = true;
+        };
+    }, [experimentId]);
 
     return {
         experiment,
         setExperiment,
         isLoading,
-        isEditMode
+        isEditMode,
+        notFound
     };
 }

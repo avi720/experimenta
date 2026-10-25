@@ -108,9 +108,6 @@ export default function WorkspaceShell({
         if (!hasTimeAxis) {
             return normalizedSimulationData;
         }
-        // When playback is at 0 before scrubbing in a completed state, or during playback,
-        // show points up to effectiveTime; if effectiveTime === 0 and simulation completed,
-        // still include at least the first point so controls know data exists.
         const upToTime = normalizedSimulationData.filter(
             (dataPoint) => dataPoint.time <= effectiveTime + 1e-9
         );
@@ -197,6 +194,7 @@ export default function WorkspaceShell({
                             onToggleConsole={handleCloseFloatingConsole}
                             onToggleCharts={handleCloseFloatingCharts}
                             maxSimulationTime={maxSimulationTime}
+                            validationState={validationState}
                         />
                     )}
                 </div>

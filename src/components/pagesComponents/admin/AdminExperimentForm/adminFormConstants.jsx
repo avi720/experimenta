@@ -4,7 +4,7 @@ export const emptyExperiment = {
   slug: '',
   category: 'ClassicalMechanics',
   visualization_type: '3d',
-  //engine: 'classicalMechanics',
+  access_level: 'public',
   parameters: [],
   outputs: [],
   presets: [],
@@ -22,15 +22,11 @@ export const categoryOptions = Object.entries(categoryNames).map(([value, labels
   label: labels.he,
 }));
 
-// export const engineOptions = [
-//   { value: 'classicalMechanics', label: 'מכניקה קלאסית' },
-//   { value: 'quantumMechanics', label: 'מכניקה קוונטית' },
-//   { value: 'optics', label: 'אופטיקה' },
-//   { value: 'fluidMechanics', label: 'מכניקת זורמים' },
-//   { value: 'thermodynamics', label: 'תרמודינמיקה' },
-//   { value: 'electromagnetism', label: 'אלקטרומגנטיות' },
-//   { value: 'relativity', label: 'תורת היחסות' }
-// ];
+export const accessLevelOptions = [
+  { value: 'public', label: 'פתוח לכולם (Public)' },
+  { value: 'registered', label: 'משתמשים רשומים בלבד (Registered)' },
+  { value: 'premium', label: 'מנויי פרימיום בלבד (Premium)' },
+];
 
 export const parameterTypes = [
   { value: 'float', label: 'מספר עשרוני (float)' },

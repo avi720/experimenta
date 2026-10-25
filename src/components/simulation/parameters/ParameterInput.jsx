@@ -5,13 +5,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { validateParameterValue } from "./parameterValidation";
 
-export default function ParameterInput({ 
-    parameter, 
-    value, 
-    onChange, 
+export default function ParameterInput({
+    parameter,
+    value,
+    onChange,
+    error,
     validationState,
-    isRTL 
+    isRTL
 }) {
     // בדיקת תקינות הפרמטר
     if (!parameter || !parameter.key) {
@@ -19,41 +21,16 @@ export default function ParameterInput({
         return null;
     }
 
-    // בדיקת ולידציה - גם מה-validationState וגם בדיקה מקומית
-    const paramValidation = validationState || {};
-    let isValid = paramValidation.isValid !== false;
-    let errorMessage = paramValidation.error;
+    // ולידציה ממקור אמת יחיד (parameterValidation.js)
+    const computedValidation =
+        validationState && typeof validationState.isValid === "boolean"
+            ? validationState
+            : error
+            ? { isValid: false, error }
+            : validateParameterValue(parameter, value, isRTL);
 
-    // בדיקות ולידציה נוספות עבור פרמטרים מספריים
-    if (parameter.type === 'float' || parameter.type === 'int') {
-        // בדיקת ערך ריק
-        if (value === undefined || value === null || value === '') {
-            isValid = false;
-            errorMessage = isRTL ? 'שדה זה הוא חובה' : 'This field is required';
-        } else {
-            const numValue = parseFloat(value);
-            
-            // בדיקת מספר לא חוקי
-            if (isNaN(numValue)) {
-                isValid = false;
-                errorMessage = isRTL ? 'יש להזין מספר חוקי' : 'Please enter a valid number';
-            }
-            // בדיקת טווח min
-            else if (parameter.min !== undefined && numValue < parameter.min) {
-                isValid = false;
-                errorMessage = isRTL 
-                    ? `הערך חייב להיות לפחות ${parameter.min}` 
-                    : `Value must be at least ${parameter.min}`;
-            }
-            // בדיקת טווח max
-            else if (parameter.max !== undefined && numValue > parameter.max) {
-                isValid = false;
-                errorMessage = isRTL 
-                    ? `הערך חייב להיות לכל היותר ${parameter.max}` 
-                    : `Value must be at most ${parameter.max}`;
-            }
-        }
-    }
+    const isValid = computedValidation.isValid !== false;
+    const errorMessage = error || computedValidation.error;
 
     // קבלת תווית בשפה הנכונה
     const getLabel = () => {
@@ -98,7 +75,7 @@ export default function ParameterInput({
                     {!isValid && <AlertCircle className="w-4 h-4 text-red-500" />}
                 </Label>
                 <Select value={value?.toString()} onValueChange={(val) => onChange(val)}>
-                    <SelectTrigger 
+                    <SelectTrigger
                         id={parameter.key}
                         className={cn(!isValid && "border-red-500")}
                     >
@@ -114,7 +91,7 @@ export default function ParameterInput({
                 </Select>
                 {tooltip && <p className="text-xs text-slate-500">{tooltip}</p>}
                 {!isValid && errorMessage && (
-                    <p className="text-xs text-red-500 flex items-center gap-1">
+                    <p className="text-xs text-red-500 flex items-center gap-1" role="alert">
                         <AlertCircle className="w-3 h-3" />
                         {errorMessage}
                     </p>
@@ -138,15 +115,18 @@ export default function ParameterInput({
                 id={parameter.key}
                 type="number"
                 value={value ?? ''}
+                aria-invalid={!isValid}
                 onChange={(e) => {
                     const val = e.target.value;
                     if (val === '') {
-                        onChange(undefined);
+                        onChange('');
                         return;
                     }
-                    const numVal = parameter.type === 'int' ? parseInt(val, 10) : parseFloat(val);
-                    if (!isNaN(numVal)) {
+                    const numVal = Number(val);
+                    if (!Number.isNaN(numVal)) {
                         onChange(numVal);
+                    } else {
+                        onChange(val);
                     }
                 }}
                 step={step}
@@ -156,7 +136,7 @@ export default function ParameterInput({
             />
             {tooltip && <p className="text-xs text-slate-500">{tooltip}</p>}
             {!isValid && errorMessage && (
-                <p className="text-xs text-red-500 flex items-center gap-1">
+                <p className="text-xs text-red-500 flex items-center gap-1" role="alert">
                     <AlertCircle className="w-3 h-3" />
                     {errorMessage}
                 </p>
