@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { AnimatePresence } from "framer-motion";
 import ExperimentHeader from "./ExperimentHeader";
 import ExperimentSidePanel from "./ExperimentSidePanel";
-import ExperimentCanvas from "./ExperimentCanvas";
 import FloatingWindowsManager from "./FloatingWindowsManager";
 import SimulationCharts from "../charts/SimulationCharts";
 
@@ -10,6 +9,7 @@ export default function WorkspaceShell({
     experiment,
     user,
     isRTL,
+    experiments,
     experimentsByCategory,
     children,
     simulationState,
@@ -22,7 +22,8 @@ export default function WorkspaceShell({
     onScrub,
     currentTime,
     playbackTime,
-    simulationData,
+    displayedDataPoint,
+    simulationData = [],
     parameters,
     paramValues,
     onParameterChange,
@@ -39,7 +40,8 @@ export default function WorkspaceShell({
     const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
     const [activeTab, setActiveTab] = useState("parameters");
     const [floatingWindows, setFloatingWindows] = useState({
-        console: false
+        console: false,
+        charts: false
     });
     const [isChartsOpen, setIsChartsOpen] = useState(false);
 
@@ -62,12 +64,58 @@ export default function WorkspaceShell({
         setIsChartsOpen(prev => !prev);
     };
 
-    const isInitializing = simulationState === 'initializing';
+    const handleCloseFloatingCharts = () => {
+        setFloatingWindows(prev => ({
+            ...prev,
+            charts: false
+        }));
+    };
 
-    // סינון הנתונים - הצגת רק נקודות עד הזמן הנוכחי
-    const filteredSimulationData = simulationData.filter(
-        (dataPoint) => dataPoint.time <= currentTime
-    );
+    const effectiveTime =
+        typeof currentTime === "number"
+            ? currentTime
+            : typeof playbackTime === "number"
+            ? playbackTime
+            : 0;
+
+    // Flatten nested object outputs (e.g. `position: { y }` on Free Fall) so recharts
+    // and CurrentValuesDisplay receive numeric values for `experiment.outputs`, and
+    // filter time-series points up to the current playback time when playing/scrubbing.
+    const normalizedSimulationData = useMemo(() => {
+        if (!Array.isArray(simulationData) || simulationData.length === 0) {
+            return [];
+        }
+        return simulationData.map((point) => {
+            if (!point || typeof point !== "object") return point;
+            if (
+                point.position &&
+                typeof point.position === "object" &&
+                typeof point.position.y === "number"
+            ) {
+                return {
+                    ...point,
+                    position: point.position.y,
+                    position_y: point.position.y,
+                };
+            }
+            return point;
+        });
+    }, [simulationData]);
+
+    const filteredSimulationData = useMemo(() => {
+        if (normalizedSimulationData.length === 0) return [];
+        const hasTimeAxis = typeof normalizedSimulationData[0]?.time === "number";
+        if (!hasTimeAxis) {
+            return normalizedSimulationData;
+        }
+        // When playback is at 0 before scrubbing in a completed state, or during playback,
+        // show points up to effectiveTime; if effectiveTime === 0 and simulation completed,
+        // still include at least the first point so controls know data exists.
+        const upToTime = normalizedSimulationData.filter(
+            (dataPoint) => dataPoint.time <= effectiveTime + 1e-9
+        );
+        return upToTime.length > 0 ? upToTime : normalizedSimulationData.slice(0, 1);
+    }, [normalizedSimulationData, effectiveTime]);
 
     return (
         <div className="h-screen flex flex-col bg-slate-50" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -75,6 +123,7 @@ export default function WorkspaceShell({
                 experiment={experiment}
                 user={user}
                 isRTL={isRTL}
+                experiments={experiments}
                 experimentsByCategory={experimentsByCategory}
                 onToggleRightPanel={() => setIsRightPanelOpen(!isRightPanelOpen)}
                 isRightPanelOpen={isRightPanelOpen}
@@ -89,9 +138,9 @@ export default function WorkspaceShell({
                 {/* Container for canvas and side panel - positioned relatively */}
                 <div className="flex-1 relative overflow-hidden">
                     {/* Canvas - always full width and height */}
-                    <ExperimentCanvas isInitializing={isInitializing} isRTL={isRTL}>
+                    <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-slate-100 to-slate-200">
                         {children}
-                    </ExperimentCanvas>
+                    </div>
 
                     {/* Side Panel - floating over the canvas with absolute positioning */}
                     <AnimatePresence>
@@ -115,9 +164,10 @@ export default function WorkspaceShell({
                                 onStepForward={onStep}
                                 onStepBackward={onStepBackward}
                                 onScrub={onScrub}
-                                currentTime={currentTime}
+                                currentTime={effectiveTime}
                                 playbackTime={playbackTime}
-                                simulationData={filteredSimulationData}
+                                displayedDataPoint={displayedDataPoint}
+                                simulationData={normalizedSimulationData}
                                 validationState={validationState}
                                 onFloatConsole={handleFloatConsole}
                                 showConsole={!floatingWindows.console}
@@ -126,23 +176,26 @@ export default function WorkspaceShell({
                         )}
                     </AnimatePresence>
 
-                    {/* Floating Console Window */}
-                    {floatingWindows.console && (
+                    {/* Floating Console / Charts Windows */}
+                    {(floatingWindows.console || floatingWindows.charts) && (
                         <FloatingWindowsManager
+                            floatingWindows={floatingWindows}
                             simulationState={simulationState}
                             onStart={onStart}
                             onPause={onPause}
                             onContinue={onContinue}
                             onReset={onReset}
-                            onStep={onStep}
+                            onStepForward={onStep}
                             onStepBackward={onStepBackward}
                             onScrub={onScrub}
-                            currentTime={currentTime}
+                            currentTime={effectiveTime}
                             playbackTime={playbackTime}
-                            simulationData={filteredSimulationData}
+                            displayedDataPoint={displayedDataPoint}
+                            simulationData={normalizedSimulationData}
                             experiment={experiment}
                             isRTL={isRTL}
-                            onClose={handleCloseFloatingConsole}
+                            onToggleConsole={handleCloseFloatingConsole}
+                            onToggleCharts={handleCloseFloatingCharts}
                             maxSimulationTime={maxSimulationTime}
                         />
                     )}

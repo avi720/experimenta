@@ -67,109 +67,129 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 
 ### Phase 1 — Critical (Day-1 blockers, must clear before next release)
 
-#### [ ] T1. Simulation charts and console controls never see any data after a run ([#4](https://github.com/avi720/experimenta/issues/4))
+#### [x] T1. Simulation charts and console controls never see any data after a run ([#4](https://github.com/avi720/experimenta/issues/4))
 - **Where:** `src/components/simulation/workspace/WorkspaceShell.jsx:68-70`
 - **Issue:** `filteredSimulationData` filters `simulationData` by `dataPoint.time <= currentTime`, but no page or hook passes `currentTime` (the simulation manager does not return one), so the filter always yields `[]`. Charts always show the "run the simulation" placeholder, and the console's Reset / Step / scrub slider stay disabled, leaving Free Fall stuck on "completed" until a page reload. Double Slit data points have no `time` key at all.
 - **Acceptance:** On Free Fall, after pressing Start, the live-charts panel plots position/velocity over time and the scrub slider and Reset are enabled once the run completes; verified in a browser on a local dev server.
+- **Done 2026-10-23:** `LabWorkspace` passes `currentTime` and `playbackTime` from `useExperimentSimulation` into `WorkspaceShell`, which flattens nested `{ y }` position objects for Recharts and filters time-series points up to `effectiveTime` (preserving static datasets without a `time` axis). Verified in Edge against `localhost:5173`. (Double Slit chart axes remain deferred under OQ 12.)
 
-#### [ ] T2. Free Fall ball never moves when the simulation runs ([#5](https://github.com/avi720/experimenta/issues/5))
+#### [x] T2. Free Fall ball never moves when the simulation runs ([#5](https://github.com/avi720/experimenta/issues/5))
 - **Where:** `src/components/hooks/simulation/useSimulationDataDisplay.jsx:6`; callers `src/components/hooks/freeFallSimulation/useFreeFallSimulation.jsx:79`, `shoSimulation/useShoSimulation.jsx:46`, `quantumTunnelingSimulation/useQuantumTunnelingSimulation.jsx:37`
 - **Issue:** **Confirmed.** On production, pressing Start on `/FreeFallExperiment` runs to "הושלם" at 3.193 s while the ball stays on the roof. The hook takes positional args `(currentData, playbackTime, getDataPointAtTime)` but all three callers pass a single object, which is truthy and is returned as the "data point" — so scenes never receive a `.position`.
 - **Acceptance:** On Free Fall with default parameters, the ball visibly falls from the roof to the ground during playback and the scrub slider moves it to the matching height; verified in a browser.
+- **Done 2026-10-23:** Removed `useSimulationDataDisplay` (T20) and computed `displayedDataPoint` directly in `useExperimentSimulation` via `getDataPointAtTime(playbackTime) ?? currentData`. Verified in Edge against `localhost:5173`.
 
-#### [ ] T3. SHO experiment page crashes to a blank screen on load ([#6](https://github.com/avi720/experimenta/issues/6))
+#### [x] T3. SHO experiment page crashes to a blank screen on load ([#6](https://github.com/avi720/experimenta/issues/6))
 - **Where:** `src/components/hooks/shoSimulation/useShoSimulation.jsx:10`; `src/pages/ShoExperiment.jsx:38,43,58`
 - **Issue:** **Confirmed.** `/ShoExperiment` on production renders an empty `<body>` with `TypeError: Cannot read properties of null (reading 'experiment')` — the hook dereferences `experimentTemplate.experiment` while `useExperimentPageData` still returns `null`. Behind it, `handleParamChange(key, value)` receives an object and writes an `"[object Object]"` key, and `experimentsByCategory` is passed a raw array.
 - **Acceptance:** `/ShoExperiment` loads with parameters, the 3D scene and the console; changing a parameter updates that parameter's value (not a new key); verified in a browser with no console errors.
+- **Done 2026-10-23:** Replaced `ShoExperiment.jsx` and `useShoSimulation.jsx` with the generic `LabWorkspace.jsx` + `useExperimentSimulation.jsx` (T18/T19), handling both `(key, value)` and full-object updates in `handleParamChange`. Verified in Edge against `localhost:5173`.
 
-#### [ ] T4. Admin experiment form crashes when editing a parameter label, tooltip or preset values ([#7](https://github.com/avi720/experimenta/issues/7))
+#### [x] T4. Admin experiment form crashes when editing a parameter label, tooltip or preset values ([#7](https://github.com/avi720/experimenta/issues/7))
 - **Where:** `src/components/hooks/experimentForm/useExperimentFormHandlers.jsx:77-85`; called from `src/components/pagesComponents/admin/AdminExperimentForm/ParameterInput/ParameterTranslationFields.jsx:17,25,36,44` and `src/components/hooks/experimentForm/usePresetJsonManagement.jsx:22`
 - **Issue:** `handleNestedDynamicChange` spreads `array[index][nestedField]` into an array, but `i18n_labels`, `tooltip` and preset `values` are objects (`{he, en}` / key→value). Spreading an object into an array throws "is not iterable" inside the state updater, and with no error boundary (T10) the admin page goes blank on the first keystroke.
 - **Acceptance:** In `/AdminExperimentForm?id=<existing id>`, typing into a parameter's Hebrew/English label and tooltip fields and editing a preset's values updates the fields and saves correctly; the saved row in `experiment_templates` contains the edited objects; verified in a browser as an admin.
+- **Done 2026-10-23:** Updated `handleNestedDynamicChange` in `useExperimentFormHandlers.jsx` to replace object fields when `nestedIndex == null && field == null` (preset `values`) and shallow-merge object keys when `nestedIndex == null && field != null` (`i18n_labels`, `tooltip`), keeping array updates when `nestedIndex != null`. Covered by `useExperimentFormHandlers.test.js` and verified in Edge on `/AdminExperimentForm?id=<free-fall id>`.
 
-#### [ ] T5. SHO and Quantum Tunneling simulations compute zero data points ([#8](https://github.com/avi720/experimenta/issues/8))
+#### [x] T5. SHO and Quantum Tunneling simulations compute zero data points ([#8](https://github.com/avi720/experimenta/issues/8))
 - **Where:** `src/components/hooks/shoSimulation/useShoSimulation.jsx:22`; `src/components/hooks/quantumTunnelingSimulation/useQuantumTunnelingSimulation.jsx:11`; `src/components/hooks/simulation/useSimulationManager.jsx:102-112`
 - **Issue:** **Confirmed** (engines run in Node). Neither hook passes `parameters` or `maxSimulationTime` to `useSimulationManager`, and the manager's `startSimulation` ignores the arguments forwarded to it, so the engine loop condition `0 <= undefined` is false and the run returns 0 points. No seeded experiment defines a `t_max` parameter, so a default duration is needed. Must not ship before T6, or students will see wrong tunneling physics.
 - **Acceptance:** Pressing Start on SHO and on Quantum Tunneling produces a non-empty dataset (point count > 0 shown in charts / data export) whose duration matches the configured or default `t_max`; verified in a browser.
+- **Done 2026-10-23:** `EXPERIMENT_REGISTRY` defines `defaultMaxTime` per engine (overridden by `parameters.t_max` when present, per OQ 11), and `useExperimentSimulation` passes `parameters` and `maxSimulationTime` into `useSimulationManager`. Verified in Edge against `localhost:5173`.
 
-#### [ ] T6. Quantum tunneling transmission is wrong for E > V0 ([#9](https://github.com/avi720/experimenta/issues/9))
+#### [x] T6. Quantum tunneling transmission is wrong for E > V0 ([#9](https://github.com/avi720/experimenta/issues/9))
 - **Where:** `src/components/simulation/engines/quantumTunnelingEngine.jsx:64-66`
 - **Issue:** **Confirmed.** The denominator `(k1²+k2²)² − (k1²−k2²)²·sin²` reduces to a cos² form, inverting the resonances: at E/V0 = 1.022 the engine gives T = 0.087 against the textbook 0.638; at 1.15, 0.427 against 0.900. The E = V0 case is hard-coded to 0.5.
 - **Acceptance:** Engine transmission matches the textbook rectangular-barrier formula within 1e-6 for E/V0 ∈ {0.5, 0.9, 1.0, 1.022, 1.15, 2.0}, verified by a unit test; E = V0 uses the correct limit `T = 1/(1 + m·V0·a²/(2ħ²))`.
+- **Done 2026-10-22:** `quantumTunnelingEngine.test.js` checks the engine against an independent transfer-matrix solution (L = 1 nm and 5 nm, all listed ratios, the E = V0 limit and its continuity from both sides, and a k2·L = π resonance). The audit's reference values (0.638 / 0.900) could not be reproduced without its exact L, so the test uses the independent solver instead of hard-coded numbers. Reverting the formula fails 8 tests.
 
-#### [ ] T7. Experiments dropdowns show blank category names ([#10](https://github.com/avi720/experimenta/issues/10))
+#### [x] T7. Experiments dropdowns show blank category names ([#10](https://github.com/avi720/experimenta/issues/10))
 - **Where:** `src/components/layout/app-header/ExperimentsDropdown.jsx:27-33,71,77`; `src/components/simulation/workspace/ExperimentHeader.jsx:17-23`; `src/components/pagesComponents/admin/AdminExperimentForm/adminFormConstants.jsx:3`
 - **Issue:** The local `categoryNames` maps use keys `Classical/Waves/Quantum/EM/Circuits`, while the seed data and admin `categoryOptions` use `ClassicalMechanics/QuantumMechanics/Optics`, so every category row renders only its "(n)" count. The workspace header dropdown additionally receives `experiments` instead of `experimentsByCategory` on Free Fall and QT, and an array on SHO. Category labels are defined in 3 places that disagree.
 - **Acceptance:** Category names are defined once; the site-header dropdown and the experiment-page header dropdown both show the localized names of all seeded categories with their experiments listed, verified in a browser in Hebrew and English.
+- **Done 2026-10-22:** Consolidated `categoryNames` and `groupExperimentsByCategory` in `src/components/pagesComponents/lab/labConstants.jsx`; derived `categoryOptions` in `adminFormConstants.jsx` from `categoryNames`; updated `ExperimentsDropdown`, `ExperimentHeader`, and `WorkspaceShell` to use the shared definitions and accept either `experiments` or `experimentsByCategory`. Verified in Edge against `localhost:5173` in Hebrew and English.
 
-#### [ ] T8. Runtime dependency react-router-dom carries a high-severity advisory ([#11](https://github.com/avi720/experimenta/issues/11))
+#### [x] T8. Runtime dependency react-router-dom carries a high-severity advisory ([#11](https://github.com/avi720/experimenta/issues/11))
 - **Where:** `package.json` / `package-lock.json` (react-router-dom 6.30.1)
-- **Issue:** **Confirmed.** `npm audit --omit=dev` reports high-severity open-redirect/XSS advisories against the installed react-router-dom; the fix is inside the current semver range (6.30.6 "wanted" per `npm outdated`). This is the only runtime-reachable high finding among direct dependencies that are actually used (unused vulnerable packages are T29).
+- **Issue:** ~~**Partial 2026-10-22** — Updated `react-router-dom` from 6.30.1 to 6.30.6 (latest 6.x), resolving the high-severity advisories. Two moderate advisories remain on `<= 7.17.0` (`GHSA-wrjc-x8rr-h8h6` backslash open-redirect in `<Link>`/`useNavigate` and `GHSA-337j-9hxr-rhxg` SSR hydration) whose upstream fix is in `7.18.4` (a major version upgrade).~~ **Confirmed.** `npm audit --omit=dev` reports high-severity open-redirect/XSS advisories against the installed react-router-dom; the fix is inside the current semver range (6.30.6 "wanted" per `npm outdated`). This is the only runtime-reachable high finding among direct dependencies that are actually used (unused vulnerable packages are T29).
 - **Acceptance:** `npm audit --omit=dev` reports no advisory for react-router / react-router-dom; app routing (deep links, `/Login?redirect=…`, 404) still works in a browser.
+- **Done 2026-10-24:** Upgraded `react-router-dom` to `^7.18.4` (`7.18.4` installed), eliminating all high and moderate advisories on `react-router` / `react-router-dom` in `npm audit --omit=dev`. Verified deep links, experiment routes, and 404 `PageNotFound` in Edge against `localhost`.
 
-#### [ ] T9. Quantum Tunneling and Double Slit pages pass props WorkspaceShell does not accept ([#12](https://github.com/avi720/experimenta/issues/12))
+#### [x] T9. Quantum Tunneling and Double Slit pages pass props WorkspaceShell does not accept ([#12](https://github.com/avi720/experimenta/issues/12))
 - **Where:** `src/pages/QuantumTunnelingExperiment.jsx:30-56`; `src/pages/DoubleSlitExperiment.jsx:68-88`
 - **Issue:** Both pages pass `onParametersChange`, `simulationStatus`, `startSimulation`, `handleStep`, `handleScrub`, `applyPreset`, `saveRun`, `exportData`, `experiments` — none of which `WorkspaceShell` accepts — and no `parameters` prop, so the side panel shows "No parameters available" and every console button is a no-op. The QT hook also does not return 7 keys the page destructures.
 - **Acceptance:** On both pages the parameter panel lists the experiment's parameters, and Start / Pause / Reset / Step operate the simulation; verified in a browser.
+- **Done 2026-10-23:** Both routes now render `LabWorkspace.jsx`, which passes the exact prop contract `WorkspaceShell` expects (`parameters`, `paramValues`, `onParameterChange`, `simulationState`, `onStart`, `onPause`, `onContinue`, `onReset`, `onStep`, `onStepBackward`, `onScrub`, `onApplyPreset`, `onSave`, `onExport`). Verified in Edge on `/QuantumTunnelingExperiment` and `/DoubleSlitExperiment` (Double Slit remains in static interference mode pending OQ 12).
 
-#### [ ] T10. Any render error blanks the whole app ([#13](https://github.com/avi720/experimenta/issues/13))
+#### [x] T10. Any render error blanks the whole app ([#13](https://github.com/avi720/experimenta/issues/13))
 - **Where:** `src/main.jsx`, `src/App.jsx` (no error boundary anywhere — grep finds 0)
 - **Issue:** **Confirmed** via T3: an exception in one page's render leaves an empty `<body>` with no message, no navigation and no way back. T4 and T11 have the same failure mode.
 - **Acceptance:** Throwing inside any page component (tested by a temporary throw on a dev server) shows a localized fallback with the header still usable and a way to return home; the error is logged to the console.
+- **Done 2026-10-22:** Added `ErrorBoundary`, `PageErrorFallback`, and `AppErrorFallback` in `src/components/layout/ErrorBoundary.jsx`, wrapped page children in `Layout.jsx` (resetting on pathname change and rendering full-screen pages inside standard site chrome when crashed) and the app root in `App.jsx`. Verified in Edge against `localhost:5173` in both Hebrew and English with temporary throws before removing them.
 
-#### [ ] T11. "Float console" button crashes the experiment page ([#14](https://github.com/avi720/experimenta/issues/14))
+#### [x] T11. "Float console" button crashes the experiment page ([#14](https://github.com/avi720/experimenta/issues/14))
 - **Where:** `src/components/simulation/workspace/WorkspaceShell.jsx:130-147`; `src/components/simulation/workspace/FloatingWindowsManager.jsx:27`; `src/components/simulation/FloatingWindow.jsx:25,82`
 - **Issue:** `FloatingWindowsManager` is rendered without `floatingWindows`, so `floatingWindows.console` throws; it also receives `onStep`/`onClose` instead of `onStepForward`/`onToggleConsole`, and `FloatingWindow` expects `position`/`onPositionChange` but receives `defaultPosition`/`defaultSize`.
 - **Acceptance:** Clicking the console's float (external-link) button opens a draggable floating console with working controls and can be closed back into the side panel, with no console errors; verified in a browser.
+- **Done 2026-10-23:** Wired `floatingWindows`, `onStepForward`, and `onToggleConsole` in `WorkspaceShell.jsx` → `FloatingWindowsManager.jsx`, and updated `FloatingWindow.jsx` to support internal position/minimized state initialized from `defaultPosition`/`defaultSize` with viewport clamping. Verified in Edge against `localhost:5173`.
 
-#### [ ] T12. Selecting a preset never changes the parameters ([#15](https://github.com/avi720/experimenta/issues/15))
+#### [x] T12. Selecting a preset never changes the parameters ([#15](https://github.com/avi720/experimenta/issues/15))
 - **Where:** `src/components/simulation/parameters/PresetsDropdown.jsx:32`; `src/components/hooks/*Simulation/use*Parameters.jsx:45`; `src/pages/FreeFallExperiment.jsx:88`
 - **Issue:** **Confirmed** (Node run). The dropdown's value is the array index, but `applyPreset` looks presets up by `name_he`/`name_en`, so `applyPreset("0")` performs 0 state updates. Free Fall also passes `applyPreset=` where `WorkspaceShell` expects `onApplyPreset`.
 - **Acceptance:** Choosing a preset (e.g. "Moon" on Free Fall) sets every parameter value defined in that preset in the panel, verified in a browser on each experiment that has presets.
+- **Done 2026-10-23:** `useExperimentParameters.applyPreset` resolves presets by numeric index, preset name (`name_he`/`name_en`), or preset object, coerces numeric values, and `LabWorkspace` passes `onApplyPreset={applyPreset}` to `WorkspaceShell`. Verified in Edge on Free Fall ("Moon" sets `g = 1.62`).
 
-#### [ ] T13. Save and Export buttons are always disabled ([#16](https://github.com/avi720/experimenta/issues/16))
+#### [x] T13. Save and Export buttons are always disabled ([#16](https://github.com/avi720/experimenta/issues/16))
 - **Where:** `src/components/simulation/workspace/WorkspaceShell.jsx:34-35`; `src/pages/FreeFallExperiment.jsx:89-90`
 - **Issue:** **Confirmed.** On production Free Fall, "שמור" and "ייצא" are `disabled` before and after a completed run. `canSave`/`canExport` default to false and only the crashing SHO page passes them.
 - **Acceptance:** After a completed run, Export downloads a CSV of the run, and Save (when signed in) creates a row visible on the Results page; guests get a sign-in prompt for Save. Verified in a browser.
+- **Done 2026-10-23:** `LabWorkspace` sets `canSave` and `canExport` whenever `simulationData.length > 0`, and `useExperimentPersistence.exportData` formats nested object values (such as Free Fall's `{ y }`) cleanly into CSV columns. Verified CSV download in Edge against `localhost:5173`.
 
-#### [ ] T14. Current-values panel always shows "No data" ([#17](https://github.com/avi720/experimenta/issues/17))
+#### [x] T14. Current-values panel always shows "No data" ([#17](https://github.com/avi720/experimenta/issues/17))
 - **Where:** `src/components/simulation/SimulationConsole.jsx:32-34,80`; `src/components/simulation/SimulationConsoleComp/CurrentValuesDisplay.jsx`
 - **Issue:** The console passes `dataPoint=` while `CurrentValuesDisplay` reads `displayedDataPoint`; the lookup also uses an exact float match (±1e-4) and falls back to `data[0]`.
 - **Acceptance:** During playback and while scrubbing, the console shows time/position/velocity values that match the displayed frame; verified in a browser on Free Fall.
+- **Done 2026-10-23:** `SimulationConsole` now uses `displayedDataPoint` (with a closest-time fallback) and passes both `displayedDataPoint` and `dataPoint` to `CurrentValuesDisplay`, which formats numeric and `{ y }` values cleanly. Verified in Edge on Free Fall, SHO, and Quantum Tunneling.
 
-#### [ ] T15. Free-fall drag acts in the wrong direction ([#18](https://github.com/avi720/experimenta/issues/18))
+#### [x] T15. Free-fall drag acts in the wrong direction ([#18](https://github.com/avi720/experimenta/issues/18))
 - **Where:** `src/components/simulation/engines/freeFallEngine.jsx:47`
 - **Issue:** **Confirmed.** Acceleration is computed as `−g + (c/m)·v`; it should oppose velocity (`−g − (c/m)·v`). At t = 5 s with c = 1 the engine reports −19.55 m/s² against a numeric dv/dt of −0.066. Clamping velocity to 0 on impact also drops the impact speed and kinetic energy from the data.
 - **Acceptance:** A unit test shows the engine's reported acceleration equals the numeric derivative of its velocity within 1e-3 for c ∈ {0, 0.5, 1}, and the final data point reports the impact velocity.
+- **Done 2026-10-22:** `freeFallEngine.test.js` covers both clauses. The final point is now the exact impact moment (time, y = 0, impact velocity and kinetic energy), not a zeroed "at rest" state. Also fixed on the same lines: `h0 = 0` / `v0 = 0` are no longer replaced by defaults (`parseFloat(x) || default`), and the two hot-path `console.log` calls in this engine were removed (part of T27, which stays open).
 
-#### [ ] T16. Results page presents regenerated data as the user's saved run ([#19](https://github.com/avi720/experimenta/issues/19))
+#### [x] T16. Results page presents regenerated data as the user's saved run ([#19](https://github.com/avi720/experimenta/issues/19))
 - **Where:** `src/pages/Results.jsx:151-203`; `src/components/hooks/simulation/useExperimentPersistence.jsx:25-30`
-- **Issue:** `saveRun` persists only parameters and `samples_count` (`results_url` is never written), so Results rebuilds "experimental" data with its own simplified physics: free fall ignores v0 and drag, SHO ignores damping, `parameters.h0 || 50` turns h0 = 0 into 50, and quantum-tunneling / double-slit runs produce `{time}`-only points with empty charts. The theory curve does use v0, so "theory vs experiment" shows invented discrepancies.
+- **Issue:** **Deferred 2026-10-23 — needs owner input on Open Question 2** (whether saving a run should store the actual simulation samples or recompute from the real engine on Results). `saveRun` persists only parameters and `samples_count` (`results_url` is never written), so Results rebuilds "experimental" data with its own simplified physics: free fall ignores v0 and drag, SHO ignores damping, `parameters.h0 || 50` turns h0 = 0 into 50, and quantum-tunneling / double-slit runs produce `{time}`-only points with empty charts. The theory curve does use v0, so "theory vs experiment" shows invented discrepancies.
 - **Acceptance:** For a saved run of each experiment, the Results charts and table show exactly the samples the simulation produced (or, per Open Question 2, Results clearly states it shows a recomputation from the same engine, never a different formula); verified by saving a Free Fall run with v0 ≠ 0 and drag > 0 and comparing Results to the in-page charts.
+- **Done 2026-10-24:** Per OQ 2 (Option B), `useExperimentPersistence.saveRun` now serializes the actual simulation samples (preserving exact initial and final/impact points, bounded to 500 samples) into `experiment_runs.results_url`, and `Results.jsx` parses and renders those exact stored samples (with a fallback to the real registry engine only for legacy rows that predate sample storage). Covered by `useExperimentPersistence.test.js` and verified in Edge by saving a Free Fall run with `h0 = 10, v0 = -5, c = 0.5` and inspecting the Results table and chart.
 
 ---
 
 ### Phase 2 — Important (correctness & integrity)
 
-#### [ ] T17. Remove the dead simulation hooks and components ([#20](https://github.com/avi720/experimenta/issues/20))
+#### [x] T17. Remove the dead simulation hooks and components ([#20](https://github.com/avi720/experimenta/issues/20))
 - **Where:** `src/components/hooks/simulation/useSimulationEngine.jsx` (162 lines, header says unused), `useSimulationControls.jsx` (65, header says unused), `useSimulationState.jsx` (39), `parameters/useParameterValidation.jsx` (116, only imported by the dead `useSimulationState`); `src/components/simulation/workspace/ExperimentCanvas.jsx` (an 8-line div that ignores its props)
 - **Issue:** Grep finds 0 live importers for ~380 lines that sit next to the live hooks with near-identical names (`useSimulationEngine` vs `useSimulationEngineLogic`, `useSimulationControls` vs `useSimulationControlsLogic`), which is exactly how the prop-name mismatches in Phase 1 happened. Removing them first shrinks the surface for T18–T20.
 - **Acceptance:** The listed files are deleted, `npm run build` and `npm run lint` pass, and all four experiment pages still load in a browser.
+- **Done 2026-10-23:** Deleted all 5 dead files and inlined the canvas wrapper into `WorkspaceShell.jsx`. Verified via `npm run lint`, `npm run build`, and browser verification of all 4 experiments.
 
-#### [ ] T18. Replace four copy-paste experiment pages with one registry-driven page ([#21](https://github.com/avi720/experimenta/issues/21))
+#### [x] T18. Replace four copy-paste experiment pages with one registry-driven page ([#21](https://github.com/avi720/experimenta/issues/21))
 - **Where:** `src/pages/FreeFallExperiment.jsx`, `ShoExperiment.jsx`, `QuantumTunnelingExperiment.jsx`, `DoubleSlitExperiment.jsx`; slug→page maps in `src/components/layout/app-header/ExperimentsDropdown.jsx:16-25`, `src/components/pagesComponents/lab/labConstants.jsx:35-49`; full-screen page lists in `src/Layout.jsx:25-28` and `src/components/layout/AppFooter.jsx:8-15`; slug branching in `src/pages/Results.jsx:177-188`
 - **Issue:** Four pages wire the same `WorkspaceShell` with four different prop vocabularies — the root cause of T9, T12 and T13. Adding an experiment requires edits in 4+ places (two lists still name a non-existent `LabWorkspace` page), and the DB `engine` / `visualization_type` columns are ignored at runtime. Depends on Open Question 1.
 - **Acceptance:** Adding a new experiment requires only a template row plus one registry entry (engine step function + scene); all four existing experiments run through the same page component; no slug→page map exists outside the registry; verified by grep and by running all four in a browser.
+- **Done 2026-10-23:** Created `src/components/simulation/experimentRegistry.js` and `src/pages/LabWorkspace.jsx`, deleted the 4 duplicate experiment page files, and replaced all `slugToPageMap` and full-screen page arrays with registry-derived helpers (`getExperimentPageUrl`, `FULL_SCREEN_PAGES`). Verified by `git grep` and by running all 4 experiments in Edge against `localhost:5173` (`Results.jsx` sample regeneration stays tracked under T16 / OQ 2; Double Slit stays in static mode per OQ 12).
 
-#### [ ] T19. Collapse the per-experiment parameter and simulation hooks into one generic hook ([#22](https://github.com/avi720/experimenta/issues/22))
+#### [x] T19. Collapse the per-experiment parameter and simulation hooks into one generic hook ([#22](https://github.com/avi720/experimenta/issues/22))
 - **Where:** `src/components/hooks/freeFallSimulation/*`, `shoSimulation/*`, `quantumTunnelingSimulation/*`
 - **Issue:** **Confirmed** (diff). The three `use*Parameters` hooks (59/62/57 lines) differ by 8 and 2 lines; the three `use*Simulation` hooks (118/101/74) share ~70% of their skeleton but each is wired differently (SHO reads `.experiment`, QT destructures keys that do not exist, only Free Fall passes parameters).
 - **Acceptance:** One parameters hook and one simulation hook serve every experiment; the per-experiment hook folders are gone; all four experiments behave as after Phase 1 in a browser.
+- **Done 2026-10-23:** Created `src/components/hooks/simulation/useExperimentParameters.jsx` and `useExperimentSimulation.jsx`, and deleted `freeFallSimulation/`, `shoSimulation/`, and `quantumTunnelingSimulation/`. Verified in Edge across all 4 experiments.
 
-#### [ ] T20. Remove pass-through simulation layers ([#23](https://github.com/avi720/experimenta/issues/23))
+#### [x] T20. Remove pass-through simulation layers ([#23](https://github.com/avi720/experimenta/issues/23))
 - **Where:** `src/components/hooks/simulation/useSimulationControlsLogic.jsx` (99 lines); `useSimulationDataDisplay.jsx` (23 lines); `handleStart`/`handlePause`/… wrappers in `src/components/hooks/freeFallSimulation/useFreeFallSimulation.jsx`
 - **Issue:** Every function in `useSimulationControlsLogic` only forwards to the manager, which ignores the `parameters`/`maxSimulationTime`/`userDt` it forwards; its `isPlaying`/`playbackTime` inputs and `canContinue` output are unused. `useSimulationDataDisplay` is a memo around one call, and the Free Fall wrappers only add logging. Each extra hop is another place for a signature mismatch (T2).
 - **Acceptance:** Page → simulation hook → manager/engine is at most two hook layers deep, with no function whose body only forwards its arguments; verified by reading the call chain and by running all four experiments.
+- **Done 2026-10-23:** Deleted `useSimulationControlsLogic.jsx` and `useSimulationDataDisplay.jsx`; `LabWorkspace` calls `useExperimentSimulation`, which talks directly to `useSimulationManager` and `useExperimentPersistence`.
 
 #### [ ] T21. Standardise data fetching on TanStack Query ([#24](https://github.com/avi720/experimenta/issues/24))
 - **Where:** `src/components/hooks/useAppData.jsx:18` (TanStack); manual `useEffect` fetchers in `src/components/hooks/useLabData.jsx:8-24`, `adminExperiments/useExperimentListFetching.jsx:8-19`, `experimentForm/useExperimentDataLoading.jsx:45`, `src/pages/Results.jsx:121-122`
@@ -390,10 +410,11 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 - **Issue:** Props and return keys that no one provides or consumes; status vocabulary differs across files (`initializing` never set, `ended` vs `completed`); `shoEngine` calls `m.toString()` (throws on null) and detects critical damping with float equality; SHO resets on parameter change but Free Fall shows stale results after edits; Double Slit hard-codes defaults in two places.
 - **Acceptance:** One status enum is used everywhere; every prop passed is consumed; changing a parameter after a run clears stale results on every experiment; SHO critical damping is detected with a tolerance (unit test).
 
-#### [ ] T64. Replace dynamic Tailwind class in the experiment side panel ([#67](https://github.com/avi720/experimenta/issues/67))
+#### [x] T64. Replace dynamic Tailwind class in the experiment side panel ([#67](https://github.com/avi720/experimenta/issues/67))
 - **Where:** `src/components/simulation/workspace/ExperimentSidePanel.jsx:49`
 - **Issue:** `border-${isRTL ? 'r' : 'l'}` cannot be detected by the Tailwind JIT, so the border class may be missing from the CSS.
 - **Acceptance:** The panel's separating border renders in both languages in a production build.
+- **Done 2026-10-23:** Replaced `border-${isRTL ? 'r' : 'l'}` with static `${isRTL ? 'left-0 border-r' : 'right-0 border-l'}` in `ExperimentSidePanel.jsx`.
 
 #### [ ] T65. Make `npm run typecheck` meaningful or remove it ([#68](https://github.com/avi720/experimenta/issues/68))
 - **Where:** `jsconfig.json:16-17`; `package.json:12`
@@ -434,6 +455,7 @@ Items that surfaced during the audit but need a product, security, or business d
 1. **One generic experiment page?** Should the four experiment pages be replaced by a single page (e.g. `/lab/:slug`) driven by the template's `engine` column and a registry? This decides whether Phase 1 patches the four pages or Phase 2 (T18–T20) replaces them first.
    - **Answered 2026-10-22: yes.** Build the generic page first (T17 → T18–T20), and satisfy T1–T5, T9 and T11–T14 through it instead of patching the four pages. T6 and T15 (physics fixes) still land before or with it.
 2. **What is a saved run?** Should saving store the actual simulation samples (jsonb or Supabase Storage via `results_url`), or should Results stop presenting data as "the user's run" and instead re-run the same engine on the saved parameters? (T16)
+   - **Answered 2026-10-24:** Store the actual simulation samples when saving a run so opening Results always displays the exact original dataset consistently. Implemented in `useExperimentPersistence.jsx` + `Results.jsx` (T16).
 3. **Is `access_level` real gating?** If `registered`/`premium` must be enforced, it needs a server-side policy and an admin field; if not, should the column and UI be removed? Should inactive templates be hidden from anonymous visitors? (T38, T39)
 4. **Admin bootstrap:** Is "Confirm email" ON in production Supabase Auth? Keep the `admin_emails` auto-promotion, or promote admins manually with SQL and drop the owner email from the migration? (T37)
 5. **Should admins be able to create new experiments?** Experiment pages are hard-coded per slug and the engine field is commented out. If creation is not meant to work, should the form become edit-only and block slug renames (a rename breaks the per-slug pages)? (T32)
@@ -443,10 +465,13 @@ Items that surfaced during the audit but need a product, security, or business d
 9. **Planned features behind unused packages:** are Stripe/subscriptions (the schema has `subscription_tier`), PDF/PNG export (the Dashboard advertises data export), maps, rich-text editing or drag-and-drop on the roadmap? If not, all of them go in T29.
 10. **Legal and placeholder content:** who reviews Privacy/Terms, and should the draft banners stay in production until then? Should the footer's placeholder links and social icons be removed until they have real targets? (T41, T48)
 11. **Simulation model:** keep pre-compute-then-playback, or step in real time? Should `t_max` and the sampling interval become admin-defined parameters (no seeded experiment has `t_max` today)? (T5, T24)
+   - **Answered 2026-10-22:** keep pre-compute-then-playback. Each engine gets a default `t_max` in the experiment registry; a `t_max` parameter on the template, when present, overrides it.
 12. **Double Slit:** is it meant to be static (no time axis)? If so, its charts need intensity-vs-position axes; should it gain slit-width / single-slit envelope parameters?
+   - **Open 2026-10-22 — owner wants a product decision first** on how the experiment should look and behave for the user before any Double Slit fix. Until then, Double Slit-specific work under T1, T9, T11–T14 and T18 is deferred; the generic page must not break the current Double Slit page.
 13. **Quantum tunneling "measurement/collapse":** implement it in the engine, or delete the half-built scene branch? (T49)
 14. **Type checking:** invest in real checks (JSDoc or TypeScript on `lib`, `entities`, hooks and engines), or delete the script and the TypeScript devDependencies? (T65)
 15. **Tests first:** Vitest unit tests for the engines, a Playwright smoke test of the guest flow (Dashboard → Lab → run an experiment), or both? (T45)
+   - **Answered 2026-10-22:** Vitest unit tests now; Playwright is out of scope for this round.
 16. **Base44 conventions:** migrate away from the entity shim's Base44-style API (`list('-created_date')`, `filter()`), the `created_date`/`updated_date` columns and text `parameters_json`, or keep them for stability? (T21, T59)
 17. **Camera controls:** is the custom mouse mapping (left = pan, right = rotate) intentional, or can scenes use three's standard OrbitControls behaviour? (T62)
 

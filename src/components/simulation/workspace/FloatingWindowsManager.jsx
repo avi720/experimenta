@@ -6,7 +6,7 @@ import SimulationCharts from "../charts/SimulationCharts";
 export default function FloatingWindowsManager({
     experiment,
     isRTL,
-    floatingWindows,
+    floatingWindows = {},
     simulationState,
     onStart,
     onPause,
@@ -17,6 +17,7 @@ export default function FloatingWindowsManager({
     onScrub,
     currentTime,
     playbackTime,
+    displayedDataPoint,
     simulationData,
     maxSimulationTime,
     onToggleConsole,
@@ -24,7 +25,7 @@ export default function FloatingWindowsManager({
 }) {
     return (
         <>
-            {floatingWindows.console && (
+            {floatingWindows?.console && (
                 <FloatingWindow
                     title={isRTL ? "קונסולת סימולציה" : "Simulation Console"}
                     defaultPosition={{ x: 20, y: 100 }}
@@ -43,6 +44,7 @@ export default function FloatingWindowsManager({
                         onScrub={onScrub}
                         currentTime={currentTime}
                         playbackTime={playbackTime}
+                        displayedDataPoint={displayedDataPoint}
                         simulationData={simulationData}
                         experiment={experiment}
                         isRTL={isRTL}
@@ -51,7 +53,7 @@ export default function FloatingWindowsManager({
                 </FloatingWindow>
             )}
 
-            {floatingWindows.charts && (
+            {floatingWindows?.charts && (
                 <FloatingWindow
                     title={isRTL ? "גרפים" : "Charts"}
                     defaultPosition={{ x: 440, y: 100 }}
