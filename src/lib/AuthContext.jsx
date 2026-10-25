@@ -72,6 +72,7 @@ export const AuthProvider = ({ children }) => {
 
   const signIn = useCallback((credentials) => User.signIn(credentials), []);
   const signUp = useCallback((details) => User.signUp(details), []);
+  const signInWithGoogle = useCallback((redirectPath) => User.signInWithGoogle(redirectPath), []);
 
   const logout = useCallback(async () => {
     profileRequestId.current++;
@@ -110,12 +111,13 @@ export const AuthProvider = ({ children }) => {
     setGuestLocale,
     signIn,
     signUp,
+    signInWithGoogle,
     logout,
     navigateToLogin,
     updatePassword,
     updateProfile,
     refreshUser,
-  }), [session, user, isLoadingAuth, authError, isPasswordRecovery, guestLocale, signIn, signUp, logout, navigateToLogin, updatePassword, updateProfile, refreshUser]);
+  }), [session, user, isLoadingAuth, authError, isPasswordRecovery, guestLocale, signIn, signUp, signInWithGoogle, logout, navigateToLogin, updatePassword, updateProfile, refreshUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
