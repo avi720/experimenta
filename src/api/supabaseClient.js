@@ -9,10 +9,25 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+// In environments where native WebSocket is not available (e.g. headless unit tests or Node < 22),
+// provide a dummy transport so client instantiation doesn't throw.
+const realtimeOptions =
+  typeof globalThis.WebSocket === 'undefined'
+    ? {
+        transport: class DummyWebSocket {
+          addEventListener() {}
+          removeEventListener() {}
+          send() {}
+          close() {}
+        },
+      }
+    : undefined;
+
 export const supabase = createClient(supabaseUrl ?? 'http://localhost', supabaseAnonKey ?? 'missing-anon-key', {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
   },
+  ...(realtimeOptions ? { realtime: realtimeOptions } : {}),
 });
