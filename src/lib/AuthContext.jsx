@@ -5,6 +5,30 @@ import { User } from '@/entities/User';
 
 const AuthContext = createContext();
 
+export const GUEST_LOCALE_STORAGE_KEY = 'experimenta_guest_locale';
+
+export function readStoredGuestLocale(storage = typeof window !== 'undefined' ? window.localStorage : null) {
+  try {
+    const val = storage?.getItem(GUEST_LOCALE_STORAGE_KEY);
+    return val === 'he' || val === 'en' ? val : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeStoredGuestLocale(locale, storage = typeof window !== 'undefined' ? window.localStorage : null) {
+  try {
+    if (!storage) return;
+    if (locale === 'he' || locale === 'en') {
+      storage.setItem(GUEST_LOCALE_STORAGE_KEY, locale);
+    } else {
+      storage.removeItem(GUEST_LOCALE_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore storage quota or private-mode errors
+  }
+}
+
 // Minimal user built from the auth session, used if the profile row cannot be loaded.
 const userFromSession = (session) => ({
   id: session.user.id,
@@ -21,15 +45,21 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
-  // Guests never persist anything, so their language choice lives in memory only.
-  const [guestLocale, setGuestLocale] = useState(null);
+  // Persist guest language preference in localStorage (holds no personal data).
+  const [guestLocale, setGuestLocaleState] = useState(() => readStoredGuestLocale());
   // Only the latest profile request may update state (sign-in/out can overlap).
   const profileRequestId = useRef(0);
+
+  const setGuestLocale = useCallback((nextLocale) => {
+    writeStoredGuestLocale(nextLocale);
+    setGuestLocaleState(nextLocale);
+  }, []);
 
   const loadProfile = useCallback(async (nextSession) => {
     const requestId = ++profileRequestId.current;
     if (!nextSession?.user) {
       setUser(null);
+      setAuthError(null);
       return;
     }
     try {
@@ -40,8 +70,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       if (requestId !== profileRequestId.current) return;
       console.error('Failed to load user profile:', error);
-      setUser(userFromSession(nextSession));
-      setAuthError({ type: 'profile_load_failed', message: error.message });
+      setUser((prev) => prev?.id === nextSession.user.id ? prev : userFromSession(nextSession));
+      setAuthError({ type: 'profile_load_failed', message: error.message || 'Failed to load user profile' });
     }
   }, []);
 
@@ -79,6 +109,7 @@ export const AuthProvider = ({ children }) => {
     await User.logout();
     setUser(null);
     setSession(null);
+    setAuthError(null);
   }, []);
 
   const navigateToLogin = useCallback(() => {
@@ -117,7 +148,7 @@ export const AuthProvider = ({ children }) => {
     updatePassword,
     updateProfile,
     refreshUser,
-  }), [session, user, isLoadingAuth, authError, isPasswordRecovery, guestLocale, signIn, signUp, signInWithGoogle, logout, navigateToLogin, updatePassword, updateProfile, refreshUser]);
+  }), [session, user, isLoadingAuth, authError, isPasswordRecovery, guestLocale, setGuestLocale, signIn, signUp, signInWithGoogle, logout, navigateToLogin, updatePassword, updateProfile, refreshUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

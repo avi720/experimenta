@@ -58,7 +58,11 @@ export function createEntity(table, { onChange } = {}) {
     },
 
     async delete(id) {
-      afterWrite(unwrap(await supabase.from(table).delete().eq('id', id)));
+      const deletedRows = unwrap(await supabase.from(table).delete().eq('id', id).select('id'));
+      if (!Array.isArray(deletedRows) || deletedRows.length === 0) {
+        throw new Error(`Delete failed: row "${id}" in "${table}" was not found or access was denied.`);
+      }
+      return afterWrite(deletedRows[0]);
     },
   };
 }

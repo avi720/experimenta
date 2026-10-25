@@ -262,77 +262,87 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 
 ### Phase 3 — UX & Localisation (user-facing behaviour, i18n & error handling)
 
-#### [ ] T36. Admin list "Export data" button does nothing ([#39](https://github.com/avi720/experimenta/issues/39))
+#### [x] T36. Admin list "Export data" button does nothing ([#39](https://github.com/avi720/experimenta/issues/39))
 - **Where:** `src/components/hooks/useAdminExperiments.jsx:26`; `src/pages/AdminExperiments.jsx:61`
 - **Issue:** `useAdminExperiments` destructures `exportExperiments` from `useExperimentActions`, which never returns it, so the button's `onClick` is `undefined`.
 - **Acceptance:** The button either exports the currently filtered templates as a file that re-imports cleanly, or is removed; verified as an admin.
+- **Done 2026-10-25:** Implemented `exportExperiments` in `useExperimentActions.jsx` to export the currently filtered templates (stripping DB-managed fields) as a formatted JSON file and disabled the button when the filtered list is empty. Covered by `useExperimentActions.test.js`.
 
-#### [ ] T40. Results ignores the user's language, hides load errors and offers dead controls ([#43](https://github.com/avi720/experimenta/issues/43))
+#### [x] T40. Results ignores the user's language, hides load errors and offers dead controls ([#43](https://github.com/avi720/experimenta/issues/43))
 - **Where:** `src/pages/Results.jsx:109` (`isRTL = settings?.locale_default === 'he'`), `:128-131` (catch only logs), `:261,265-269,327-340` (date filter, row delete, `compareRuns`)
 - **Issue:** Results reads the site default locale instead of the user/guest choice that every other page honours, so English users see Hebrew; a failed load renders as "no saved results"; the date-range filter renders but does nothing, row delete only mutates the regenerated view (implying an edit that is not persisted), and `chartConfig.compareRuns` is unused.
 - **Acceptance:** Results follows the active language; a failed load shows an error with retry; every visible control either works (date filter narrows the list) or is removed; verified in a browser in both languages and with the network offline.
+- **Done 2026-10-25:** Switched `Results.jsx` to `useAppData().isRTL`, added a localized `loadError` state with a Retry button, implemented `filterRunsByCriteria` for the `today` / `week` / `month` date-range filter, and removed the non-persisted per-row delete column and unused `compareRuns` state. Covered by `Results.test.js`.
 
 #### [ ] T41. Content pages ignore English and several are draft copy ([#44](https://github.com/avi720/experimenta/issues/44))
 - **Where:** `src/pages/AboutUs.jsx:7`, `WhatIsNew.jsx`, `Resources.jsx:34`, `PrivacyPolicy.jsx:7,27,156-161`, `TermsOfService.jsx:7`, `AdminExperiments.jsx`, `AdminExperimentForm.jsx`
-- **Issue:** **Confirmed** (grep). Seven pages hard-code `dir="rtl"` and Hebrew text, so they stay Hebrew in English mode. Privacy and Terms show a visible "draft – needs legal review" banner; the privacy policy claims cookie-based usage statistics that do not exist and omits Supabase and Vercel as processors; What's New is a hard-coded list from Nov 2024–Jan 2025; Resources lists non-link items. Depends on Open Questions 7 and 10.
+- **Issue:** **Deferred 2026-10-25 — needs owner input on Open Questions 7 and 10.** **Confirmed** (grep). Seven pages hard-code `dir="rtl"` and Hebrew text, so they stay Hebrew in English mode. Privacy and Terms show a visible "draft – needs legal review" banner; the privacy policy claims cookie-based usage statistics that do not exist and omits Supabase and Vercel as processors; What's New is a hard-coded list from Nov 2024–Jan 2025; Resources lists non-link items. Depends on Open Questions 7 and 10.
 - **Acceptance:** Each listed page renders in the active language (or the owner records a Hebrew-only decision and the English toggle is hidden on them), and Privacy/Terms describe the actual processors and data use with no draft banner; verified in a browser.
 
 #### [ ] T42. UI strings are localised by 179 inline ternaries with no shared mechanism ([#45](https://github.com/avi720/experimenta/issues/45))
 - **Where:** repo-wide — 179 `isRTL ?` ternaries across 36 files; category label maps in 3 places; physical `mr-2`/`ml-2` spacing on icons
-- **Issue:** **Confirmed** (grep). There is no dictionary or translation layer; every component branches on `isRTL`, labels drift apart (T7), and RTL mirroring relies on physical margins. Every new string doubles the code path. Depends on Open Question 7.
+- **Issue:** **Deferred 2026-10-25 — needs owner input on Open Question 7.** **Confirmed** (grep). There is no dictionary or translation layer; every component branches on `isRTL`, labels drift apart (T7), and RTL mirroring relies on physical margins. Every new string doubles the code path. Depends on Open Question 7.
 - **Acceptance:** UI strings come from one per-language source (grep finds no `isRTL ? '` string ternaries in components), and icon spacing uses logical properties; switching language in a browser updates all chrome strings.
 
-#### [ ] T46. Guest language choice is lost on reload ([#49](https://github.com/avi720/experimenta/issues/49))
+#### [x] T46. Guest language choice is lost on reload ([#49](https://github.com/avi720/experimenta/issues/49))
 - **Where:** `src/lib/AuthContext.jsx:25`; `src/components/hooks/useAppData.jsx:38-51`
 - **Issue:** `guestLocale` lives only in React state, so a guest who switches to English gets Hebrew back after every refresh or deep link. Persisting a language preference in browser storage holds no personal data.
 - **Acceptance:** As a guest, choosing English and reloading any page keeps English; verified in a browser.
+- **Done 2026-10-25:** Persisted `guestLocale` in `localStorage` (`experimenta_guest_locale`) via `readStoredGuestLocale` / `writeStoredGuestLocale` in `AuthContext.jsx`. Verified in Chrome across full page reload and in `createEntity.test.js`.
 
-#### [ ] T47. Unknown URLs render a bare English 404 outside the app shell ([#50](https://github.com/avi720/experimenta/issues/50))
+#### [x] T47. Unknown URLs render a bare English 404 outside the app shell ([#50](https://github.com/avi720/experimenta/issues/50))
 - **Where:** `src/App.jsx:65`; `src/lib/PageNotFound.jsx:21-27,40,50`; `vercel.json`
 - **Issue:** The catch-all route renders without Layout (no header/footer), in English only although Hebrew is the default, its "Go Home" does a full reload via `window.location.href`, and its admin note still refers to "src/pages.config.js". Because every path rewrites to `index.html`, unknown URLs return HTTP 200.
 - **Acceptance:** `/no-such-page` shows a localized not-found page inside the normal header/footer, and its home link navigates without a full reload; verified in a browser in both languages.
+- **Done 2026-10-25:** Wrapped `<PageNotFound />` in `<LayoutWrapper currentPageName="PageNotFound">` in `src/App.jsx`, localized `PageNotFound.jsx` in Hebrew and English via `useAppData()`, removed the stale Base44 admin note, and replaced `window.location.href` with `<Link to="/">`. Verified in Chrome at `/no-such-page` in both languages.
 
 #### [ ] T48. Dead and placeholder links on content pages and footer ([#51](https://github.com/avi720/experimenta/issues/51))
 - **Where:** `src/pages/AboutUs.jsx:74` (`/contact`); `src/pages/Resources.jsx:84,104` (raw `<a href>`); `src/components/layout/AppFooter.jsx:26-51`
-- **Issue:** About links to `/contact`, which has no route (→ 404); Resources uses raw anchors that reload the whole SPA; the footer has 6 `#` placeholder links (NSF-style items such as "Research.gov") and 4 social icons that `preventDefault`. Depends on Open Question 10.
+- **Issue:** **Deferred 2026-10-25 — needs owner input on Open Question 10.** About links to `/contact`, which has no route (→ 404); Resources uses raw anchors that reload the whole SPA; the footer has 6 `#` placeholder links (NSF-style items such as "Research.gov") and 4 social icons that `preventDefault`. Depends on Open Question 10.
 - **Acceptance:** A link checker (or manual click-through) finds no link to a non-existent route or `#`, and internal links navigate without a full page reload.
 
 #### [ ] T49. Quantum tunneling barrier is effectively invisible ([#52](https://github.com/avi720/experimenta/issues/52))
 - **Where:** `src/components/simulation/scenes/QuantumTunnelingScene.jsx:248,233-244,276-290`
-- **Issue:** The scene reads `debug.barrier_width_nm` while the engine emits `barrier_width_um`, so it falls back to `0.005 × 0.25` and sets `scale.x = 0.00125`. The `measurementResult` / `hasCollapsed` branch is dead because no engine produces those fields (Open Question 13).
+- **Issue:** ~~**Partial 2026-10-25** — Fixed barrier visual width scaling via `computeBarrierVisualWidth` (converting `barrier_width_um` / `parameters.L` from `µm` to `nm` before applying `VISUAL_L_SCALE_FACTOR` and updating on parameter change before playback); the `measurementResult` / `hasCollapsed` branch awaits owner decision on Open Question 13.~~ The scene reads `debug.barrier_width_nm` while the engine emits `barrier_width_um`, so it falls back to `0.005 × 0.25` and sets `scale.x = 0.00125`. The `measurementResult` / `hasCollapsed` branch is dead because no engine produces those fields (Open Question 13).
 - **Acceptance:** After T5/T9, the barrier's rendered width changes visibly with the barrier-width parameter; the collapse branch is either fed by the engine or removed.
 
 ---
 
-#### [ ] T51. Two toast systems are mounted; one can never show anything ([#54](https://github.com/avi720/experimenta/issues/54))
+#### [x] T51. Two toast systems are mounted; one can never show anything ([#54](https://github.com/avi720/experimenta/issues/54))
 - **Where:** `src/App.jsx:1-2,79-80`; `src/components/ui/toaster.jsx`, `toast.jsx`, `use-toast.jsx`, `sonner.jsx`
 - **Issue:** **Confirmed** (grep). Both the shadcn `<Toaster/>` and `<SonnerToaster/>` are rendered, but code only calls sonner's `toast()`; the shadcn trio is dead. `sonner.jsx` calls next-themes `useTheme` without a `ThemeProvider`.
 - **Acceptance:** One toast system is mounted and installed; grep finds no import of the other; toasts still appear (e.g. after an admin save) in a browser.
+- **Done 2026-10-25:** Removed `<Toaster />` from `src/App.jsx`, deleted `toaster.jsx`, `toast.jsx`, and `use-toast.jsx`, and set `theme="light"` directly in `src/components/ui/sonner.jsx`. Verified in Chrome.
 
-#### [ ] T52. Replace blocking alert/confirm dialogs with the app's dialog and toast UI ([#55](https://github.com/avi720/experimenta/issues/55))
+#### [x] T52. Replace blocking alert/confirm dialogs with the app's dialog and toast UI ([#55](https://github.com/avi720/experimenta/issues/55))
 - **Where:** `src/components/hooks/simulation/useExperimentPersistence.jsx:14,20,33,36,43,70`; `src/pages/Results.jsx:135,147`
 - **Issue:** Save/export/delete feedback uses `window.alert`/`window.confirm` (unstyled, not localized in direction, blocking), while the rest of the app uses sonner toasts and the alert-dialog component.
 - **Acceptance:** Grep finds no `alert(` / `confirm(` in `src/`; save, export and delete show in-app toasts/dialogs in the active language.
+- **Done 2026-10-25:** Replaced all `window.alert` and `window.confirm` calls in `useExperimentPersistence.jsx` and `Results.jsx` with localized `sonner` toasts (including a Sign-in action button when a guest clicks Save) and an `AlertDialog` for run deletion. Verified via `git grep`, unit tests, and Chrome.
 
-#### [ ] T55. Admin card and form small correctness issues ([#58](https://github.com/avi720/experimenta/issues/58))
+#### [x] T55. Admin card and form small correctness issues ([#58](https://github.com/avi720/experimenta/issues/58))
 - **Where:** `src/components/hooks/adminExperiments/useExperimentActions.jsx:29-32`; `src/components/pagesComponents/admin/AdminExperimentForm/ExperimentFormFloatingSaveButton.jsx:8-9`; `ExperimentFormHeaderActions.jsx:42`; `AdminExperimentCard.jsx:60`
 - **Issue:** `toggleActive` re-sends the whole row (all jsonb columns) and can overwrite a concurrent edit; the floating save button is both `type="submit"` and `onClick={handleSubmit}`; "Preview" opens `/lab?experiment=${slug}`, which Lab ignores; `DropdownMenuItem` is wrapped in `<Link>` (invalid `a > menuitem` nesting).
 - **Acceptance:** Toggling active sends only `is_active` (verified in the network panel); save fires once per click; Preview opens that experiment's page; the menu item is a single interactive element (axe DevTools reports no nested-interactive violation).
+- **Done 2026-10-25:** Updated `toggleActive` to send only `{ is_active: !experiment.is_active }`, removed duplicate `onClick={handleSubmit}` from `ExperimentFormFloatingSaveButton.jsx`, wired Preview in `ExperimentFormHeaderActions.jsx` to `getExperimentWorkspaceUrl(experiment.slug)`, and used `<DropdownMenuItem asChild><Link ...>` in `AdminExperimentCard.jsx`.
 
-#### [ ] T56. Data layer reports success on silent failures ([#59](https://github.com/avi720/experimenta/issues/59))
+#### [x] T56. Data layer reports success on silent failures ([#59](https://github.com/avi720/experimenta/issues/59))
 - **Where:** `src/entities/createEntity.js:60-62`; `src/api/supabaseClient.js:6-12`; `src/lib/AuthContext.jsx:40-45`
 - **Issue:** `delete()` does not select affected rows, so an RLS-filtered delete of 0 rows toasts "deleted"; missing `VITE_SUPABASE_*` env vars only log and build a client against `http://localhost` (contrary to the owner's no-masking rule); a profile-load failure silently downgrades an admin to `user` and sets an `authError` nobody reads.
 - **Acceptance:** Deleting a row the user may not delete shows an error; starting the app without the env vars fails with a clear message; a profile-load failure shows a visible error instead of silently removing admin access.
+- **Done 2026-10-25:** Updated `createEntity.delete` to select deleted rows and throw when 0 rows are affected; added `resolveSupabaseConfig` in `supabaseClient.js` to throw immediately when `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY` is missing; surfaced `authError` with a visible error banner and retry button in `Layout.jsx` and `ProtectedRoute` in `App.jsx`. Covered by `createEntity.test.js`.
 
-#### [ ] T57. Login page edge cases ([#60](https://github.com/avi720/experimenta/issues/60))
+#### [x] T57. Login page edge cases ([#60](https://github.com/avi720/experimenta/issues/60))
 - **Where:** `src/pages/Login.jsx:24,82-95`
 - **Issue:** Any signed-in user visiting `/Login?mode=recovery` sees the change-password form without a recovery token; the reset-password button has no submitting state and can be spammed; raw Supabase error messages are shown untranslated.
 - **Acceptance:** The recovery form appears only after a `PASSWORD_RECOVERY` event; the reset button is disabled while submitting; common auth errors show localized messages.
+- **Done 2026-10-25:** Restricted the password change form in `Login.jsx` to actual `isPasswordRecovery` events, added `isResettingPassword` loading/disabled state to the reset-password button, and added `localizeAuthError` for common Supabase Auth errors. Verified in Chrome and `Login.test.js`.
 
-#### [ ] T58. Results renders unguarded JSON from the database ([#61](https://github.com/avi720/experimenta/issues/61))
+#### [x] T58. Results renders unguarded JSON from the database ([#61](https://github.com/avi720/experimenta/issues/61))
 - **Where:** `src/pages/Results.jsx:156,230,467,470,577`
 - **Issue:** `JSON.parse(parameters_json)` runs during render without a guard, non-number values are rendered raw (an object value would crash React), and `<SelectItem value={null}>` relies on Radix tolerating `null`.
 - **Acceptance:** A run row with malformed `parameters_json` (inserted on a local/branch DB) shows a per-run error instead of crashing the page.
+- **Done 2026-10-25:** Added `parseRunParameters` and `formatDisplayValue` in `Results.jsx`, guarded all `parameters_json` parsing and value rendering, ensured non-null string `<SelectItem>` values, and displayed a localized per-run destructive alert when `parameters_json` is malformed. Covered by `Results.test.js`.
 
 #### [x] T64. Replace dynamic Tailwind class in the experiment side panel ([#67](https://github.com/avi720/experimenta/issues/67))
 - **Where:** `src/components/simulation/workspace/ExperimentSidePanel.jsx:49`

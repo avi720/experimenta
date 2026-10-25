@@ -1,7 +1,26 @@
-
 import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { createOrbitControls } from '../controls/orbitControls';
+
+const UM_TO_NM = 1000;
+const VISUAL_L_SCALE_FACTOR = 0.25;
+
+/**
+ * Computes the visual X-scale of the barrier mesh in scene units from `parameters.L` (µm)
+ * or `dataPointToRender.debug.barrier_width_um` (µm).
+ */
+export function computeBarrierVisualWidth(parameters = {}, dataPointToRender = null) {
+    const debug = dataPointToRender?.debug || {};
+    if (debug.barrier_width_nm !== undefined && !Number.isNaN(parseFloat(debug.barrier_width_nm))) {
+        const nm = parseFloat(debug.barrier_width_nm);
+        if (nm > 0) return nm * VISUAL_L_SCALE_FACTOR;
+    }
+    const rawUm = debug.barrier_width_um ?? parameters?.L;
+    const parsedUm = parseFloat(rawUm);
+    const widthUm = !Number.isNaN(parsedUm) && parsedUm > 0 ? parsedUm : 0.005;
+    const widthNm = widthUm <= 0.5 ? widthUm * UM_TO_NM : widthUm;
+    return widthNm * VISUAL_L_SCALE_FACTOR;
+}
 
 export default function QuantumTunnelingScene({ parameters, dataPointToRender }) {
     const mountRef = useRef(null);
@@ -20,14 +39,11 @@ export default function QuantumTunnelingScene({ parameters, dataPointToRender })
     const detectorRef = useRef(null);
     const detectorConeRef = useRef(null);
 
-    // Visual scaling factor for barrier width
-    const VISUAL_L_SCALE_FACTOR = 0.25;
-
     useEffect(() => {
         const mountElement = mountRef.current;
         if (!mountElement) return;
 
-        const DETECTOR_X_POSITION = -25; // Moved inside useEffect
+        const DETECTOR_X_POSITION = -25;
 
         // Scene setup
         const scene = new THREE.Scene();
@@ -113,29 +129,27 @@ export default function QuantumTunnelingScene({ parameters, dataPointToRender })
         });
         const barrier = new THREE.Mesh(barrierGeometry, barrierMaterial);
         barrier.position.set(0, 2, 0);
+        barrier.scale.x = computeBarrierVisualWidth(parameters, dataPointToRender);
         barrierRef.current = barrier;
         scene.add(barrier);
 
         // Detector (Camera-like shape)
         const detectorGroup = new THREE.Group();
-        detectorGroup.position.set(DETECTOR_X_POSITION, 3, -4); // Positioned to the side
+        detectorGroup.position.set(DETECTOR_X_POSITION, 3, -4);
 
-        // Detector body (rectangular)
         const detectorBodyGeometry = new THREE.BoxGeometry(2, 1.5, 3);
         const detectorBodyMaterial = new THREE.MeshLambertMaterial({ color: 0x606060 });
         const detectorBody = new THREE.Mesh(detectorBodyGeometry, detectorBodyMaterial);
         detectorGroup.add(detectorBody);
 
-        // Detector cone (lens/camera front)
         const detectorConeGeometry = new THREE.ConeGeometry(0.8, 2, 8);
         const detectorConeMaterial = new THREE.MeshLambertMaterial({ color: 0x404040 });
         const detectorCone = new THREE.Mesh(detectorConeGeometry, detectorConeMaterial);
-        detectorCone.position.set(0, -0.5, 2); // In front of the body
-        detectorCone.rotation.x = -Math.PI / 6 ; // Angled slightly downward
+        detectorCone.position.set(0, -0.5, 2);
+        detectorCone.rotation.x = -Math.PI / 6;
         detectorConeRef.current = detectorCone;
         detectorGroup.add(detectorCone);
 
-        // Detector support arm
         const armGeometry = new THREE.CylinderGeometry(0.2, 0.2, 5, 8);
         const armMaterial = new THREE.MeshLambertMaterial({ color: 0x505050 });
         const arm = new THREE.Mesh(armGeometry, armMaterial);
@@ -223,32 +237,29 @@ export default function QuantumTunnelingScene({ parameters, dataPointToRender })
         };
     }, []);
 
-    // Effect to update scene based on simulation data
+    // Effect to update scene based on simulation data and parameters
     useEffect(() => {
-        const DETECTOR_X_POSITION = -25; // Moved inside useEffect
         const allParticles = [incomingParticleRef.current, transmittedParticleRef.current, reflectedParticleRef.current];
         if (!allParticles.every(p => p) || !barrierRef.current || !detectorConeRef.current) return;
+
+        // Always update barrier width when parameters or dataPointToRender change
+        const barrierWidthVisual = computeBarrierVisualWidth(parameters, dataPointToRender);
+        barrierRef.current.scale.x = barrierWidthVisual;
+        const barrierLeftEdge = -barrierWidthVisual / 2;
         
         if (dataPointToRender) {
             const { position, transmission, reflection, time, measurementResult, hasCollapsed } = dataPointToRender;
-            const simParams = dataPointToRender.debug || parameters || {};
 
             // Update detector appearance based on measurement result
             if (hasCollapsed && measurementResult) {
                 if (measurementResult === 'reflected') {
-                    detectorConeRef.current.material.color.setHex(0xffa500); // Orange for detection
+                    detectorConeRef.current.material.color.setHex(0xffa500);
                 } else if (measurementResult === 'transmitted') {
-                    detectorConeRef.current.material.color.setHex(0x00ff00); // Green for no detection
+                    detectorConeRef.current.material.color.setHex(0x00ff00);
                 }
             } else {
-                detectorConeRef.current.material.color.setHex(0x404040); // Default gray
+                detectorConeRef.current.material.color.setHex(0x404040);
             }
-
-            // Barrier properties
-            const L = parseFloat(simParams.barrier_width_nm || parameters.L) || 10;
-            const barrierWidthVisual = L * VISUAL_L_SCALE_FACTOR;
-            barrierRef.current.scale.x = barrierWidthVisual;
-            const barrierLeftEdge = -barrierWidthVisual / 2;
 
             // Visibility control
             const isSimulationActive = time > 0;
@@ -275,30 +286,26 @@ export default function QuantumTunnelingScene({ parameters, dataPointToRender })
                 // Handle quantum collapse
                 if (hasCollapsed && measurementResult) {
                     if (measurementResult === 'transmitted') {
-                        // Only transmitted particle is visible
                         transmittedParticleRef.current.visible = true;
                         reflectedParticleRef.current.visible = false;
                         transmittedParticleRef.current.position.x = position;
-                        transmittedParticleRef.current.material.opacity = 1.0; // Full opacity for the "chosen" particle
+                        transmittedParticleRef.current.material.opacity = 1.0;
                     } else if (measurementResult === 'reflected') {
-                        // Only reflected particle is visible
                         transmittedParticleRef.current.visible = false;
                         reflectedParticleRef.current.visible = true;
                         const reflectedPosition = barrierLeftEdge - (position - barrierLeftEdge);
                         reflectedParticleRef.current.position.x = reflectedPosition;
-                        reflectedParticleRef.current.material.opacity = 1.0; // Full opacity for the "chosen" particle
+                        reflectedParticleRef.current.material.opacity = 1.0;
                     }
                 } else {
                     // Normal superposition state - both particles visible with probability-based opacity
                     transmittedParticleRef.current.visible = true;
                     reflectedParticleRef.current.visible = true;
 
-                    // Update transmitted particle
                     transmittedParticleRef.current.position.x = position;
                     const MIN_DISPLAY_OPACITY = 0.1;
                     transmittedParticleRef.current.material.opacity = Math.max(transmission, MIN_DISPLAY_OPACITY);
 
-                    // Update reflected particle
                     const reflectedPosition = barrierLeftEdge - (position - barrierLeftEdge);
                     reflectedParticleRef.current.position.x = reflectedPosition;
                     reflectedParticleRef.current.material.opacity = Math.max(reflection, MIN_DISPLAY_OPACITY);
@@ -306,9 +313,7 @@ export default function QuantumTunnelingScene({ parameters, dataPointToRender })
             }
 
         } else {
-            // Hide all particles if no data point is available (e.g., on reset)
             allParticles.forEach(p => p.visible = false);
-            // Reset detector appearance
             if (detectorConeRef.current) {
                 detectorConeRef.current.material.color.setHex(0x404040);
             }

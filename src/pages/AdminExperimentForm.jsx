@@ -182,7 +182,6 @@ export default function AdminExperimentForm() {
       {/* Floating Save Button */}
       <ExperimentFormFloatingSaveButton
         isSaving={isSaving}
-        handleSubmit={handleSubmit}
         hasChanges={hasChanges}
         isEditMode={isEditMode}
       />
