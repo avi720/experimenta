@@ -67,6 +67,17 @@ export const User = {
     return data;
   },
 
+  /** Redirects to Google; on return the session is picked up from the URL on /Login. */
+  async signInWithGoogle(redirectPath = '/') {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/Login?redirect=${encodeURIComponent(redirectPath)}`,
+      },
+    });
+    if (error) throw error;
+  },
+
   async resetPassword(email) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/Login?mode=recovery`,
