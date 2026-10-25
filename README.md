@@ -28,7 +28,7 @@ npm run dev
    - `experiment_runs` — saved simulation runs, private to their owner.
    - `app_settings` — global settings (single row).
    - Row Level Security on every table, plus seed data for the four built-in experiments.
-3. Emails listed in `public.admin_emails` become admins automatically when they sign up. To promote an existing user:
+3. Every new user signs up with `role = 'user'`; admins are promoted manually after they sign up:
    ```sql
    update public.profiles set role = 'admin' where email = 'someone@example.com';
    ```
