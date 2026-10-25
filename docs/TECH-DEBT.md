@@ -271,10 +271,11 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 - **Issue:** `useAdminExperiments` destructures `exportExperiments` from `useExperimentActions`, which never returns it, so the button's `onClick` is `undefined`.
 - **Acceptance:** The button either exports the currently filtered templates as a file that re-imports cleanly, or is removed; verified as an admin.
 
-#### [ ] T37. Admin auto-promotion trusts unverified sign-ups ([#40](https://github.com/avi720/experimenta/issues/40))
+#### [x] T37. Admin auto-promotion trusts unverified sign-ups ([#40](https://github.com/avi720/experimenta/issues/40))
 - **Where:** `supabase/migrations/20261022073402_baseline_schema.sql:65-91` (`handle_new_user`)
 - **Issue:** The trigger runs `AFTER INSERT ON auth.users` and sets `role = 'admin'` for any email in `admin_emails`, before the email is confirmed. In any environment where the owner account does not yet exist, or if "Confirm email" is off, whoever signs up with the listed address becomes admin. The owner's personal email is also committed in the migration. Production is protected today only because the owner row exists. Depends on Open Question 4.
 - **Acceptance:** Admin role is granted only to a confirmed email (or only manually); verified on a branch/local database by signing up with an `admin_emails` address without confirming and observing `role = 'user'`.
+- **Done 2026-10-25:** Admins are promoted manually only. Migration `20261025132942_drop_admin_emails.sql` makes `handle_new_user` always insert `role = 'user'` and drops `admin_emails`; verified in production with a rolled-back test insert into `auth.users` (profile created with `role = 'user'`).
 
 #### [ ] T38. Premium and inactive templates are readable by anyone through the API ([#41](https://github.com/avi720/experimenta/issues/41))
 - **Where:** `supabase/migrations/20261022073402_baseline_schema.sql:229-232` (`"templates: public read" … to anon, authenticated using (true)`)
@@ -458,6 +459,7 @@ Items that surfaced during the audit but need a product, security, or business d
    - **Answered 2026-10-24:** Store the actual simulation samples when saving a run so opening Results always displays the exact original dataset consistently. Implemented in `useExperimentPersistence.jsx` + `Results.jsx` (T16).
 3. **Is `access_level` real gating?** If `registered`/`premium` must be enforced, it needs a server-side policy and an admin field; if not, should the column and UI be removed? Should inactive templates be hidden from anonymous visitors? (T38, T39)
 4. **Admin bootstrap:** Is "Confirm email" ON in production Supabase Auth? Keep the `admin_emails` auto-promotion, or promote admins manually with SQL and drop the owner email from the migration? (T37)
+   - **Answered 2026-10-25:** Promote admins manually with SQL; `admin_emails` dropped (T37).
 5. **Should admins be able to create new experiments?** Experiment pages are hard-coded per slug and the engine field is commented out. If creation is not meant to work, should the form become edit-only and block slug renames (a rename breaks the per-slug pages)? (T32)
 6. **URL scheme:** keep the Base44 PascalCase paths (`/Lab`, `/AdminExperimentForm`), or move to kebab-case (`/lab`, `/experiments/free-fall`) with redirects? (T60)
 7. **i18n:** adopt a real translation mechanism and translate the seven Hebrew-only pages, or declare the site Hebrew-first and drop the English toggle from content pages? (T41, T42)
