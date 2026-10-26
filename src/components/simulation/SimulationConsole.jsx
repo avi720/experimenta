@@ -2,6 +2,7 @@ import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
+import { useTranslation } from "@/i18n";
 import SimulationControls from "./SimulationConsoleComp/SimulationControls";
 import SimulationTimeDisplay from "./SimulationConsoleComp/SimulationTimeDisplay";
 import CurrentValuesDisplay from "./SimulationConsoleComp/CurrentValuesDisplay";
@@ -43,9 +44,10 @@ export default function SimulationConsole({
     experiment,
     isRTL,
     onFloat,
-    maxSimulationTime,
     validationState
 }) {
+    const { t } = useTranslation(isRTL);
+
     // חישוב הזמן המקסימלי שחושב בפועל
     const maxAvailableTime = simulationData && simulationData.length > 0
         ? simulationData[simulationData.length - 1].time ?? 0
@@ -61,14 +63,14 @@ export default function SimulationConsole({
         <Card className="p-4">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-slate-900">
-                    {isRTL ? "קונסולת סימולציה" : "Simulation Console"}
+                    {t("workspace.simulationConsoleTitle")}
                 </h3>
                 {onFloat && (
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={onFloat}
-                        aria-label={isRTL ? "פתח קונסולה בחלון צף" : "Float simulation console"}
+                        aria-label={t("workspace.floatSimulationConsole")}
                         className="text-slate-500 hover:text-slate-700"
                     >
                         <ExternalLink className="w-4 h-4" />

@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Play, Pause, SkipBack, SkipForward, RotateCcw, Loader2 } from "lucide-react";
+import { useTranslation } from "@/i18n";
 
 export default function SimulationControls({
     simulationState,
@@ -18,6 +19,7 @@ export default function SimulationControls({
     isRTL,
     isValid = true
 }) {
+    const { t } = useTranslation(isRTL);
     const hasData = simulationData && simulationData.length > 0 && maxAvailableTime > 0;
     const isIdle = simulationState === 'idle';
     const isRunning = simulationState === 'running';
@@ -39,7 +41,7 @@ export default function SimulationControls({
                     size="icon"
                     onClick={onStepBackward}
                     disabled={disableStep || playbackTime === 0}
-                    aria-label={isRTL ? "צעד אחורה" : "Step backward"}
+                    aria-label={t("workspace.stepBackward")}
                     className="flex-shrink-0"
                 >
                     <SkipBack className="w-4 h-4" />
@@ -52,26 +54,26 @@ export default function SimulationControls({
                         disabled={!isValid}
                     >
                         <Play className="w-4 h-4" />
-                        {isRTL ? "התחל" : "Start"}
+                        {t("workspace.start")}
                     </Button>
                 ) : isCalculating ? (
                     <Button className="flex-grow flex items-center justify-center gap-2 bg-blue-600 text-white" disabled>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        {isRTL ? "מחשב..." : "Calculating..."}
+                        {t("workspace.calculating")}
                     </Button>
                 ) : isRunning && hasData ? (
                     <Button className="flex-grow flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white" onClick={onPause}>
                         <Pause className="w-4 h-4" />
-                        {isRTL ? "השהה" : "Pause"}
+                        {t("workspace.pause")}
                     </Button>
                 ) : isPaused && hasData ? (
                     <Button className="flex-grow flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={onContinue}>
                         <Play className="w-4 h-4" />
-                        {isRTL ? "המשך" : "Continue"}
+                        {t("workspace.continue")}
                     </Button>
                 ) : (
                     <Button className="flex-grow flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white" disabled={isCompleted}>
-                        {isRTL ? "הושלם" : "completed"}
+                        {t("workspace.completed")}
                     </Button>
                 )}
 
@@ -80,7 +82,7 @@ export default function SimulationControls({
                     size="icon"
                     onClick={onStepForward}
                     disabled={disableStep || playbackTime >= maxAvailableTime}
-                    aria-label={isRTL ? "צעד קדימה" : "Step forward"}
+                    aria-label={t("workspace.stepForward")}
                     className="flex-shrink-0"
                 >
                     <SkipForward className="w-4 h-4" />
@@ -91,7 +93,7 @@ export default function SimulationControls({
                     size="icon"
                     onClick={onReset}
                     disabled={disableReset}
-                    aria-label={isRTL ? "אפס סימולציה" : "Reset simulation"}
+                    aria-label={t("workspace.resetSimulation")}
                     className="flex-shrink-0"
                 >
                     <RotateCcw className="w-4 h-4" />
@@ -100,9 +102,7 @@ export default function SimulationControls({
 
             {!isValid && (
                 <p className="text-xs text-red-500 text-center" role="alert">
-                    {isRTL
-                        ? "יש לתקן את ערכי הפרמטרים לפני הפעלת הסימולציה"
-                        : "Please fix parameter errors before starting the simulation"}
+                    {t("workspace.fixParameterErrors")}
                 </p>
             )}
 

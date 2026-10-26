@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { categoryIcons, categoryNames } from "../components/pagesComponents/lab/labConstants";
 import { useAppData } from "../components/hooks/useAppData";
+import { useTranslation } from "@/i18n";
 // Import hooks and components
 import { useLabData } from "../components/hooks/useLabData";
 import LabUnavailableMessage from "../components/pagesComponents/lab/LabUnavailableMessage";
@@ -21,6 +22,7 @@ export default function Lab() {
 
   // Get app-wide data (settings, user, locale)
   const { settings, isLoading: isAppSettingsLoading, isRTL } = useAppData();
+  const { t, dir } = useTranslation(isRTL);
   
   // Pass filter parameters to useLabData hook
   const { 
@@ -36,9 +38,9 @@ export default function Lab() {
   if (isAppSettingsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center space-x-3 rtl:space-x-reverse">
+        <div className="flex items-center gap-3">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="text-slate-600">{isRTL ? "טוען ניסויים..." : "Loading experiments..."}</p>
+          <p className="text-slate-600">{t("common.loadingExperiments")}</p>
         </div>
       </div>
     );
@@ -50,7 +52,7 @@ export default function Lab() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="max-w-7xl mx-auto px-4 py-8" dir={dir}>
       {/* Header */}
       <LabHeader selectedCategory={selectedCategory} isRTL={isRTL} categoryNames={categoryNames} />
 
@@ -69,9 +71,9 @@ export default function Lab() {
       {/* Experiments by Category or Filtered List */}
       {isExperimentsLoading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="flex items-center space-x-3 rtl:space-x-reverse">
+          <div className="flex items-center gap-3">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="text-slate-600">{isRTL ? "טוען ניסויים..." : "Loading experiments..."}</p>
+            <p className="text-slate-600">{t("common.loadingExperiments")}</p>
           </div>
         </div>
       ) : (

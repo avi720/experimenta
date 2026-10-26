@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Activity } from "lucide-react";
+import { useTranslation } from "@/i18n";
 
 function formatMetricValue(value) {
     if (typeof value === "number") {
@@ -23,16 +24,17 @@ export default function CurrentValuesDisplay({
     dataPoint,
     isRTL
 }) {
+    const { t } = useTranslation(isRTL);
     const point = displayedDataPoint || dataPoint;
 
     if (!point || typeof point !== "object") {
         return (
             <Card className="bg-slate-50">
                 <CardContent className="p-4">
-                    <div className="flex items-center justify-center text-slate-400 space-x-2 rtl:space-x-reverse">
+                    <div className="flex items-center justify-center text-slate-400 gap-2">
                         <Activity className="w-5 h-5" />
                         <span className="text-sm">
-                            {isRTL ? "אין נתונים להצגה" : "No data to display"}
+                            {t("workspace.noDataToDisplay")}
                         </span>
                     </div>
                 </CardContent>
@@ -52,10 +54,10 @@ export default function CurrentValuesDisplay({
     return (
         <Card className="bg-gradient-to-br from-blue-50 to-indigo-50">
             <CardContent className="p-4">
-                <div className="flex items-center space-x-2 rtl:space-x-reverse mb-3">
+                <div className="flex items-center gap-2 mb-3">
                     <Activity className="w-5 h-5 text-blue-600" />
                     <h3 className="font-semibold text-slate-800">
-                        {isRTL ? "ערכים נוכחיים" : "Current Values"}
+                        {t("workspace.currentValuesTitle")}
                     </h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">

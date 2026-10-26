@@ -55,7 +55,7 @@ export default function ParametersEditorTab({
             is_active: true
           })}
         >
-          <PlusCircle className="ml-2 h-5 w-5" /> {/* Corrected className from h-5 h-5 to h-5 w-5 */}
+          <PlusCircle className="me-2 h-5 w-5" />
           הוסף פרמטר חדש
         </Button>
       </CardContent>

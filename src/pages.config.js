@@ -6,7 +6,6 @@ import AdminExperimentForm from './pages/AdminExperimentForm';
 import Results from './pages/Results';
 import AboutUs from './pages/AboutUs';
 import WhatIsNew from './pages/WhatIsNew';
-import Resources from './pages/Resources';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import Login from './pages/Login';
@@ -30,7 +29,6 @@ export const PAGES = {
     "Results": Results,
     "AboutUs": AboutUs,
     "WhatIsNew": WhatIsNew,
-    "Resources": Resources,
     "PrivacyPolicy": PrivacyPolicy,
     "TermsOfService": TermsOfService,
     "Login": Login,

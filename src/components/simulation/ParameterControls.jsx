@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles } from "lucide-react";
+import { useTranslation } from "@/i18n";
 import ParameterInput from "./parameters/ParameterInput";
 import PresetsDropdown from "./parameters/PresetsDropdown";
 
@@ -14,6 +15,8 @@ export default function ParameterControls({
     validationState,
     isRTL
 }) {
+    const { t } = useTranslation(isRTL);
+
     const handleParamChange = (key, value) => {
         if (onParameterChange) {
             const newValues = { ...paramValues, [key]: value };
@@ -27,7 +30,7 @@ export default function ParameterControls({
         return (
             <Card className="border-slate-200">
                 <CardContent className="pt-6 text-center text-slate-500">
-                    {isRTL ? "אין פרמטרים זמינים" : "No parameters available"}
+                    {t("workspace.noParametersAvailable")}
                 </CardContent>
             </Card>
         );
@@ -40,7 +43,7 @@ export default function ParameterControls({
                     <CardHeader className="pb-3">
                         <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                             <Sparkles className="w-4 h-4 text-purple-600" />
-                            {isRTL ? "תצורות מוכנות" : "Presets"}
+                            {t("workspace.presetsCardTitle")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -57,7 +60,7 @@ export default function ParameterControls({
             <Card className="border-slate-200">
                 <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-semibold text-slate-700">
-                        {isRTL ? "הגדרות פרמטרים" : "Parameter Settings"}
+                        {t("workspace.parameterSettingsTitle")}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">

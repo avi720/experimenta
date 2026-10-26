@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { createOrbitControls } from '../controls/orbitControls';
+import { DETECTOR_X_POSITION } from '../engines/quantumTunnelingEngine';
 
 const UM_TO_NM = 1000;
 const VISUAL_L_SCALE_FACTOR = 0.25;
@@ -42,8 +43,6 @@ export default function QuantumTunnelingScene({ parameters, dataPointToRender })
     useEffect(() => {
         const mountElement = mountRef.current;
         if (!mountElement) return;
-
-        const DETECTOR_X_POSITION = -25;
 
         // Scene setup
         const scene = new THREE.Scene();
@@ -133,7 +132,7 @@ export default function QuantumTunnelingScene({ parameters, dataPointToRender })
         barrierRef.current = barrier;
         scene.add(barrier);
 
-        // Detector (Camera-like shape)
+        // Detector (Camera-like shape placed on the transmitted side at DETECTOR_X_POSITION)
         const detectorGroup = new THREE.Group();
         detectorGroup.position.set(DETECTOR_X_POSITION, 3, -4);
 

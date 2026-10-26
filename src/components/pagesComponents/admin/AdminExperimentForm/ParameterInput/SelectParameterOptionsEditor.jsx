@@ -58,7 +58,7 @@ export default function SelectParameterOptionsEditor({
           className="w-full mt-2"
           onClick={() => addNestedToArray('parameters', index, 'options', { value: '', label_he: '', label_en: '' })}
         >
-          <PlusCircle className="ml-2 h-4 w-4" />
+          <PlusCircle className="me-2 h-4 w-4" />
           הוסף אפשרות
         </Button>
       </div>

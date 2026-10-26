@@ -119,7 +119,7 @@ export default function PresetsEditorTab({
           })}
           className="w-full h-16 text-lg"
         >
-          <PlusCircle className="ml-2 h-5 w-5" />
+          <PlusCircle className="me-2 h-5 w-5" />
           הוסף תבנית חדשה
         </Button>
       </CardContent>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 import ExperimentCard from './ExperimentCard';
 
 export default function ExperimentsByCategoryList({ 
@@ -9,6 +10,8 @@ export default function ExperimentsByCategoryList({
     categoryIcons, 
     categoryNames 
 }) {
+    const { t, pick } = useTranslation(isRTL);
+
     return (
         <motion.div
             key="categories"
@@ -24,7 +27,7 @@ export default function ExperimentsByCategoryList({
                     transition={{ delay: categoryIndex * 0.1 }}
                     className="mb-12"
                 >
-                    <div className="flex items-center space-x-4 rtl:space-x-reverse mb-6">
+                    <div className="flex items-center gap-4 mb-6">
                         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center">
                             {React.createElement(categoryIcons[category] || BookOpen, { 
                                 className: "w-6 h-6 text-white" 
@@ -32,10 +35,10 @@ export default function ExperimentsByCategoryList({
                         </div>
                         <div>
                             <h2 className="text-2xl font-bold text-slate-900">
-                                {isRTL ? categoryNames[category]?.he : categoryNames[category]?.en}
+                                {pick(categoryNames[category], category)}
                             </h2>
                             <p className="text-slate-500">
-                                {categoryExperiments.length} {isRTL ? "ניסויים" : "experiments"}
+                                {categoryExperiments.length} {t('lab.experimentsCountLabel')}
                             </p>
                         </div>
                     </div>

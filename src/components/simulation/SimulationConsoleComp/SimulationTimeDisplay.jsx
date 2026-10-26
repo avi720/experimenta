@@ -1,11 +1,14 @@
 import React from 'react';
 import { Clock } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 export default function SimulationTimeDisplay({ 
     playbackTime, 
     maxAvailableTime,
     isRTL 
 }) {
+    const { t } = useTranslation(isRTL);
+
     return (
         <div className="flex items-center justify-center gap-3 text-sm text-slate-600">
             <div className="flex items-center gap-2">
@@ -13,7 +16,7 @@ export default function SimulationTimeDisplay({
                 <span className="font-mono">
                     {playbackTime?.toFixed(3) || '0.000'}
                 </span>
-                <span>{isRTL ? 's' : 's'}</span>
+                <span>{t('common.secondsShort')}</span>
             </div>
             
             <span className="text-slate-400">/</span>
@@ -22,7 +25,7 @@ export default function SimulationTimeDisplay({
                 <span className="font-mono">
                     {maxAvailableTime?.toFixed(3) || '0.000'}
                 </span>
-                <span>{isRTL ? 's' : 's'}</span>
+                <span>{t('common.secondsShort')}</span>
             </div>
         </div>
     );

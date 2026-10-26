@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/api/supabaseClient';
 import { User } from '@/entities/User';
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 export const GUEST_LOCALE_STORAGE_KEY = 'experimenta_guest_locale';
 

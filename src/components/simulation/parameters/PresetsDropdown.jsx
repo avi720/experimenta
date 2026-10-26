@@ -1,6 +1,7 @@
 import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sparkles } from "lucide-react";
+import { useTranslation } from "@/i18n";
 
 /**
  * רשימה נפתחת לבחירת Presets
@@ -11,26 +12,28 @@ export default function PresetsDropdown({
     onApplyPreset,
     isRTL
 }) {
+    const { t, pick } = useTranslation(isRTL);
+
     if (!presets || presets.length === 0) {
         return null;
     }
 
     return (
         <div className="space-y-2">
-            <div className="flex items-center space-x-2 rtl:space-x-reverse">
+            <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-slate-500" />
                 <span className="text-sm font-medium text-slate-700">
-                    {isRTL ? "תצורות מוגדרות מראש" : "Presets"}
+                    {t("workspace.presetsLabel")}
                 </span>
             </div>
             <Select value={selectedPreset} onValueChange={onApplyPreset}>
                 <SelectTrigger>
-                    <SelectValue placeholder={isRTL ? "בחר תצורה" : "Select preset"} />
+                    <SelectValue placeholder={t("workspace.selectPresetPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                     {presets.map((preset, index) => (
                         <SelectItem key={index} value={index.toString()}>
-                            {isRTL ? preset.name_he : preset.name_en}
+                            {pick(preset)}
                         </SelectItem>
                     ))}
                 </SelectContent>

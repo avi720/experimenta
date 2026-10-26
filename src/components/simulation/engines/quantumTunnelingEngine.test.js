@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    DETECTOR_X_POSITION,
     calculateQuantumTunnelingStep,
     calculateTransmissionReflection,
 } from './quantumTunnelingEngine.jsx';
@@ -111,5 +112,34 @@ describe('calculateQuantumTunnelingStep', () => {
         expect(Math.abs(point.transmission - expected)).toBeLessThan(1e-6);
         expect(point.transmission + point.reflection).toBeCloseTo(1, 12);
         expect(point.debug.ratio_E_V0).toBeCloseTo(E / EV, 9);
+    });
+
+    it('collapses the wave-function at DETECTOR_X_POSITION = 25 based on _collapseRandom (T49)', () => {
+        expect(DETECTOR_X_POSITION).toBe(25);
+        // Choose parameters where 0 < transmission < 1 (v = 0.002c, V0 = 1 eV, L = 0.001 µm)
+        const baseParams = { v: 0.002, m: 5.11, V0: 1, L: 0.001 };
+        const initial = calculateQuantumTunnelingStep(0, { ...baseParams, _collapseRandom: 0.0 });
+        expect(initial.position).toBeLessThan(DETECTOR_X_POSITION);
+        expect(initial.hasCollapsed).toBe(false);
+        expect(initial.measurementResult).toBeNull();
+        expect(initial.transmission).toBeGreaterThan(0);
+        expect(initial.transmission).toBeLessThan(1);
+
+        // At t = 25 s, position reaches the cap (50 >= 25)
+        const collapsedTransmitted = calculateQuantumTunnelingStep(25, {
+            ...baseParams,
+            _collapseRandom: initial.transmission * 0.5,
+        });
+        expect(collapsedTransmitted.position).toBeGreaterThanOrEqual(DETECTOR_X_POSITION);
+        expect(collapsedTransmitted.hasCollapsed).toBe(true);
+        expect(collapsedTransmitted.measurementResult).toBe('transmitted');
+
+        const collapsedReflected = calculateQuantumTunnelingStep(25, {
+            ...baseParams,
+            _collapseRandom: initial.transmission + (1 - initial.transmission) * 0.5,
+        });
+        expect(collapsedReflected.position).toBeGreaterThanOrEqual(DETECTOR_X_POSITION);
+        expect(collapsedReflected.hasCollapsed).toBe(true);
+        expect(collapsedReflected.measurementResult).toBe('reflected');
     });
 });

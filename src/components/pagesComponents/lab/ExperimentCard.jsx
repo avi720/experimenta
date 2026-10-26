@@ -5,9 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Play, BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTranslation } from '@/i18n';
 import { getExperimentPageUrl } from './labConstants';
 
 export default function ExperimentCard({ experiment, isRTL, delay, categoryIcons }) {
+    const { t, pick } = useTranslation(isRTL);
     const CategoryIcon = categoryIcons[experiment.category] || BookOpen;
 
     return (
@@ -18,7 +20,7 @@ export default function ExperimentCard({ experiment, isRTL, delay, categoryIcons
         >
             <Card className="h-full border-0 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/90 backdrop-blur-sm overflow-hidden group">
                 <CardHeader className="pb-4">
-                    <div className="flex items-center space-x-3 rtl:space-x-reverse mb-4">
+                    <div className="flex items-center gap-3 mb-4">
                         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                             <CategoryIcon className="w-6 h-6 text-white" />
                         </div>
@@ -28,7 +30,7 @@ export default function ExperimentCard({ experiment, isRTL, delay, categoryIcons
                     </div>
 
                     <CardTitle className="text-xl leading-tight group-hover:text-blue-600 transition-colors">
-                        {isRTL ? experiment.i18n_texts?.he?.title || experiment.slug : experiment.i18n_texts?.en?.title || experiment.slug}
+                        {pick(experiment.i18n_texts)?.title || experiment.slug}
                     </CardTitle>
                 </CardHeader>
 
@@ -51,9 +53,9 @@ export default function ExperimentCard({ experiment, isRTL, delay, categoryIcons
                             state={{ experiment }}
                             className="block"
                         >
-                            <Button className="w-full h-12 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 shadow-lg hover:shadow-xl transition-all duration-300">
-                                <Play className="w-5 h-5 mr-2" />
-                                {isRTL ? "התחל ניסוי" : "Start Experiment"}
+                            <Button className="w-full h-12 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 shadow-lg hover:shadow-xl transition-all duration-300 gap-2">
+                                <Play className="w-5 h-5" />
+                                {t('lab.startExperiment')}
                             </Button>
                         </Link>
                     </div>

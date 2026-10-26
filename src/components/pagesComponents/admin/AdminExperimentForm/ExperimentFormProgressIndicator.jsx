@@ -1,20 +1,22 @@
 import React from 'react';
 import { CheckCircle2, Circle } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
-const tabs = [
-  { value: 'general', label: 'כללי' },
-  { value: 'content', label: 'תוכן' },
-  { value: 'parameters', label: 'פרמטרים' },
-  { value: 'presets', label: 'תבניות' },
-  { value: 'advanced', label: 'מתקדם' }
+const tabsConfig = [
+  { value: 'general', key: 'generalShort' },
+  { value: 'content', key: 'content' },
+  { value: 'parameters', key: 'parameters' },
+  { value: 'presets', key: 'presets' },
+  { value: 'advanced', key: 'advanced' }
 ];
 
 export default function ExperimentFormProgressIndicator({ currentTab }) {
-  const currentIndex = tabs.findIndex(tab => tab.value === currentTab);
+  const { t } = useTranslation();
+  const currentIndex = tabsConfig.findIndex(tab => tab.value === currentTab);
 
   return (
     <div className="flex items-center justify-between max-w-3xl mx-auto">
-      {tabs.map((tab, index) => (
+      {tabsConfig.map((tab, index) => (
         <React.Fragment key={tab.value}>
           <div className="flex flex-col items-center">
             <div className={`
@@ -34,11 +36,11 @@ export default function ExperimentFormProgressIndicator({ currentTab }) {
               text-xs mt-2 font-medium
               ${index <= currentIndex ? 'text-blue-600' : 'text-slate-400'}
             `}>
-              {tab.label}
+              {t(`admin.form.tabs.${tab.key}`)}
             </span>
           </div>
           
-          {index < tabs.length - 1 && (
+          {index < tabsConfig.length - 1 && (
             <div className={`
               flex-1 h-0.5 mx-2 transition-all
               ${index < currentIndex ? 'bg-blue-600' : 'bg-slate-200'}

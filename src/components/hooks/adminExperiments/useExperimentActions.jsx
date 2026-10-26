@@ -3,15 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { ExperimentTemplate } from '@/entities/all';
 import { createPageUrl } from '@/utils';
 import { toast } from 'sonner';
+import { useTranslation } from '@/i18n';
 
 export function useExperimentActions(loadExperiments, filteredExperiments = []) {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [isDeleting, setIsDeleting] = useState(false);
     const [isToggling, setIsToggling] = useState(false);
 
     const exportExperiments = useCallback(() => {
         if (!Array.isArray(filteredExperiments) || filteredExperiments.length === 0) {
-            toast.error('אין ניסויים לייצוא');
+            toast.error(t('admin.list.toasts.noExperimentsToExport'));
             return;
         }
         try {
@@ -29,26 +31,26 @@ export function useExperimentActions(loadExperiments, filteredExperiments = []) 
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            toast.success(`יוצאו ${cleanTemplates.length} ניסויים בהצלחה`);
+            toast.success(t('admin.list.toasts.exportSuccess', { count: cleanTemplates.length }));
         } catch (error) {
             console.error('Error exporting experiments:', error);
-            toast.error('אירעה שגיאה בייצוא הניסויים');
+            toast.error(t('admin.list.toasts.exportError'));
         }
-    }, [filteredExperiments]);
+    }, [filteredExperiments, t]);
 
     const handleDelete = useCallback(async (experimentId) => {
         setIsDeleting(true);
         try {
             await ExperimentTemplate.delete(experimentId);
-            toast.success('הניסוי נמחק בהצלחה');
+            toast.success(t('admin.list.toasts.deleteSuccess'));
             await loadExperiments();
         } catch (error) {
             console.error('Error deleting experiment:', error);
-            toast.error('אירעה שגיאה במחיקת הניסוי');
+            toast.error(t('admin.list.toasts.deleteError'));
         } finally {
             setIsDeleting(false);
         }
-    }, [loadExperiments]);
+    }, [loadExperiments, t]);
 
     const toggleActive = useCallback(async (experiment) => {
         setIsToggling(true);
@@ -56,15 +58,15 @@ export function useExperimentActions(loadExperiments, filteredExperiments = []) 
             await ExperimentTemplate.update(experiment.id, {
                 is_active: !experiment.is_active
             });
-            toast.success(experiment.is_active ? 'הניסוי הושבת' : 'הניסוי הופעל');
+            toast.success(experiment.is_active ? t('admin.list.toasts.deactivatedSuccess') : t('admin.list.toasts.activatedSuccess'));
             await loadExperiments();
         } catch (error) {
             console.error('Error toggling experiment:', error);
-            toast.error('אירעה שגיאה בעדכון הניסוי');
+            toast.error(t('admin.list.toasts.toggleError'));
         } finally {
             setIsToggling(false);
         }
-    }, [loadExperiments]);
+    }, [loadExperiments, t]);
 
     const handleDuplicate = useCallback(async (experiment) => {
         try {
@@ -85,13 +87,13 @@ export function useExperimentActions(loadExperiments, filteredExperiments = []) 
                 }
             };
             await ExperimentTemplate.create(newExp);
-            toast.success('הניסוי שוכפל בהצלחה');
+            toast.success(t('admin.list.toasts.duplicateSuccess'));
             await loadExperiments();
         } catch (error) {
             console.error('Error duplicating experiment:', error);
-            toast.error('אירעה שגיאה בשכפול הניסוי');
+            toast.error(t('admin.list.toasts.duplicateError'));
         }
-    }, [loadExperiments]);
+    }, [loadExperiments, t]);
 
     const handleEdit = useCallback((experiment) => {
         navigate(createPageUrl('AdminExperimentForm') + `?id=${experiment.id}`, { state: { experiment } });
@@ -100,10 +102,10 @@ export function useExperimentActions(loadExperiments, filteredExperiments = []) 
     return {
         isDeleting,
         isToggling,
+        exportExperiments,
         handleDelete,
         toggleActive,
         handleDuplicate,
-        handleEdit,
-        exportExperiments
+        handleEdit
     };
 }

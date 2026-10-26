@@ -9,19 +9,22 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/i18n';
 
 export default function UserDropdown({ user, isRTL, handleLogout, handleLanguageChange }) {
+    const { t, oppositeLocale, alignStart } = useTranslation(isRTL);
+
     if (!user) {
         return (
             <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => handleLanguageChange(isRTL ? 'en' : 'he')}>
+                <Button variant="ghost" size="sm" onClick={() => handleLanguageChange(oppositeLocale)}>
                     <Globe className="w-4 h-4" />
-                    {isRTL ? "EN" : "עב"}
+                    {t('common.oppositeLanguageShort')}
                 </Button>
                 <Button asChild size="sm">
                     <Link to="/Login">
                         <LogIn className="w-4 h-4" />
-                        {isRTL ? "התחברות" : "Sign in"}
+                        {t('common.signIn')}
                     </Link>
                 </Button>
             </div>
@@ -31,7 +34,7 @@ export default function UserDropdown({ user, isRTL, handleLogout, handleLanguage
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center space-x-2 rtl:space-x-reverse px-3 py-2">
+                <Button variant="ghost" className="flex items-center gap-2 px-3 py-2">
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                         <User className="w-4 h-4 text-blue-600" />
                     </div>
@@ -39,15 +42,15 @@ export default function UserDropdown({ user, isRTL, handleLogout, handleLanguage
                     <ChevronDown className="w-4 h-4" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align={isRTL ? "end" : "start"} className="w-56">
-                <DropdownMenuItem onClick={() => handleLanguageChange(isRTL ? 'en' : 'he')}>
-                    <Globe className="w-4 h-4 mr-2" />
-                    {isRTL ? "Switch to English" : "עבור לעברית"}
+            <DropdownMenuContent align={alignStart} className="w-56">
+                <DropdownMenuItem onClick={() => handleLanguageChange(oppositeLocale)} className="gap-2">
+                    <Globe className="w-4 h-4" />
+                    {t('common.switchToOppositeLanguage')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    {isRTL ? "התנתק" : "Logout"}
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 gap-2">
+                    <LogOut className="w-4 h-4" />
+                    {t('common.logout')}
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

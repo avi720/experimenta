@@ -2,26 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Home, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const STRINGS = {
-  he: {
-    title: "משהו השתבש בטעינת הדף",
-    body: "אירעה שגיאה בלתי צפויה. אפשר לנסות שוב או לחזור לדף הבית.",
-    retry: "נסה שוב",
-    home: "חזרה לדף הבית",
-  },
-  en: {
-    title: "Something went wrong loading this page",
-    body: "An unexpected error occurred. You can try again or go back to the home page.",
-    retry: "Try again",
-    home: "Back to home",
-  },
-};
-
-/** Language of the document, kept in sync with the user's choice by useAppData. */
-function documentLanguage() {
-  return typeof document !== "undefined" && document.documentElement.lang === "en" ? "en" : "he";
-}
+import { useTranslation } from "@/i18n";
 
 /**
  * Catches render errors in its subtree, logs them, and renders `fallback({ error, reset })`.
@@ -61,21 +42,21 @@ export class ErrorBoundary extends React.Component {
 }
 
 function FallbackCard({ isRTL, onRetry, onHome }) {
-  const t = STRINGS[isRTL ? "he" : "en"];
+  const { t, dir } = useTranslation(isRTL);
   return (
-    <div className="flex items-center justify-center px-4 py-24" dir={isRTL ? "rtl" : "ltr"} role="alert">
+    <div className="flex items-center justify-center px-4 py-24" dir={dir} role="alert">
       <div className="max-w-md w-full bg-white border border-slate-200 rounded-xl shadow-sm p-8 text-center">
         <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-4" aria-hidden="true" />
-        <h1 className="text-xl font-semibold text-slate-900 mb-2">{t.title}</h1>
-        <p className="text-slate-600 mb-6">{t.body}</p>
+        <h1 className="text-xl font-semibold text-slate-900 mb-2">{t("errors.pageCrashTitle")}</h1>
+        <p className="text-slate-600 mb-6">{t("errors.pageCrashBody")}</p>
         <div className="flex flex-wrap justify-center gap-3">
           <Button variant="outline" onClick={onRetry}>
             <RotateCcw className="w-4 h-4 me-2" aria-hidden="true" />
-            {t.retry}
+            {t("common.tryAgain")}
           </Button>
           <Button onClick={onHome}>
             <Home className="w-4 h-4 me-2" aria-hidden="true" />
-            {t.home}
+            {t("common.backToHome")}
           </Button>
         </div>
       </div>
@@ -95,11 +76,9 @@ export function PageErrorFallback({ isRTL, reset }) {
 
 /** Last-resort fallback outside the router (e.g. the header itself crashed); reloads the app. */
 export function AppErrorFallback() {
-  const isRTL = documentLanguage() === "he";
   return (
     <div className="min-h-screen bg-slate-50">
       <FallbackCard
-        isRTL={isRTL}
         onRetry={() => window.location.reload()}
         onHome={() => window.location.assign("/")}
       />

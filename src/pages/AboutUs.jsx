@@ -1,15 +1,16 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, Users, Target, Lightbulb } from "lucide-react";
+import { useTranslation } from "@/i18n";
 
 export default function AboutUs() {
+  const { t, dir } = useTranslation();
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12" dir="rtl">
+    <div className="max-w-4xl mx-auto px-4 py-12" dir={dir}>
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-slate-900 mb-4">אודות Experimenta</h1>
-        <p className="text-xl text-slate-600">
-          פלטפורמה חדשנית לסימולציות פיזיקליות אינטראקטיביות
-        </p>
+        <h1 className="text-4xl font-bold text-slate-900 mb-4">{t("about.title")}</h1>
+        <p className="text-xl text-slate-600">{t("about.subtitle")}</p>
       </div>
 
       <div className="space-y-8">
@@ -17,14 +18,12 @@ export default function AboutUs() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="w-6 h-6 text-blue-600" />
-              המשימה שלנו
+              {t("about.missionTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-slate-700 leading-relaxed">
-              Experimenta מספקת סביבת למידה וירטואלית מתקדמת המאפשרת לסטודנטים, 
-              חוקרים ומורים לבצע ניסויים פיזיקליים באופן דיגיטלי. 
-              אנו שואפים להנגיש את המדע והפיזיקה לכולם באמצעות סימולציות מדויקות ואינטראקטיביות.
+              {t("about.missionBody")}
             </p>
           </CardContent>
         </Card>
@@ -33,14 +32,12 @@ export default function AboutUs() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Lightbulb className="w-6 h-6 text-blue-600" />
-              החזון שלנו
+              {t("about.visionTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-slate-700 leading-relaxed">
-              אנו מאמינים שכל אדם ראוי לגישה לכלים מדעיים מתקדמים. 
-              המטרה שלנו היא לבנות את המעבדה הוירטואלית המתקדמת ביותר בעולם, 
-              המשלבת פיזיקה קלאסית, קוונטית, ותחומים נוספים במדע.
+              {t("about.visionBody")}
             </p>
           </CardContent>
         </Card>
@@ -49,13 +46,12 @@ export default function AboutUs() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="w-6 h-6 text-blue-600" />
-              הצוות שלנו
+              {t("about.teamTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-slate-700 leading-relaxed">
-              Experimenta מורכבת מצוות מומחים בתחומי הפיזיקה, מדעי המחשב וחינוך. 
-              אנו עובדים ביחד כדי ליצור חוויית למידה ייחודית ומעוררת השראה.
+              {t("about.teamBody")}
             </p>
           </CardContent>
         </Card>
@@ -64,14 +60,16 @@ export default function AboutUs() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="w-6 h-6 text-blue-600" />
-              צור קשר
+              {t("about.contactTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-slate-700 leading-relaxed">
-              יש לך שאלות או הצעות? נשמח לשמוע ממך!
+              {t("about.contactBody")}
               <br />
-              ניתן ליצור קשר דרך דף <a href="/contact" className="text-blue-600 hover:underline">יצירת קשר</a> שלנו.
+              <a href="mailto:info@experimenta.com" className="text-blue-600 font-medium hover:underline mt-1 inline-block">
+                info@experimenta.com
+              </a>
             </p>
           </CardContent>
         </Card>

@@ -39,7 +39,7 @@ export default function I18nStepsEditor({
         onClick={() => addI18nStep(locale)}
         className="w-full"
       >
-        <PlusCircle className="ml-2 h-4 w-4" />
+        <PlusCircle className="me-2 h-4 w-4" />
         {locale === 'he' ? 'הוסף שלב' : 'Add Step'}
       </Button>
     </div>

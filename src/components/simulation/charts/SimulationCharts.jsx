@@ -12,6 +12,7 @@ import {
     Legend,
     ResponsiveContainer
 } from "recharts";
+import { useTranslation } from "@/i18n";
 
 export default function SimulationCharts({ 
     simulationData, 
@@ -20,6 +21,7 @@ export default function SimulationCharts({
     isOpen = false,
     onToggle
 }) {
+    const { t } = useTranslation(isRTL);
     const [height, setHeight] = useState(300);
     const [isDragging, setIsDragging] = useState(false);
     const dragStartY = useRef(0);
@@ -66,7 +68,7 @@ export default function SimulationCharts({
                     className="px-6 py-3 bg-slate-600/40 hover:bg-slate-600/50 backdrop-blur-sm text-white rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl"
                 >
                     <div className="text-sm font-semibold">
-                        {isRTL ? "גרפים חיים" : "Live Charts"}
+                        {t("workspace.liveCharts")}
                     </div>
                 </button>
             </div>
@@ -91,13 +93,12 @@ export default function SimulationCharts({
             >
                 <GripHorizontal className="w-5 h-5 text-slate-400" />
                 
-                {/* כפתורים בצד שמאל */}
-                <div className={`absolute ${isRTL ? 'left-2' : 'right-2'} top-1/2 transform -translate-y-1/2 flex items-center gap-1`}>
+                <div className="absolute end-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
                     <Button
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 hover:bg-slate-200"
-                        title={isRTL ? "פתח בחלון צף" : "Open in floating window"}
+                        title={t("workspace.openInFloatingWindow")}
                     >
                         <ExternalLink className="w-3 h-3" />
                     </Button>
@@ -120,16 +121,10 @@ export default function SimulationCharts({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                         </svg>
                         <p className="text-slate-500 text-sm font-medium">
-                            {isRTL 
-                                ? "הרץ את הסימולציה כדי לראות גרפים" 
-                                : "Run the simulation to see charts"
-                            }
+                            {t("workspace.runSimulationToSeeCharts")}
                         </p>
                         <p className="text-slate-400 text-xs mt-2">
-                            {isRTL 
-                                ? "לחץ על כפתור ההפעלה בקונסולה" 
-                                : "Click the play button in the console"
-                            }
+                            {t("workspace.clickPlayInConsole")}
                         </p>
                     </div>
                 ) : (
@@ -142,7 +137,7 @@ export default function SimulationCharts({
                             <XAxis 
                                 dataKey="time" 
                                 label={{ 
-                                    value: isRTL ? 'זמן (s)' : 'Time (s)', 
+                                    value: t("workspace.timeAxisLabel"), 
                                     position: 'insideBottom', 
                                     offset: -5 
                                 }}
@@ -152,7 +147,7 @@ export default function SimulationCharts({
                             />
                             <YAxis 
                                 label={{ 
-                                    value: isRTL ? 'ערכים' : 'Values', 
+                                    value: t("workspace.valuesAxisLabel"), 
                                     angle: -90, 
                                     position: 'insideLeft' 
                                 }}

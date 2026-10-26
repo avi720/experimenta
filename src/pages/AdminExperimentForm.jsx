@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, AlertTriangle } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { useExperimentForm } from '../components/hooks/useExperimentForm';
+import { useTranslation } from '@/i18n';
 
 // Import UI components
 import ExperimentFormHeaderActions from '../components/pagesComponents/admin/AdminExperimentForm/ExperimentFormHeaderActions';
@@ -19,6 +20,7 @@ import PresetsEditorTab from '../components/pagesComponents/admin/AdminExperimen
 import AdvancedSettingsTab from '../components/pagesComponents/admin/AdminExperimentForm/AdvancedSettingsTab';
 
 export default function AdminExperimentForm() {
+  const { t, dir } = useTranslation();
   const {
     experiment,
     isLoading,
@@ -51,10 +53,10 @@ export default function AdminExperimentForm() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" dir={dir}>
         <div className="flex items-center space-x-3 rtl:space-x-reverse">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="text-slate-600">טוען...</p>
+          <p className="text-slate-600">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -62,15 +64,15 @@ export default function AdminExperimentForm() {
 
   if (notFound || !experiment) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-16" dir="rtl">
+      <div className="max-w-2xl mx-auto px-4 py-16" dir={dir}>
         <Card className="border-red-200 shadow-sm">
           <CardHeader className="text-center">
             <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-3">
               <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
-            <CardTitle className="text-2xl text-slate-900">הניסוי לא נמצא</CardTitle>
+            <CardTitle className="text-2xl text-slate-900">{t('admin.form.notFoundTitle')}</CardTitle>
             <CardDescription className="text-base text-slate-600">
-              לא נמצא ניסוי עם המזהה המבוקש. ייתכן שהניסוי נמחק או שהקישור שגוי.
+              {t('admin.form.notFoundDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center pt-2">
@@ -81,7 +83,7 @@ export default function AdminExperimentForm() {
               className="gap-2"
             >
               <ArrowRight className="w-4 h-4" />
-              חזרה לרשימת הניסויים
+              {t('admin.form.backToList')}
             </Button>
           </CardContent>
         </Card>
@@ -90,7 +92,7 @@ export default function AdminExperimentForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-6xl mx-auto px-4 py-8 space-y-8" dir="rtl">
+    <form onSubmit={handleSubmit} className="max-w-6xl mx-auto px-4 py-8 space-y-8" dir={dir}>
       {/* Header and Actions */}
       <ExperimentFormHeaderActions
         isEditMode={isEditMode}
@@ -108,19 +110,19 @@ export default function AdminExperimentForm() {
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5 bg-slate-100">
           <TabsTrigger value="general" className="data-[state=active]:bg-white">
-            פרטים כלליים
+            {t('admin.form.tabs.general')}
           </TabsTrigger>
           <TabsTrigger value="content" className="data-[state=active]:bg-white">
-            תוכן
+            {t('admin.form.tabs.content')}
           </TabsTrigger>
           <TabsTrigger value="parameters" className="data-[state=active]:bg-white">
-            פרמטרים
+            {t('admin.form.tabs.parameters')}
           </TabsTrigger>
           <TabsTrigger value="presets" className="data-[state=active]:bg-white">
-            תבניות
+            {t('admin.form.tabs.presets')}
           </TabsTrigger>
           <TabsTrigger value="advanced" className="data-[state=active]:bg-white">
-            מתקדם
+            {t('admin.form.tabs.advanced')}
           </TabsTrigger>
         </TabsList>
 

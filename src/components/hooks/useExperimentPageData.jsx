@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { toast } from "sonner";
 import { canAccessExperiment } from "@/lib/access";
+import { translate } from "@/i18n";
 
 /**
  * @param {string} experimentSlug - ה-slug של הניסוי (למשל: 'sho', 'free-fall', 'quantum-tunneling')
@@ -36,7 +37,7 @@ export function useExperimentPageData(experimentSlug, settings, user, isRTL, all
 
             if (!foundExperiment) {
                 console.error(`Experiment with slug "${experimentSlug}" not found`);
-                toast.error(isRTL ? `ניסוי "${experimentSlug}" לא נמצא` : `Experiment "${experimentSlug}" not found`);
+                toast.error(translate(isRTL, 'workspace.experimentNotFoundToast', { slug: experimentSlug }));
                 setExperiment(null);
                 setBlockedExperiment(null);
                 setAccessDeniedReason(null);
@@ -55,11 +56,7 @@ export function useExperimentPageData(experimentSlug, settings, user, isRTL, all
                     const toastKey = `premium:${foundExperiment.slug}:${user.id || 'user'}`;
                     if (lastToastKeyRef.current !== toastKey) {
                         lastToastKeyRef.current = toastKey;
-                        toast.error(
-                            isRTL
-                                ? 'הניסוי הזה זמין למנויי פרימיום בלבד'
-                                : 'This experiment requires a premium subscription'
-                        );
+                        toast.error(translate(isRTL, 'workspace.premiumOnlyToast'));
                     }
                     setIsLoading(false);
                     return;
@@ -69,13 +66,10 @@ export function useExperimentPageData(experimentSlug, settings, user, isRTL, all
                 setAccessDeniedReason('registered');
                 const isPremium = foundExperiment.access_level === 'premium';
                 toast.error(
-                    isPremium
-                        ? isRTL
-                            ? 'הניסוי הזה זמין למנויי פרימיום בלבד'
-                            : 'This experiment requires a premium subscription'
-                        : isRTL
-                        ? 'הניסוי הזה זמין למשתמשים רשומים בלבד'
-                        : 'This experiment is available to registered users only'
+                    translate(
+                        isRTL,
+                        isPremium ? 'workspace.premiumOnlyToast' : 'workspace.registeredOnlyToast'
+                    )
                 );
                 setIsLoading(false);
                 const returnUrl = `${window.location.pathname}${window.location.search || ''}`;
@@ -88,7 +82,7 @@ export function useExperimentPageData(experimentSlug, settings, user, isRTL, all
             setExperiment(foundExperiment);
         } catch (error) {
             console.error('Error loading experiment page data:', error);
-            toast.error(isRTL ? 'שגיאה בטעינת הניסוי' : 'Error loading experiment');
+            toast.error(translate(isRTL, 'workspace.loadErrorToast'));
             setIsLoading(false);
             navigate(createPageUrl("Dashboard"));
         } finally {

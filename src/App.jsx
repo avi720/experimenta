@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { AppErrorFallback, ErrorBoundary } from '@/components/layout/ErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -28,23 +29,21 @@ const FullScreenSpinner = () => (
 );
 
 const ProfileLoadErrorFallback = ({ onRetry }) => {
-  const isRTL = typeof document === 'undefined' || document.documentElement.dir !== 'ltr';
+  const { t, dir } = useTranslation();
   return (
-    <div className="max-w-lg mx-auto px-4 py-16 text-center space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="max-w-lg mx-auto px-4 py-16 text-center space-y-4" dir={dir}>
       <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
         <AlertTriangle className="w-6 h-6 text-red-600" />
       </div>
       <h2 className="text-2xl font-bold text-slate-900">
-        {isRTL ? 'שגיאה בטעינת פרופיל המשתמש' : 'Failed to load user profile'}
+        {t('errors.profileLoadFailedTitle')}
       </h2>
       <p className="text-slate-600">
-        {isRTL
-          ? 'לא ניתן היה לאמת את הרשאות המשתמש מול השרת. נסה לטעון מחדש.'
-          : 'Could not verify your account permissions from the server. Please try again.'}
+        {t('errors.profileLoadFailedDescription')}
       </p>
       <Button onClick={onRetry} variant="outline" className="gap-2">
         <RefreshCw className="w-4 h-4" />
-        {isRTL ? 'נסה שוב' : 'Try Again'}
+        {t('common.tryAgain')}
       </Button>
     </div>
   );

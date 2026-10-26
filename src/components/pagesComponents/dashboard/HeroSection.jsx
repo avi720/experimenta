@@ -5,8 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Beaker } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTranslation } from '@/i18n';
 
 export default function HeroSection({ settings, isRTL }) {
+    const { t } = useTranslation(isRTL);
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -17,25 +20,22 @@ export default function HeroSection({ settings, isRTL }) {
                 <Beaker className="w-12 h-12 text-white" />
             </div>
             <h1 className="text-5xl md:text-6xl font-bold text-slate-900 mb-6">
-                {isRTL ? "מעבדת הפיזיקה הווירטואלית" : "Virtual Physics Laboratory"}
+                {t('dashboard.heroTitle')}
             </h1>
             <p className="text-2xl text-slate-600 max-w-3xl mx-auto mb-8 leading-relaxed">
-                {isRTL 
-                    ? "גלו את חוקי הפיזיקה דרך סימולציות אינטראקטיביות מתקדמות. למדו, התנסו וחקרו בסביבה וירטואלית בטוחה ומתקדמת."
-                    : "Discover the laws of physics through advanced interactive simulations. Learn, experiment and explore in a safe and advanced virtual environment."
-                }
+                {t('dashboard.heroSubtitle')}
             </p>
             
             {settings?.virtual_lab_enabled ? (
                 <Link to={createPageUrl("Lab")}>
-                    <Button size="lg" className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 px-8 py-4 text-lg">
-                        <Beaker className="w-6 h-6 mr-3" />
-                        {isRTL ? "התחילו לחקור" : "Start Exploring"}
+                    <Button size="lg" className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 px-8 py-4 text-lg gap-3">
+                        <Beaker className="w-6 h-6" />
+                        {t('dashboard.startExploring')}
                     </Button>
                 </Link>
             ) : (
                 <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 px-6 py-2 text-lg">
-                    {isRTL ? "המעבדה תהיה זמינה בקרוב" : "Lab Coming Soon"}
+                    {t('dashboard.labComingSoon')}
                 </Badge>
             )}
         </motion.div>
