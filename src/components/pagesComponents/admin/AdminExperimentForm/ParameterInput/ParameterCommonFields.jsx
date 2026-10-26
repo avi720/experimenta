@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { parameterTypes } from '../adminFormConstants';
+import { useTranslation } from '@/i18n';
 
 export default function ParameterCommonFields({ 
   param, 
@@ -11,11 +12,13 @@ export default function ParameterCommonFields({
   handleDynamicArrayChange, 
   errors 
 }) {
+  const { t } = useTranslation();
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <Label>מפתח (Key) *</Label>
+          <Label>{t('admin.form.parameters.keyLabel')}</Label>
           <Input
             value={param.key}
             onChange={e => handleDynamicArrayChange('parameters', index, 'key', e.target.value)}
@@ -28,7 +31,7 @@ export default function ParameterCommonFields({
         </div>
 
         <div>
-          <Label>סוג נתונים *</Label>
+          <Label>{t('admin.form.parameters.dataTypeLabel')}</Label>
           <Select
             value={param.type}
             onValueChange={val => handleDynamicArrayChange('parameters', index, 'type', val)}
@@ -39,7 +42,7 @@ export default function ParameterCommonFields({
             <SelectContent>
               {parameterTypes.map(option => (
                 <SelectItem key={option.value} value={option.value}>
-                  {option.label}
+                  {option.i18nKey ? t(option.i18nKey) : option.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -47,7 +50,7 @@ export default function ParameterCommonFields({
         </div>
 
         <div>
-          <Label>יחידה</Label>
+          <Label>{t('admin.form.parameters.unitLabel')}</Label>
           <Input
             value={param.unit || ''}
             onChange={e => handleDynamicArrayChange('parameters', index, 'unit', e.target.value)}
@@ -61,7 +64,7 @@ export default function ParameterCommonFields({
           checked={param.is_active !== false}
           onCheckedChange={val => handleDynamicArrayChange('parameters', index, 'is_active', val)}
         />
-        <Label>פרמטר פעיל</Label>
+        <Label>{t('admin.form.parameters.activeParamLabel')}</Label>
       </div>
     </>
   );

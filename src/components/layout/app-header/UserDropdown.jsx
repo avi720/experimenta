@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 
 export default function UserDropdown({ user, isRTL, handleLogout, handleLanguageChange }) {
-    const { t, oppositeLocale, alignStart } = useTranslation(isRTL);
+    const { t, oppositeLocale, menuAlignStart } = useTranslation(isRTL);
 
     if (!user) {
         return (
@@ -42,7 +42,7 @@ export default function UserDropdown({ user, isRTL, handleLogout, handleLanguage
                     <ChevronDown className="w-4 h-4" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align={alignStart} className="w-56">
+            <DropdownMenuContent align={menuAlignStart} className="w-56">
                 <DropdownMenuItem onClick={() => handleLanguageChange(oppositeLocale)} className="gap-2">
                     <Globe className="w-4 h-4" />
                     {t('common.switchToOppositeLanguage')}

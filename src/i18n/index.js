@@ -1,5 +1,8 @@
-import { useContext, useMemo, useCallback } from 'react';
+import { createContext, useContext, useMemo, useCallback, useEffect, createElement } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { AuthContext, readStoredGuestLocale } from '@/lib/AuthContext';
+import { AppSettings } from '@/entities/all';
+import { appQueryKeys, queryClientInstance } from '@/lib/query-client';
 import he from './he';
 import en from './en';
 
@@ -10,13 +13,29 @@ const LOCALE_TO_BOOL = {
   en: false,
 };
 
+const DEFAULT_SETTINGS = { virtual_lab_enabled: true, locale_default: 'he' };
+
+export const I18nContext = typeof createContext === 'function' ? createContext(null) : null;
+
 /**
  * Resolves a locale code ('he' | 'en') from an explicit argument (`'he'`, `'en'`, or boolean `isRTL`),
- * falling back to `<html lang>` or stored guest locale, and defaulting to `'he'`.
+ * falling back to stored guest locale, cached app settings, `<html lang>`, and defaulting to `'he'`.
  */
 export function resolveLocale(localeOrIsRTL) {
   if (localeOrIsRTL === 'en' || localeOrIsRTL === false) return 'en';
   if (localeOrIsRTL === 'he' || localeOrIsRTL === true) return 'he';
+
+  const stored = readStoredGuestLocale();
+  if (stored === 'en' || stored === 'he') return stored;
+
+  try {
+    const cachedSettings = queryClientInstance?.getQueryData(appQueryKeys.settings);
+    if (cachedSettings?.locale_default === 'en' || cachedSettings?.locale_default === 'he') {
+      return cachedSettings.locale_default;
+    }
+  } catch {
+    // queryClient might not be initialized in isolated environments
+  }
 
   if (typeof document !== 'undefined') {
     const htmlLang = document.documentElement?.lang;
@@ -24,9 +43,6 @@ export function resolveLocale(localeOrIsRTL) {
     if (htmlLang === 'he') return 'he';
     if (document.documentElement?.dir === 'ltr') return 'en';
   }
-
-  const stored = readStoredGuestLocale();
-  if (stored === 'en' || stored === 'he') return stored;
 
   return 'he';
 }
@@ -93,28 +109,79 @@ export function pickLocalized(source, localeOrIsRTL, fallback = '') {
 }
 
 /**
- * React hook returning `{ t, pick, locale, dir, isRTL, oppositeLocale, alignStart, alignEnd }`
- * synchronized with the active user/guest locale in `AuthContext` (or an optional override).
+ * App-wide i18n provider syncing locale with user preference, guest storage,
+ * and app_settings.locale_default, as well as keeping <html lang/dir> in sync.
+ */
+export function I18nProvider({ children }) {
+  const auth = useContext(AuthContext);
+
+  const settingsQuery = useQuery({
+    queryKey: appQueryKeys.settings,
+    queryFn: async () => (await AppSettings.list())[0] || DEFAULT_SETTINGS,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const locale = useMemo(() => {
+    const fromAuth = auth?.user?.locale_preference || auth?.guestLocale;
+    if (fromAuth === 'he' || fromAuth === 'en') {
+      return fromAuth;
+    }
+    const fromSettings = settingsQuery?.data?.locale_default;
+    if (fromSettings === 'he' || fromSettings === 'en') {
+      return fromSettings;
+    }
+    const stored = readStoredGuestLocale();
+    if (stored === 'he' || stored === 'en') {
+      return stored;
+    }
+    return 'he';
+  }, [auth?.user?.locale_preference, auth?.guestLocale, settingsQuery?.data?.locale_default]);
+
+  const isRTL = LOCALE_TO_BOOL[locale] ?? true;
+  const dir = isRTL ? 'rtl' : 'ltr';
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = locale;
+      document.documentElement.dir = dir;
+    }
+  }, [locale, dir]);
+
+  const value = useMemo(() => ({ locale, isRTL, dir }), [locale, isRTL, dir]);
+
+  return createElement(I18nContext.Provider, { value }, children);
+}
+
+/**
+ * React hook returning `{ t, pick, locale, dir, isRTL, oppositeLocale, menuAlignStart, menuAlignEnd }`
+ * synchronized with active I18nProvider, AuthContext, or an optional override.
  */
 export function useTranslation(overrideLocaleOrIsRTL) {
+  const i18n = useContext(I18nContext);
   const auth = useContext(AuthContext);
 
   const locale = useMemo(() => {
     if (overrideLocaleOrIsRTL !== undefined && overrideLocaleOrIsRTL !== null) {
       return resolveLocale(overrideLocaleOrIsRTL);
     }
+    if (i18n?.locale) {
+      return i18n.locale;
+    }
     const fromAuth = auth?.user?.locale_preference || auth?.guestLocale;
     if (fromAuth === 'he' || fromAuth === 'en') {
       return fromAuth;
     }
     return resolveLocale();
-  }, [overrideLocaleOrIsRTL, auth?.user?.locale_preference, auth?.guestLocale]);
+  }, [overrideLocaleOrIsRTL, i18n?.locale, auth?.user?.locale_preference, auth?.guestLocale]);
 
-  const isRTL = LOCALE_TO_BOOL[locale];
-  const dir = locale === 'he' ? 'rtl' : 'ltr';
+  const isRTL = LOCALE_TO_BOOL[locale] ?? true;
+  const dir = isRTL ? 'rtl' : 'ltr';
   const oppositeLocale = locale === 'he' ? 'en' : 'he';
-  const alignStart = locale === 'he' ? 'end' : 'start';
-  const alignEnd = locale === 'he' ? 'start' : 'end';
+
+  // Radix UI dropdown alignment: In LTR, 'start' aligns with the trigger's left edge.
+  // In RTL, logical start is the physical right edge, corresponding to Radix align="end".
+  const menuAlignStart = locale === 'he' ? 'end' : 'start';
+  const menuAlignEnd = locale === 'he' ? 'start' : 'end';
 
   const t = useCallback(
     (key, vars) => translate(locale, key, vars),
@@ -133,7 +200,10 @@ export function useTranslation(overrideLocaleOrIsRTL) {
     dir,
     isRTL,
     oppositeLocale,
-    alignStart,
-    alignEnd,
+    menuAlignStart,
+    menuAlignEnd,
+    // Aliases for backwards compatibility:
+    alignStart: menuAlignStart,
+    alignEnd: menuAlignEnd,
   };
 }

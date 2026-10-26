@@ -2,7 +2,7 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { useExperimentForm } from '../components/hooks/useExperimentForm';
 import { useTranslation } from '@/i18n';
@@ -82,7 +82,7 @@ export default function AdminExperimentForm() {
               onClick={() => navigate(createPageUrl('AdminExperiments'))}
               className="gap-2"
             >
-              <ArrowRight className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
               {t('admin.form.backToList')}
             </Button>
           </CardContent>

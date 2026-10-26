@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Save, Eye, FileDown } from 'lucide-react';
+import { ArrowLeft, Save, Eye, FileDown } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { getExperimentWorkspaceUrl } from '@/components/simulation/experimentRegistry';
 import { useTranslation } from '@/i18n';
@@ -56,7 +56,7 @@ export default function ExperimentFormHeaderActions({
           variant="outline"
           onClick={() => navigate(createPageUrl('AdminExperiments'))}
         >
-          <ArrowRight className="w-4 h-4 me-2" />
+          <ArrowLeft className="w-4 h-4 me-2 rtl:rotate-180" />
           {t('common.back')}
         </Button>
 

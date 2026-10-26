@@ -1,6 +1,7 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/i18n';
 
 export default function NumericParameterFields({ 
   param, 
@@ -8,10 +9,12 @@ export default function NumericParameterFields({
   handleDynamicArrayChange, 
   errors 
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div>
-        <Label>ערך ברירת מחדל *</Label>
+        <Label>{t('admin.form.parameters.defaultValueRequired')}</Label>
         <Input
           type="text"
           value={param.default}
@@ -24,7 +27,7 @@ export default function NumericParameterFields({
       </div>
 
       <div>
-        <Label>מינימום</Label>
+        <Label>{t('admin.form.parameters.minLabel')}</Label>
         <Input
           type="text"
           value={param.min}
@@ -37,7 +40,7 @@ export default function NumericParameterFields({
       </div>
 
       <div>
-        <Label>מקסימום</Label>
+        <Label>{t('admin.form.parameters.maxLabel')}</Label>
         <Input
           type="text"
           value={param.max}
@@ -50,7 +53,7 @@ export default function NumericParameterFields({
       </div>
 
       <div>
-        <Label>צעד (Step)</Label>
+        <Label>{t('admin.form.parameters.stepLabel')}</Label>
         <Input
           type="text"
           value={param.step}

@@ -98,7 +98,6 @@ export default function ExperimentSidePanel({
                                 experiment={experiment}
                                 isRTL={isRTL}
                                 onFloat={onFloatConsole}
-                                maxSimulationTime={maxSimulationTime}
                                 validationState={validationState}
                             />
                         ) : (

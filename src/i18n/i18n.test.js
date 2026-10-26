@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import he from './he';
 import en from './en';
 import { translate, pickLocalized, resolveLocale } from './index';
+import { queryClientInstance, appQueryKeys } from '@/lib/query-client';
 
 function collectKeys(obj, prefix = '') {
   const keys = [];
@@ -41,5 +42,14 @@ describe('i18n dictionaries and helpers (T41, T42)', () => {
     expect(pickLocalized({ name_he: 'תבנית א', name_en: 'Preset A' }, 'en')).toBe('Preset A');
     expect(pickLocalized({ label_he: 'אפשרות', label_en: 'Option' }, 'he')).toBe('אפשרות');
     expect(pickLocalized(null, 'en', 'fallback')).toBe('fallback');
+  });
+
+  it('resolves fallback locale from cached queryClient app-settings on cold navigation', () => {
+    queryClientInstance.setQueryData(appQueryKeys.settings, { locale_default: 'en' });
+    try {
+      expect(resolveLocale()).toBe('en');
+    } finally {
+      queryClientInstance.removeQueries({ queryKey: appQueryKeys.settings });
+    }
   });
 });

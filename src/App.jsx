@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { AppErrorFallback, ErrorBoundary } from '@/components/layout/ErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { useTranslation } from '@/i18n';
+import { useTranslation, I18nProvider } from '@/i18n';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -109,7 +109,9 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <AuthProvider>
-            <AppRoutes />
+            <I18nProvider>
+              <AppRoutes />
+            </I18nProvider>
           </AuthProvider>
         </Router>
         <SonnerToaster position="top-center" richColors />

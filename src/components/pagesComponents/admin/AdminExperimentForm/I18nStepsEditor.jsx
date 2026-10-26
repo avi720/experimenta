@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Trash2 } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 export default function I18nStepsEditor({ 
   locale, 
@@ -13,6 +14,8 @@ export default function I18nStepsEditor({
   label,
   placeholder 
 }) {
+  const { t } = useTranslation();
+
   return (
     <div>
       <Label className="text-base font-medium">{label}</Label>
@@ -40,7 +43,7 @@ export default function I18nStepsEditor({
         className="w-full"
       >
         <PlusCircle className="me-2 h-4 w-4" />
-        {locale === 'he' ? 'הוסף שלב' : 'Add Step'}
+        {t(locale === 'he' ? 'admin.form.content.addStepHe' : 'admin.form.content.addStepEn')}
       </Button>
     </div>
   );

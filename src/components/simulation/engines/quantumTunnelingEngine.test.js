@@ -142,4 +142,23 @@ describe('calculateQuantumTunnelingStep', () => {
         expect(collapsedReflected.hasCollapsed).toBe(true);
         expect(collapsedReflected.measurementResult).toBe('reflected');
     });
+
+    it('does not collapse if neither randomSeed nor _collapseRandom is provided (legacy runs) (T49)', () => {
+        const baseParams = { v: 0.002, m: 5.11, V0: 1, L: 0.001 };
+        const legacy = calculateQuantumTunnelingStep(25, baseParams);
+        expect(legacy.position).toBeGreaterThanOrEqual(DETECTOR_X_POSITION);
+        expect(legacy.hasCollapsed).toBe(false);
+        expect(legacy.measurementResult).toBeNull();
+    });
+
+    it('supports generic randomSeed for collapse determination', () => {
+        const baseParams = { v: 0.002, m: 5.11, V0: 1, L: 0.001 };
+        const point = calculateQuantumTunnelingStep(0, baseParams);
+        const result = calculateQuantumTunnelingStep(25, {
+            ...baseParams,
+            randomSeed: point.transmission * 0.25,
+        });
+        expect(result.hasCollapsed).toBe(true);
+        expect(result.measurementResult).toBe('transmitted');
+    });
 });

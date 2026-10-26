@@ -9,6 +9,7 @@ import NumericParameterFields from './NumericParameterFields';
 import SelectParameterOptionsEditor from './SelectParameterOptionsEditor';
 import BooleanParameterDefault from './BooleanParameterDefault';
 import ParameterTranslationFields from './ParameterTranslationFields';
+import { useTranslation } from '@/i18n';
 
 export default function ParameterInput({ 
   param, 
@@ -20,12 +21,15 @@ export default function ParameterInput({
   removeFromArray,
   errors 
 }) {
+  const { t, pick } = useTranslation();
+  const paramName = pick(param.i18n_labels) || param.key || `#${index + 1}`;
+
   return (
     <Card className="relative">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">
-            פרמטר {index + 1}: {param.i18n_labels?.he || param.key || 'חדש'}
+            {t('admin.form.parameters.paramCardTitle', { index: index + 1, name: paramName })}
           </CardTitle>
           <Button
             type="button"

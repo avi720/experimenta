@@ -20,10 +20,13 @@ import { useTranslation } from '@/i18n';
 
 export default function ExperimentsDropdown({ experiments, isRTL }) {
     const navigate = useNavigate();
-    const { t, pick, dir, alignStart } = useTranslation(isRTL);
+    const { t, pick, dir, menuAlignStart } = useTranslation(isRTL);
     const experimentsByCategory = groupExperimentsByCategory(experiments);
     const categories = Object.entries(experimentsByCategory);
     const [expandedCategory, setExpandedCategory] = useState(null);
+
+    const expandKey = dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
+    const collapseKey = dir === 'rtl' ? 'ArrowRight' : 'ArrowLeft';
 
     if (!experiments || experiments.length === 0) {
         return null;
@@ -43,7 +46,7 @@ export default function ExperimentsDropdown({ experiments, isRTL }) {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-                align={alignStart}
+                align={menuAlignStart}
                 className="w-72 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto"
                 dir={dir}
             >
@@ -71,7 +74,10 @@ export default function ExperimentsDropdown({ experiments, isRTL }) {
                                             toggleCategory(category);
                                         }}
                                         onKeyDown={(event) => {
-                                            if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                                            if (event.key === expandKey && !isExpanded) {
+                                                event.preventDefault();
+                                                toggleCategory(category);
+                                            } else if (event.key === collapseKey && isExpanded) {
                                                 event.preventDefault();
                                                 toggleCategory(category);
                                             }

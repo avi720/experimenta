@@ -11,6 +11,9 @@ vi.mock("react", () => ({
   useCallback: (fn) => fn,
   useMemo: (fn) => fn(),
   useContext: () => ({ user: { locale_preference: "he" } }),
+  createContext: () => ({ Provider: ({ children }) => children }),
+  useEffect: vi.fn(),
+  createElement: vi.fn(),
 }));
 vi.mock("@/lib/AuthContext", () => ({
   AuthContext: {},

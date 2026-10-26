@@ -52,7 +52,6 @@ export default function FloatingWindowsManager({
                         simulationData={simulationData}
                         experiment={experiment}
                         isRTL={isRTL}
-                        maxSimulationTime={maxSimulationTime}
                         validationState={validationState}
                     />
                 </FloatingWindow>

@@ -35,7 +35,7 @@ export default function ExperimentHeader({
     canExport = false
 }) {
     const navigate = useNavigate();
-    const { t, pick, alignEnd } = useTranslation(isRTL);
+    const { t, pick, menuAlignEnd } = useTranslation(isRTL);
     const groupedExperiments = groupExperimentsByCategory(
         experimentsByCategory ?? experiments ?? []
     );
@@ -106,7 +106,7 @@ export default function ExperimentHeader({
                                     <ChevronDown className="w-4 h-4 ms-1.5" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-64 max-w-[calc(100vw-2rem)]" align={alignEnd}>
+                            <DropdownMenuContent className="w-64 max-w-[calc(100vw-2rem)]" align={menuAlignEnd}>
                                 <DropdownMenuLabel>{t("common.categories")}</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 {Object.keys(groupedExperiments).length > 0 ? (
@@ -149,7 +149,7 @@ export default function ExperimentHeader({
                                         <User className="w-5 h-5" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align={alignEnd}>
+                                <DropdownMenuContent align={menuAlignEnd}>
                                     <DropdownMenuLabel>{user.full_name || user.email}</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => navigate(createPageUrl("Dashboard"))}>

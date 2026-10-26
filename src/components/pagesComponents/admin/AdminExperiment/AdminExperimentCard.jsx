@@ -16,9 +16,10 @@ export default function AdminExperimentCard({ experiment, index, handleDelete, h
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { t, pick, dir, locale } = useTranslation();
 
-  const title = experiment.i18n_texts?.[locale]?.title || experiment.i18n_texts?.he?.title || experiment.slug;
-  const shortDesc = experiment.i18n_texts?.[locale]?.short_desc || experiment.i18n_texts?.he?.short_desc;
-  const categoryLabel = categoryNames[experiment.category]?.[locale] || categoryNames[experiment.category]?.he || experiment.category;
+  const localizedTexts = pick(experiment.i18n_texts, null);
+  const title = localizedTexts?.title || experiment.slug;
+  const shortDesc = localizedTexts?.short_desc || '';
+  const categoryLabel = pick(categoryNames[experiment.category], experiment.category);
 
   return (
     <motion.div

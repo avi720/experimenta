@@ -19,7 +19,7 @@ export default function AdminExperimentsFilters({
   activeFiltersCount,
   clearFilters
 }) {
-  const { t, locale } = useTranslation();
+  const { t, pick } = useTranslation();
 
   return (
     <motion.div
@@ -41,9 +41,9 @@ export default function AdminExperimentsFilters({
           <SelectTrigger><SelectValue placeholder={t('admin.list.filterByCategory')} /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('common.allCategories')}</SelectItem>
-            {Object.entries(categoryNames).map(([key, { he }]) => (
+            {Object.entries(categoryNames).map(([key]) => (
               <SelectItem key={key} value={key}>
-                {categoryNames[key]?.[locale] || he} ({stats.byCategory[key] || 0})
+                {pick(categoryNames[key], key)} ({stats.byCategory[key] || 0})
               </SelectItem>
             ))}
           </SelectContent>

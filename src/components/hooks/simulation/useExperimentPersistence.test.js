@@ -17,6 +17,9 @@ vi.mock("react", () => ({
     useCallback: (fn) => fn,
     useMemo: (fn) => fn(),
     useContext: () => authMock,
+    createContext: () => ({ Provider: ({ children }) => children }),
+    useEffect: vi.fn(),
+    createElement: vi.fn(),
 }));
 vi.mock("sonner", () => ({
     toast: toastMocks,

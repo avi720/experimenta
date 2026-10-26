@@ -338,7 +338,7 @@ const en = {
     sharingTitle: 'Sharing Information with Third Parties',
     sharingIntro: 'We do not sell, rent, or trade your personal information. Data may be shared only in the following limited circumstances:',
     sharingItems: [
-      'With infrastructure providers operating on our behalf to host the service, store data, and authenticate users under strict confidentiality and security obligations.',
+      'With technology infrastructure providers acting on our behalf to operate the service, store data, and authenticate users: Supabase (Authentication & PostgreSQL Database) and Vercel (Hosting & Edge Infrastructure), subject to strict confidentiality and security obligations.',
       'When required by applicable law, regulation, or valid legal process.',
       'To protect the legal rights, safety, or integrity of Experimenta and its users.',
     ],

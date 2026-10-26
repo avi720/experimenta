@@ -87,6 +87,7 @@ export function calculateQuantumTunnelingStep(t, parameters = {}) {
         m = 5.11,   // Particle mass in 10^5 eV/c² (UI unit). 5.11 is electron mass.
         V0 = 1.0,   // Barrier height in eV
         L = 0.005,  // Barrier width in µm (micrometers)
+        randomSeed,
         _collapseRandom,
     } = parameters || {};
 
@@ -143,13 +144,17 @@ export function calculateQuantumTunnelingStep(t, parameters = {}) {
     // Once the transmitted wave reaches the detector at DETECTOR_X_POSITION (x = 25),
     // a measurement occurs: the state collapses into 'transmitted' with probability T
     // or 'reflected' with probability R = 1 - T.
-    const collapseRandom =
-        typeof _collapseRandom === 'number' && !Number.isNaN(_collapseRandom)
-            ? _collapseRandom
-            : 0.5;
-    const hasCollapsed = position >= DETECTOR_X_POSITION;
+    // When randomSeed / _collapseRandom is not provided (e.g. legacy reconstructed runs),
+    // do not trigger a collapse.
+    const rawRandom =
+        typeof randomSeed === 'number' && !Number.isNaN(randomSeed)
+            ? randomSeed
+            : (typeof _collapseRandom === 'number' && !Number.isNaN(_collapseRandom) ? _collapseRandom : null);
+    const collapseRandom = rawRandom;
+    const hasRandom = rawRandom !== null;
+    const hasCollapsed = hasRandom && position >= DETECTOR_X_POSITION;
     const measurementResult = hasCollapsed
-        ? (collapseRandom < transmission ? 'transmitted' : 'reflected')
+        ? (rawRandom < transmission ? 'transmitted' : 'reflected')
         : null;
 
     // --- Phase Calculation ---
