@@ -100,7 +100,7 @@ export function useExperimentPersistence(experiment, _user, parameters, simulati
             const storedSamples = serializeSimulationSamples(simulationData);
             const runData = {
                 experiment_slug: experiment.slug,
-                parameters_json: JSON.stringify(parameters || {}),
+                parameters_json: parameters || {},
                 samples_count: storedSamples.length,
                 results_url: JSON.stringify(storedSamples),
                 notes: ''

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateFreeFallStep } from './freeFallEngine.jsx';
+import { calculateFreeFallStep } from './freeFallEngine';
 
 const DT = 0.001; // same fixed step as the simulation engine loop
 

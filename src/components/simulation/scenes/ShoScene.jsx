@@ -1,7 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
-import { setupBasicScene } from './sceneUtils';
-import { createOrbitControls } from '../controls/orbitControls';
+import { createGroundPlane, setupScene } from './sceneUtils';
 
 const SPRING_SAMPLES = 128;
 const SPRING_TUBULAR_SEGMENTS = 64;
@@ -49,173 +48,113 @@ export function updateSpringGeometry(geometry, length) {
     return geometry;
 }
 
+const WALL_EDGE_X = -45;
+const MASS_HALF_WIDTH = 10;
+const VISUAL_SCALE = 30;
+const MIN_SPRING_LENGTH = 10;
+const SPRING_RESHAPE_THRESHOLD = 2;
+
+/**
+ * Maps the physical position (from the current data point, else `x0`, else 1) to the mass's
+ * scene X and returns the resulting spring length between the wall and the mass.
+ */
+function computeMassLayout(params, dataPoint) {
+    let xPhysics;
+    if (dataPoint && dataPoint.position !== undefined) {
+        xPhysics = dataPoint.position;
+    } else if (params && params.x0 !== undefined) {
+        xPhysics = params.x0;
+    } else {
+        xPhysics = 1;
+    }
+    const massX = xPhysics * VISUAL_SCALE;
+    const springLength = Math.max(MIN_SPRING_LENGTH, massX - MASS_HALF_WIDTH - WALL_EDGE_X);
+    return { massX, springLength };
+}
+
 const ShoScene = ({ parameters, dataPointToRender }) => {
     const mountRef = useRef(null);
-    const sceneRef = useRef(null);
-    const cameraRef = useRef(null);
-    const rendererRef = useRef(null);
-    const massRef = useRef(null);
-    const springRef = useRef(null);
-    const controlsRef = useRef(null);
-    const animationFrameId = useRef(null);
 
-    const wallEdgeX = -45;
-
-    // Create refs for parameters and data point to avoid stale closures in animate loop
+    // Refs keep the render loop reading the latest props without restarting the scene.
     const dataPointRef = useRef(dataPointToRender);
     const parametersRef = useRef(parameters);
-    
+
     useEffect(() => {
         dataPointRef.current = dataPointToRender;
     }, [dataPointToRender]);
-    
+
     useEffect(() => {
         parametersRef.current = parameters;
     }, [parameters]);
 
     useEffect(() => {
         const currentMount = mountRef.current;
-        if (!currentMount) {
-            return;
-        }
+        if (!currentMount) return;
 
-        const { scene, camera, renderer, dispose: disposeBasicScene } = setupBasicScene(currentMount);
-        sceneRef.current = scene;
-        cameraRef.current = camera;
-        rendererRef.current = renderer;
-        
-        controlsRef.current = createOrbitControls(camera, renderer.domElement);
-        controlsRef.current.target.set(0, 10, 0);
-        camera.position.set(0, 50, 150);
+        const { scene, start, dispose } = setupScene(currentMount, {
+            background: 0x87ceeb,
+            fov: 75,
+            far: 1000,
+            cameraPosition: [0, 50, 150],
+            target: [0, 10, 0],
+            lights: {
+                ambientIntensity: 0.7,
+                directionalIntensity: 0.8,
+                directionalPosition: [50, 80, 30],
+                shadowCamera: { top: 100, bottom: -100, left: -100, right: 100 },
+            },
+            controls: { minDistance: 20, maxDistance: 500, maxPolarAngle: Math.PI / 2 },
+        });
+
+        scene.add(createGroundPlane(200, 200, new THREE.MeshStandardMaterial({
+            color: 0x228b22, // ForestGreen
+            roughness: 0.9,
+            metalness: 0.1,
+        })));
 
         // Wall
-        const wallGeometry = new THREE.BoxGeometry(10, 50, 50);
-        const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.2, roughness: 0.8 });
-        const wall = new THREE.Mesh(wallGeometry, wallMaterial);
-        wall.position.x = wallEdgeX - 5;
-        wall.position.y = 25;
+        const wall = new THREE.Mesh(
+            new THREE.BoxGeometry(10, 50, 50),
+            new THREE.MeshStandardMaterial({ color: 0x808080, metalness: 0.2, roughness: 0.8 })
+        );
+        wall.position.set(WALL_EDGE_X - 5, 25, 0);
         wall.receiveShadow = true;
         scene.add(wall);
 
         // Mass
-        const massGeometry = new THREE.BoxGeometry(20, 20, 20);
-        const massMaterial = new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.6, roughness: 0.4 });
-        massRef.current = new THREE.Mesh(massGeometry, massMaterial);
-        massRef.current.castShadow = true;
-        massRef.current.position.y = 10;
-        scene.add(massRef.current);
+        const mass = new THREE.Mesh(
+            new THREE.BoxGeometry(20, 20, 20),
+            new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.6, roughness: 0.4 })
+        );
+        mass.castShadow = true;
+        mass.position.y = 10;
+        scene.add(mass);
 
-        // Initial spring
-        const springMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0x444444, 
-            metalness: 0.8, 
-            roughness: 0.3 
-        });
-        springRef.current = new THREE.Mesh(createSpringGeometry(50), springMaterial);
-        springRef.current.position.y = 10;
-        scene.add(springRef.current);
+        // Spring: built once, then reshaped in place.
+        const initial = computeMassLayout(parametersRef.current, dataPointRef.current);
+        mass.position.x = initial.massX;
+        const spring = new THREE.Mesh(
+            createSpringGeometry(initial.springLength),
+            new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.8, roughness: 0.3 })
+        );
+        spring.position.set(WALL_EDGE_X, 10, 0);
+        scene.add(spring);
 
-        // פונקציה מרכזית לחישוב ועדכון מיקום המסה והקפיץ
-        const updateMassAndSpringPosition = (currentParams, currentDataPoint) => {
-            if (!massRef.current || !springRef.current) return;
+        let lastSpringLength = initial.springLength;
 
-            // קבלת המיקום הפיזיקלי
-            let x_physics;
-            if (currentDataPoint && currentDataPoint.position !== undefined) {
-                x_physics = currentDataPoint.position;
-            } else if (currentParams && currentParams.x0 !== undefined) {
-                x_physics = currentParams.x0;
-            } else {
-                x_physics = 1;
+        start(() => {
+            const { massX, springLength } = computeMassLayout(parametersRef.current, dataPointRef.current);
+            mass.position.x = massX;
+            if (Math.abs(springLength - lastSpringLength) > SPRING_RESHAPE_THRESHOLD) {
+                updateSpringGeometry(spring.geometry, springLength);
+                lastSpringLength = springLength;
             }
-
-            const massHalfWidth = 10;
-            const visual_position_x = x_physics * 30;
-            
-            // Update mass position
-            massRef.current.position.x = visual_position_x;
-
-            // Calculate spring attachment points and current length
-            const wallAttachmentX = wallEdgeX;
-            const massAttachmentX = massRef.current.position.x - massHalfWidth;
-            let currentSpringLength = massAttachmentX - wallAttachmentX;
-            
-            currentSpringLength = Math.max(10, currentSpringLength);
-
-            return currentSpringLength;
-        };
-
-        // אתחול מיקום ראשוני - קריטי לתצוגה הנכונה מההתחלה
-        const initialSpringLength = updateMassAndSpringPosition(parametersRef.current, dataPointRef.current);
-        if (initialSpringLength && springRef.current) {
-            updateSpringGeometry(springRef.current.geometry, initialSpringLength);
-            springRef.current.position.x = wallEdgeX;
-        }
-
-        let lastSpringLength = initialSpringLength || 50;
-
-        let isDisposed = false;
-        const animate = () => {
-            if (isDisposed) return;
-            animationFrameId.current = requestAnimationFrame(animate);
-            controlsRef.current.update();
-
-            const currentSpringLength = updateMassAndSpringPosition(parametersRef.current, dataPointRef.current);
-
-            if (currentSpringLength && Math.abs(currentSpringLength - lastSpringLength) > 2) {
-                if (springRef.current) {
-                    updateSpringGeometry(springRef.current.geometry, currentSpringLength);
-                    lastSpringLength = currentSpringLength;
-                }
-            }
-            
-            renderer.render(scene, camera);
-        };
-
-        animate();
-
-        // פונקציה לעדכון גודל renderer וcamera
-        const handleResize = () => {
-            if (!currentMount || !camera || !renderer) return;
-            camera.aspect = currentMount.clientWidth / currentMount.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
-        };
-
-        // ResizeObserver לזיהוי שינויים בגודל ה-div
-        const resizeObserver = new ResizeObserver(() => {
-            handleResize();
         });
 
-        if (currentMount) {
-            resizeObserver.observe(currentMount);
-        }
-
-        // window resize listener (backup)
-        window.addEventListener('resize', handleResize);
-
-        return () => {
-            isDisposed = true;
-            if (animationFrameId.current !== null) {
-                cancelAnimationFrame(animationFrameId.current);
-                animationFrameId.current = null;
-            }
-            window.removeEventListener('resize', handleResize);
-            resizeObserver.disconnect();
-            if (controlsRef.current) controlsRef.current.dispose();
-
-            // Disposes every geometry/material in the scene (wall, mass, spring, ground, lights),
-            // the renderer, and removes the canvas.
-            disposeBasicScene();
-
-            sceneRef.current = null;
-            cameraRef.current = null;
-            rendererRef.current = null;
-            massRef.current = null;
-            springRef.current = null;
-            controlsRef.current = null;
-        };
-    }, [wallEdgeX]);
+        // Disposes the loop, observer, controls, every geometry/material in the scene
+        // (ground, wall, mass, spring, lights), the renderer, and removes the canvas.
+        return dispose;
+    }, []);
 
     return <div ref={mountRef} className="w-full h-full" />;
 };

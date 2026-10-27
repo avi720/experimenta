@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateInterference } from "./doubleSlitEngine.jsx";
+import { calculateInterference } from "./doubleSlitEngine";
 
 describe("double slit engine (T45)", () => {
     const params = { wavelength: 500, slit_separation: 2000, screen_distance: 1 };

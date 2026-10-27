@@ -3,10 +3,11 @@ import pluginJs from "@eslint/js";
 import pluginReact from "eslint-plugin-react";
 import pluginReactHooks from "eslint-plugin-react-hooks";
 import pluginUnusedImports from "eslint-plugin-unused-imports";
+import tseslint from "typescript-eslint";
 
 export default [
   {
-    files: ["src/**/*.{js,mjs,cjs,jsx}"],
+    files: ["src/**/*.{js,mjs,cjs,jsx,ts,tsx}"],
     ignores: ["src/components/ui/**/*"],
     ...pluginJs.configs.recommended,
     ...pluginReact.configs.flat.recommended,
@@ -54,6 +55,18 @@ export default [
       "react-hooks/exhaustive-deps": "warn",
       // Debug logging is not shipped; warn/error remain for real failures (T27).
       "no-console": ["error", { allow: ["warn", "error"] }],
+    },
+  },
+  // TypeScript files (T65): TS parser + the recommended type-aware-free rule set.
+  ...tseslint.configs.recommended.map((config) => ({
+    ...config,
+    files: ["src/**/*.{ts,tsx}"],
+  })),
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      // unused-imports/no-unused-vars already reports these with the project's `_` convention.
+      "@typescript-eslint/no-unused-vars": "off",
     },
   },
 ];

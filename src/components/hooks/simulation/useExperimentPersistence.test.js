@@ -38,7 +38,7 @@ import {
     parseStoredSimulationSamples,
     useExperimentPersistence,
 } from "./useExperimentPersistence.jsx";
-import { calculateFreeFallStep } from "@/components/simulation/engines/freeFallEngine.jsx";
+import { calculateFreeFallStep } from "@/components/simulation/engines/freeFallEngine";
 
 describe("useExperimentPersistence sample serialization (T16, T52)", () => {
     it("flattens nested position.y, strips internal keys, and preserves exact final impact point", () => {
@@ -99,6 +99,8 @@ describe("useExperimentPersistence sample serialization (T16, T52)", () => {
             const { saveRun } = useExperimentPersistence({ slug: "free-fall" }, null, { h0: 10 }, [{ time: 0, position: 10 }]);
             await saveRun();
             expect(createRunMock).toHaveBeenCalledTimes(1);
+            // parameters_json is a jsonb column (T59): the object is sent as-is, not stringified.
+            expect(createRunMock.mock.calls[0][0].parameters_json).toEqual({ h0: 10 });
             expect(toastMocks.success).toHaveBeenCalledWith("Run saved successfully!");
         });
     });

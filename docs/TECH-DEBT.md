@@ -421,18 +421,21 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 
 #### [ ] T59. Bound user-supplied run data ([#62](https://github.com/avi720/experimenta/issues/62))
 - **Where:** `supabase/migrations/20261022073402_baseline_schema.sql:166-178`
-- **Issue:** **Deferred 2026-10-27** — needs owner input on Open Question 16 (keep text `parameters_json` or move to jsonb) and approval to push a production migration. `experiment_runs.notes` and `parameters_json` are unbounded `text`, so a user can store arbitrarily large rows; `parameters_json` is text rather than `jsonb` (a Base44 carry-over), forcing `JSON.parse` everywhere (T58). Depends on Open Question 16.
+- **Issue:** `experiment_runs.notes` and `parameters_json` are unbounded `text`, so a user can store arbitrarily large rows; `parameters_json` is text rather than `jsonb` (a Base44 carry-over), forcing `JSON.parse` everywhere (T58). Depends on Open Question 16.
 - **Acceptance:** A new migration enforces size limits (insert of a > 64 kB notes value is rejected — verified with `supabase db push --dry-run` then a test insert on a branch/local DB) and the parameter column type is decided per Open Question 16.
+- **In progress 2026-10-27:** Open Question 16 answered: `jsonb`. Migration `20261027085256_run_parameters_jsonb_and_limits.sql` converts `parameters_json` to `jsonb` (unparseable legacy text is kept as a jsonb string, which Results already reports as malformed) and adds size checks: notes ≤ 64 kB, parameters ≤ 64 kB, stored samples (`results_url`) ≤ 2 MB. `supabase db push --dry-run` lists it cleanly; the app now saves parameters as an object and reads either form. Left: push to production (needs owner approval) and confirm a > 64 kB notes insert is rejected.
 
-#### [ ] T62. Unify three.js scene setup and camera controls ([#65](https://github.com/avi720/experimenta/issues/65))
+#### [x] T62. Unify three.js scene setup and camera controls ([#65](https://github.com/avi720/experimenta/issues/65))
 - **Where:** `src/components/simulation/scenes/FreeFallScene.jsx`, `QuantumTunnelingScene.jsx`, `ShoScene.jsx`, `sceneUtils.jsx`; `src/components/simulation/controls/orbitControls.jsx`
-- **Issue:** **Deferred 2026-10-27** — needs owner input on Open Question 17 (keep the custom left = pan / right = rotate mapping or adopt three's standard OrbitControls). `setupBasicScene` is used only by ShoScene; FreeFall and QT each inline ~60 lines of scene/camera/renderer/lights setup; FreeFallScene has its own ~90-line mouse controller and `orbitControls` hand-rolls what three's bundled OrbitControls provides; resize is window-only in FF/QT vs `ResizeObserver` in SHO. Depends on Open Question 17.
+- **Issue:** `setupBasicScene` is used only by ShoScene; FreeFall and QT each inline ~60 lines of scene/camera/renderer/lights setup; FreeFallScene has its own ~90-line mouse controller and `orbitControls` hand-rolls what three's bundled OrbitControls provides; resize is window-only in FF/QT vs `ResizeObserver` in SHO. Depends on Open Question 17.
 - **Acceptance:** All scenes share one setup/teardown path and one camera-control implementation, and resize correctly when the side panel opens/closes; verified in a browser for each experiment.
+- **Done 2026-10-27:** `sceneUtils.setupScene` is the single setup/teardown path (scene, camera, renderer, lights, controls, `ResizeObserver` on the mount, rAF loop, one `dispose()`); FreeFall, QT and SHO keep only their own objects. Camera control is three's `OrbitControls` via `controls/cameraControls.js` with the owner's mapping (Open Question 17): left = pan, right = rotate around the clicked point (raycast pivot, camera does not jump), wheel = zoom, damping and touch as standard. The hand-rolled `orbitControls.jsx` and FreeFall's own mouse controller are gone. Verified in the browser for all three scenes: pan, pivot-rotate and zoom work, the canvas follows viewport resizes, and 5 mount/unmount cycles leave no live WebGL buffers.
 
-#### [ ] T65. Make `npm run typecheck` meaningful or remove it ([#68](https://github.com/avi720/experimenta/issues/68))
+#### [x] T65. Make `npm run typecheck` meaningful or remove it ([#68](https://github.com/avi720/experimenta/issues/68))
 - **Where:** `jsconfig.json:16-17`; `package.json:12`
-- **Issue:** **Deferred 2026-10-27** — needs owner input on Open Question 14 (invest in real type checks or delete the script and TypeScript devDependencies). **Confirmed.** It exits 2 with 1,253 errors — 578 from `node_modules/three` and most of the rest JS/shadcn `forwardRef` artefacts — while `include` globs only `src/components/**/*.js` although the components are `.jsx`. CI does not run it. Depends on Open Question 14.
+- **Issue:** **Confirmed.** It exits 2 with 1,253 errors — 578 from `node_modules/three` and most of the rest JS/shadcn `forwardRef` artefacts — while `include` globs only `src/components/**/*.js` although the components are `.jsx`. CI does not run it. Depends on Open Question 14.
 - **Acceptance:** Either `npm run typecheck` exits 0 on a defined scope and runs in CI, or the script and the unused `typescript`/`@types/*` devDependencies are removed.
+- **Done 2026-10-27:** Open Question 14 answered: adopt TypeScript. `tsconfig.json` (strict, `allowJs`, `checkJs: false`) replaces `jsconfig.json`; `npm run typecheck` (`tsc -p tsconfig.json`) exits 0 and runs in CI before the tests. First converted scope, fully typed: `src/lib` (non-component files), `src/entities`, `src/api`, `src/i18n`, `src/hooks/useDataQueries`, the four engines, plus generated `src/types/database.ts` and app models in `src/types/models.ts`. ESLint parses `.ts`/`.tsx` with `typescript-eslint`. Typing surfaced the `m.toString()` null crash in `shoEngine` (T63), fixed with a regression test. The rest of the codebase is tracked by T71.
 
 #### [x] T68. Load the fonts the CSS asks for, without per-render style injection ([#71](https://github.com/avi720/experimenta/issues/71))
 - **Where:** `src/Layout.jsx:39-42`; `index.html`
@@ -528,13 +531,21 @@ Items that surfaced during the audit but need a product, security, or business d
 13. **Quantum tunneling "measurement/collapse":** implement it in the engine, or delete the half-built scene branch? (T49)
     - **Answered 2026-10-26:** Implemented quantum measurement and wave-function collapse in `quantumTunnelingEngine.jsx` and `QuantumTunnelingScene.jsx`, placing the detector at `x = 25` (transmitted side). The wave-packet collapses into either transmitted or reflected state based on tunneling probability and persistent random seed.
 14. **Type checking:** invest in real checks (JSDoc or TypeScript on `lib`, `entities`, hooks and engines), or delete the script and the TypeScript devDependencies? (T65)
+   - **Answered 2026-10-27:** adopt TypeScript for the whole project; files that need rewriting will be rewritten. T65 sets up the toolchain and converts a first scope; the rest is tracked as its own finding.
 15. **Tests first:** Vitest unit tests for the engines, a Playwright smoke test of the guest flow (Dashboard → Lab → run an experiment), or both? (T45)
    - **Answered 2026-10-22:** Vitest unit tests now; Playwright is out of scope for this round.
 16. **Base44 conventions:** migrate away from the entity shim's Base44-style API (`list('-created_date')`, `filter()`), the `created_date`/`updated_date` columns and text `parameters_json`, or keep them for stability? (T21, T59)
+   - **Answered 2026-10-27:** move `parameters_json` to `jsonb` (T59). The entity shim API and the `created_date`/`updated_date` column names stay as they are.
 17. **Camera controls:** is the custom mouse mapping (left = pan, right = rotate) intentional, or can scenes use three's standard OrbitControls behaviour? (T62)
+   - **Answered 2026-10-27:** keep left = pan and right = rotate around the clicked point; everything else (wheel zoom, damping, touch) follows three's standard OrbitControls.
 
 ---
 
 ## Discovered During Remediation
 
 > Add new findings here as they surface while working through the plan. Same format: `[ ] {PREFIX}##. Title` + Where / Issue / Acceptance.
+
+#### [ ] T71. Convert the remaining JavaScript to TypeScript ([#84](https://github.com/avi720/experimenta/issues/84))
+- **Where:** every `.js`/`.jsx` file under `src/` outside T65's first scope — pages, `components/**` (incl. `ui/`), hooks under `components/hooks/`, scenes and controls (need `@types/three`), `Layout.jsx`, `App.jsx`, `main.jsx`, `lib/AuthContext.jsx`, `lib/PageNotFound.jsx`, tests.
+- **Issue:** Open Question 14 chose TypeScript for the whole project; T65 set up the toolchain and typed the data layer, i18n and engines, but most files are still unchecked JavaScript (`checkJs: false`). Overlaps T61 (file extensions), which this supersedes for extensions.
+- **Acceptance:** No `.js`/`.jsx` source file remains under `src/`; `tsconfig.json` drops `allowJs`; `npm run typecheck`, lint, tests and build pass in CI; the app behaves unchanged in a browser.

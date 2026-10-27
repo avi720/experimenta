@@ -1,3 +1,7 @@
+import type { EngineParameters, ParameterValue } from './types';
+
+type FreeFallPhysics = { h0: number; v0: number; g: number; m: number; c: number };
+
 /**
  * Free Fall Physics Engine
  * מנוע חישוב לנפילה חופשית
@@ -7,8 +11,8 @@
  * ממיר קלט (מספר או מחרוזת מה-UI) למספר; ערך ברירת המחדל משמש רק כשהקלט אינו מספר תקין.
  * כך h0 = 0 או v0 = 0 נשארים 0 ולא מוחלפים בברירת המחדל.
  */
-function toNumber(value, fallback) {
-    const parsed = parseFloat(value);
+function toNumber(value: ParameterValue, fallback: number): number {
+    const parsed = parseFloat(String(value));
     return Number.isFinite(parsed) ? parsed : fallback;
 }
 
@@ -16,7 +20,7 @@ function toNumber(value, fallback) {
  * מצב קינמטי אנליטי (ללא התחשבות בקרקע) בזמן t.
  * גרר לינארי: F = -c·v, ולכן a = -g - (c/m)·v — הגרר תמיד מנוגד למהירות.
  */
-function kinematicsAt(t, { h0, v0, g, m, c }) {
+function kinematicsAt(t: number, { h0, v0, g, m, c }: FreeFallPhysics) {
     if (c === 0) {
         return {
             y: h0 + v0 * t - 0.5 * g * t * t,
@@ -42,7 +46,7 @@ function kinematicsAt(t, { h0, v0, g, m, c }) {
  * זמן הגעת הגוף לשיא הגובה (0 אם הוא לא נע כלפי מעלה בתחילת התנועה).
  * מאותו רגע הגובה יורד באופן מונוטוני.
  */
-function apexTime({ v0, g, m, c }) {
+function apexTime({ v0, g, m, c }: FreeFallPhysics): number {
     if (v0 <= 0 || g <= 0) return 0;
     if (c === 0) return v0 / g;
     const gamma = c / m;
@@ -53,7 +57,7 @@ function apexTime({ v0, g, m, c }) {
  * מוצא את רגע הפגיעה בקרקע (y = 0) בתוך [tLow, tHigh] בחיפוש בינארי,
  * כאשר y(tLow) >= 0 ו-y(tHigh) <= 0.
  */
-function findImpactTime(tLow, tHigh, physics) {
+function findImpactTime(tLow: number, tHigh: number, physics: FreeFallPhysics): number {
     let low = tLow;
     let high = tHigh;
     for (let i = 0; i < 100 && high - low > 1e-12; i++) {
@@ -73,7 +77,7 @@ function findImpactTime(tLow, tHigh, physics) {
  * @param {Object} parameters - פרמטרי הסימולציה
  * @returns {Object} נתוני הצעד
  */
-export function calculateFreeFallStep(t, parameters) {
+export function calculateFreeFallStep(t: number, parameters?: EngineParameters | null) {
     const { 
         h0 = 50,      // גובה התחלתי [m]
         v0 = 0,       // מהירות התחלתית [m/s]

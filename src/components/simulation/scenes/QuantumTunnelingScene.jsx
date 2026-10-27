@@ -1,8 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
-import { createOrbitControls } from '../controls/orbitControls';
 import { DETECTOR_X_POSITION } from '../engines/quantumTunnelingEngine';
-import { disposeObject3D, disposeRenderer } from './sceneUtils';
+import { createGroundPlane, setupScene } from './sceneUtils';
 
 const UM_TO_NM = 1000;
 const VISUAL_L_SCALE_FACTOR = 0.25;
@@ -25,29 +24,12 @@ export function computeBarrierVisualWidth(parameters = {}, dataPointToRender = n
 }
 
 /**
- * Adds the lights, floor, particle gun, barrier, detector and particles to `scene`.
- * Returns the objects the component updates afterwards.
+ * Adds the floor, particle gun, barrier, detector and particles to `scene` (lights come from
+ * `setupScene`). Returns the objects the component updates afterwards.
  */
 export function populateQuantumTunnelingScene(scene, barrierWidth) {
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-    scene.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(10, 10, 5);
-    directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-    scene.add(directionalLight);
-
     // Floor
-    const floorGeometry = new THREE.PlaneGeometry(100, 50);
-    const floorMaterial = new THREE.MeshLambertMaterial({ color: 0xf0f0f0 });
-    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -2;
-    floor.receiveShadow = true;
-    scene.add(floor);
+    scene.add(createGroundPlane(100, 50, new THREE.MeshLambertMaterial({ color: 0xf0f0f0 }), -2));
 
     // Particle Gun
     const gunGroup = new THREE.Group();
@@ -151,118 +133,54 @@ export function populateQuantumTunnelingScene(scene, barrierWidth) {
 
 export default function QuantumTunnelingScene({ parameters, dataPointToRender }) {
     const mountRef = useRef(null);
-    const sceneRef = useRef(null);
-    const rendererRef = useRef(null);
-    const cameraRef = useRef(null);
-    const controlsRef = useRef(null);
-    const animationIdRef = useRef(null);
 
     // Particle Refs
     const incomingParticleRef = useRef(null);
     const transmittedParticleRef = useRef(null);
     const reflectedParticleRef = useRef(null);
-    
+
     const barrierRef = useRef(null);
-    const detectorRef = useRef(null);
     const detectorConeRef = useRef(null);
 
     useEffect(() => {
         const mountElement = mountRef.current;
         if (!mountElement) return;
 
-        // Scene setup
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf7fafc);
-        sceneRef.current = scene;
-
-        // Camera setup
-        const camera = new THREE.PerspectiveCamera(
-            60,
-            mountElement.clientWidth / mountElement.clientHeight,
-            0.1,
-            1000
-        );
-        camera.position.set(0, 15, 25);
-        camera.lookAt(0, 0, 0);
-        cameraRef.current = camera;
-
-        // Renderer setup
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(mountElement.clientWidth, mountElement.clientHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        mountElement.appendChild(renderer.domElement);
-        rendererRef.current = renderer;
-
-        // Controls setup using createOrbitControls
-        const controls = createOrbitControls(camera, renderer.domElement);
-        controls.target.set(0, 0, 0);
-        controls.minDistance = 5;
-        controls.maxDistance = 100;
-        controlsRef.current = controls;
+        const { scene, start, dispose } = setupScene(mountElement, {
+            background: 0xf7fafc,
+            fov: 60,
+            far: 1000,
+            cameraPosition: [0, 15, 25],
+            target: [0, 0, 0],
+            lights: {
+                ambientIntensity: 0.4,
+                directionalIntensity: 1,
+                directionalPosition: [10, 10, 5],
+            },
+            controls: { minDistance: 5, maxDistance: 100, maxPolarAngle: Math.PI / 2 },
+        });
 
         const objects = populateQuantumTunnelingScene(scene, computeBarrierVisualWidth(parameters, dataPointToRender));
         barrierRef.current = objects.barrier;
-        detectorRef.current = objects.detectorGroup;
         detectorConeRef.current = objects.detectorCone;
         incomingParticleRef.current = objects.incomingParticle;
         transmittedParticleRef.current = objects.transmittedParticle;
         reflectedParticleRef.current = objects.reflectedParticle;
 
-        // Animation loop
-        let isDisposed = false;
-        const animate = () => {
-            if (isDisposed) return;
-            animationIdRef.current = requestAnimationFrame(animate);
-
-            if (controlsRef.current) {
-                controlsRef.current.update();
-            }
-            
-            const time = Date.now() * 0.005;
-            [incomingParticleRef, transmittedParticleRef, reflectedParticleRef].forEach(ref => {
-                if (ref.current && ref.current.visible) {
-                    ref.current.position.y = Math.sin(time) * 0.1;
-                }
+        const particles = [objects.incomingParticle, objects.transmittedParticle, objects.reflectedParticle];
+        start(() => {
+            const bob = Math.sin(Date.now() * 0.005) * 0.1;
+            particles.forEach((particle) => {
+                if (particle.visible) particle.position.y = bob;
             });
+        });
 
-            renderer.render(scene, camera);
-        };
-        animate();
-
-        // Handle resize
-        const handleResize = () => {
-            if (mountElement) {
-                camera.aspect = mountElement.clientWidth / mountElement.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(mountElement.clientWidth, mountElement.clientHeight);
-            }
-        };
-        window.addEventListener('resize', handleResize);
-
-        // Cleanup
         return () => {
-            isDisposed = true;
-            if (animationIdRef.current !== null) {
-                cancelAnimationFrame(animationIdRef.current);
-                animationIdRef.current = null;
-            }
-            window.removeEventListener('resize', handleResize);
-            controls.dispose();
-
-            disposeObject3D(scene);
-            scene.clear();
-            disposeRenderer(renderer, mountElement);
-
-            sceneRef.current = null;
-            rendererRef.current = null;
-            cameraRef.current = null;
-            controlsRef.current = null;
+            dispose();
             incomingParticleRef.current = null;
             transmittedParticleRef.current = null;
             reflectedParticleRef.current = null;
             barrierRef.current = null;
-            detectorRef.current = null;
             detectorConeRef.current = null;
         };
     // Mount-only scene setup; later parameter/data changes are applied by the update effect below.

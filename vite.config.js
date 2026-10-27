@@ -8,6 +8,9 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url))
 export default defineConfig({
   plugins: [react()],
   build: {
+    // three.js core + OrbitControls (~510 kB, loaded only on experiment pages) is the largest
+    // legitimate chunk; anything above this still triggers Vite's size warning (T31).
+    chunkSizeWarningLimit: 550,
     rollupOptions: {
       output: {
         // Long-lived vendor chunks keep the app entry small and cache well across deploys (T30).

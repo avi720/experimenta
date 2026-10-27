@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { samplesToCsv, serializeCsvCell } from "./csv.js";
+import { samplesToCsv, serializeCsvCell } from "./csv";
 
 describe("csv utility (T22)", () => {
   it("serializes cells consistently", () => {

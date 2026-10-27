@@ -1,3 +1,5 @@
+import type { EngineParameters } from './types';
+
 /**
  * Quantum tunneling simulation engine with time evolution.
  * All internal calculations are done in SI units (meters, kg, seconds, Joules).
@@ -28,7 +30,7 @@ export const DETECTOR_X_POSITION = 25;
  * @param {number} m_si - Mass of the particle (kg).
  * @returns {{transmission: number, reflection: number}} Transmission and reflection probabilities.
  */
-export function calculateTransmissionReflection(E_si, V0_si, L_si, m_si) {
+export function calculateTransmissionReflection(E_si: number, V0_si: number, L_si: number, m_si: number) {
     // Ensure we have valid physical parameters
     if (E_si <= 0 || V0_si <= 0 || L_si <= 0 || m_si <= 0) {
         return { transmission: 0, reflection: 1 };
@@ -80,7 +82,7 @@ export function calculateTransmissionReflection(E_si, V0_si, L_si, m_si) {
     return { transmission, reflection };
 }
 
-export function calculateQuantumTunnelingStep(t, parameters = {}) {
+export function calculateQuantumTunnelingStep(t: number, parameters: EngineParameters | null = {}) {
     // Ensure parameters object exists and has default values
     const { 
         v = 0.01,   // Particle speed as fraction of c (non-relativistic default)
@@ -91,10 +93,10 @@ export function calculateQuantumTunnelingStep(t, parameters = {}) {
     } = parameters || {};
 
     // Convert to numbers to handle string inputs from UI
-    const v_num = parseFloat(v) || 0.01;
-    const m_num_ui_unit = parseFloat(m) || 5.11;
-    const V0_num = parseFloat(V0) || 1.0;
-    const L_num = parseFloat(L) || 0.005;
+    const v_num = parseFloat(String(v)) || 0.01;
+    const m_num_ui_unit = parseFloat(String(m)) || 5.11;
+    const V0_num = parseFloat(String(V0)) || 1.0;
+    const L_num = parseFloat(String(L)) || 0.005;
 
     // --- Convert user-friendly units to SI units for physics calculations ---
     

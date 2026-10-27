@@ -16,7 +16,7 @@ vi.mock("@/api/supabaseClient", async (importOriginal) => {
   };
 });
 
-import { createEntity } from "./createEntity.js";
+import { createEntity } from "./createEntity";
 import { resolveSupabaseConfig } from "@/api/supabaseClient";
 import {
   readStoredGuestLocale,

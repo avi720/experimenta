@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateStep } from "./shoEngine.jsx";
+import { calculateStep } from "./shoEngine";
 
 const h = 1e-5;
 
@@ -41,6 +41,12 @@ describe("SHO engine (T45)", () => {
             expectSatisfiesOde(underdamped, t);
             expectSatisfiesOde(overdamped, t);
         }
+    });
+
+    it("falls back to defaults instead of throwing on null parameters", () => {
+        const p = calculateStep(0, { m: null, k: null, x0: null, v0: null });
+        expect(p.position).toBe(1);
+        expect(p.angular_frequency).toBeCloseTo(Math.sqrt(10), 10);
     });
 
     it("loses energy monotonically when damped", () => {

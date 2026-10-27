@@ -1,33 +1,44 @@
-import { createContext, useContext, useMemo, useCallback, useEffect, createElement } from 'react';
+import { createContext, useContext, useMemo, useCallback, useEffect, createElement, type ReactNode } from 'react';
 import { AuthContext, readStoredGuestLocale } from '@/lib/AuthContext';
 import { useAppSettingsQuery } from '@/hooks/useDataQueries';
 import { appQueryKeys, queryClientInstance } from '@/lib/query-client';
+import type { AppSettings } from '@/types/models';
 import he from './he';
 import en from './en';
 
-export const dictionaries = { he, en };
+export type Locale = 'he' | 'en';
+/** A locale code, or the legacy `isRTL` boolean (true = Hebrew). Empty means resolve from context. */
+export type LocaleInput = Locale | boolean | null | undefined;
+type Vars = Record<string, unknown>;
+type Dir = 'rtl' | 'ltr';
 
-const LOCALE_TO_BOOL = {
+export const dictionaries: Record<Locale, Record<string, unknown>> = { he, en };
+
+const LOCALE_TO_BOOL: Record<Locale, boolean> = {
   he: true,
   en: false,
 };
 
+type I18nContextValue = { locale: Locale; isRTL: boolean; dir: Dir };
+type AuthLocaleSource = { user?: { locale_preference?: string | null } | null; guestLocale?: string | null } | null | undefined;
 
-export const I18nContext = typeof createContext === 'function' ? createContext(null) : null;
+export const I18nContext = createContext<I18nContextValue | null>(null);
+
+const isLocale = (value: unknown): value is Locale => value === 'he' || value === 'en';
 
 /**
  * Resolves a locale code ('he' | 'en') from an explicit argument (`'he'`, `'en'`, or boolean `isRTL`),
  * falling back to stored guest locale, cached app settings, `<html lang>`, and defaulting to `'he'`.
  */
-export function resolveLocale(localeOrIsRTL) {
+export function resolveLocale(localeOrIsRTL?: LocaleInput): Locale {
   if (localeOrIsRTL === 'en' || localeOrIsRTL === false) return 'en';
   if (localeOrIsRTL === 'he' || localeOrIsRTL === true) return 'he';
 
   const stored = readStoredGuestLocale();
-  if (stored === 'en' || stored === 'he') return stored;
+  if (isLocale(stored)) return stored;
 
-  const cachedSettings = queryClientInstance?.getQueryData(appQueryKeys.settings);
-  if (cachedSettings?.locale_default === 'en' || cachedSettings?.locale_default === 'he') {
+  const cachedSettings = queryClientInstance.getQueryData<AppSettings>(appQueryKeys.settings);
+  if (isLocale(cachedSettings?.locale_default)) {
     return cachedSettings.locale_default;
   }
 
@@ -41,18 +52,18 @@ export function resolveLocale(localeOrIsRTL) {
   return 'he';
 }
 
-function getNestedValue(obj, path) {
+function getNestedValue(obj: unknown, path: string): unknown {
   if (!obj || !path) return undefined;
   return String(path)
     .split('.')
-    .reduce((acc, part) => (acc && typeof acc === 'object' ? acc[part] : undefined), obj);
+    .reduce<unknown>((acc, part) => (acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[part] : undefined), obj);
 }
 
-function interpolate(template, vars) {
+function interpolate(template: unknown, vars?: Vars): unknown {
   if (typeof template !== 'string' || !vars || typeof vars !== 'object') {
     return template;
   }
-  return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key) =>
+  return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key: string) =>
     vars[key] !== undefined && vars[key] !== null ? String(vars[key]) : ''
   );
 }
@@ -61,12 +72,13 @@ function interpolate(template, vars) {
  * Translates a dotted key (e.g. `'header.openMenu'`) for the given locale or `isRTL` boolean.
  * Supports `{{variable}}` interpolation and returns arrays/objects when the dictionary entry is structured.
  */
-export function translate(localeOrIsRTL, key, vars) {
+// The return type defaults to string; structured entries (e.g. step lists) can be requested as T.
+export function translate<T = string>(localeOrIsRTL: LocaleInput, key: string, vars?: Vars): T {
   const locale = resolveLocale(localeOrIsRTL);
   const primary = getNestedValue(dictionaries[locale], key);
   const raw = primary !== undefined ? primary : getNestedValue(dictionaries.he, key);
-  if (raw === undefined) return key;
-  return interpolate(raw, vars);
+  if (raw === undefined) return key as T;
+  return interpolate(raw, vars) as T;
 }
 
 /**
@@ -76,30 +88,31 @@ export function translate(localeOrIsRTL, key, vars) {
  * - `{ label_he, label_en }` (e.g., `parameter.options[i]`)
  * - `{ title_he, title_en }`
  */
-export function pickLocalized(source, localeOrIsRTL, fallback = '') {
-  if (!source || typeof source !== 'object') return fallback;
+export function pickLocalized<T = string>(source: unknown, localeOrIsRTL: LocaleInput, fallback: T | '' = ''): T {
+  if (!source || typeof source !== 'object') return fallback as T;
+  const record = source as Record<string, T | undefined>;
   const locale = resolveLocale(localeOrIsRTL);
   const altLocale = locale === 'he' ? 'en' : 'he';
 
-  if (locale in source || altLocale in source) {
-    return source[locale] || source[altLocale] || fallback;
+  if (locale in record || altLocale in record) {
+    return record[locale] || record[altLocale] || (fallback as T);
   }
   const nameKey = `name_${locale}`;
   const altNameKey = `name_${altLocale}`;
-  if (nameKey in source || altNameKey in source) {
-    return source[nameKey] || source[altNameKey] || fallback;
+  if (nameKey in record || altNameKey in record) {
+    return record[nameKey] || record[altNameKey] || (fallback as T);
   }
   const labelKey = `label_${locale}`;
   const altLabelKey = `label_${altLocale}`;
-  if (labelKey in source || altLabelKey in source) {
-    return source[labelKey] || source[altLabelKey] || fallback;
+  if (labelKey in record || altLabelKey in record) {
+    return record[labelKey] || record[altLabelKey] || (fallback as T);
   }
   const titleKey = `title_${locale}`;
   const altTitleKey = `title_${altLocale}`;
-  if (titleKey in source || altTitleKey in source) {
-    return source[titleKey] || source[altTitleKey] || fallback;
+  if (titleKey in record || altTitleKey in record) {
+    return record[titleKey] || record[altTitleKey] || (fallback as T);
   }
-  return fallback;
+  return fallback as T;
 }
 
 /**
@@ -107,29 +120,29 @@ export function pickLocalized(source, localeOrIsRTL, fallback = '') {
  * and app_settings.locale_default. It is the single owner of <html lang/dir>, which
  * portaled UI (dropdowns, dialogs, toasts) inherits its direction from.
  */
-export function I18nProvider({ children }) {
-  const auth = useContext(AuthContext);
+export function I18nProvider({ children }: { children?: ReactNode }) {
+  const auth = useContext(AuthContext) as AuthLocaleSource;
 
   const settingsQuery = useAppSettingsQuery();
 
   const locale = useMemo(() => {
     const fromAuth = auth?.user?.locale_preference || auth?.guestLocale;
-    if (fromAuth === 'he' || fromAuth === 'en') {
+    if (isLocale(fromAuth)) {
       return fromAuth;
     }
     const fromSettings = settingsQuery?.data?.locale_default;
-    if (fromSettings === 'he' || fromSettings === 'en') {
+    if (isLocale(fromSettings)) {
       return fromSettings;
     }
     const stored = readStoredGuestLocale();
-    if (stored === 'he' || stored === 'en') {
+    if (isLocale(stored)) {
       return stored;
     }
-    return 'he';
+    return 'he' as const;
   }, [auth?.user?.locale_preference, auth?.guestLocale, settingsQuery?.data?.locale_default]);
 
   const isRTL = LOCALE_TO_BOOL[locale] ?? true;
-  const dir = isRTL ? 'rtl' : 'ltr';
+  const dir: Dir = isRTL ? 'rtl' : 'ltr';
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -147,11 +160,11 @@ export function I18nProvider({ children }) {
  * React hook returning `{ t, pick, locale, dir, isRTL, oppositeLocale, menuAlignStart, menuAlignEnd }`
  * synchronized with active I18nProvider, AuthContext, or an optional override.
  */
-export function useTranslation(overrideLocaleOrIsRTL) {
+export function useTranslation(overrideLocaleOrIsRTL?: LocaleInput) {
   const i18n = useContext(I18nContext);
-  const auth = useContext(AuthContext);
+  const auth = useContext(AuthContext) as AuthLocaleSource;
 
-  const locale = useMemo(() => {
+  const locale = useMemo((): Locale => {
     if (overrideLocaleOrIsRTL !== undefined && overrideLocaleOrIsRTL !== null) {
       return resolveLocale(overrideLocaleOrIsRTL);
     }
@@ -159,28 +172,28 @@ export function useTranslation(overrideLocaleOrIsRTL) {
       return i18n.locale;
     }
     const fromAuth = auth?.user?.locale_preference || auth?.guestLocale;
-    if (fromAuth === 'he' || fromAuth === 'en') {
+    if (isLocale(fromAuth)) {
       return fromAuth;
     }
     return resolveLocale();
   }, [overrideLocaleOrIsRTL, i18n?.locale, auth?.user?.locale_preference, auth?.guestLocale]);
 
   const isRTL = LOCALE_TO_BOOL[locale] ?? true;
-  const dir = isRTL ? 'rtl' : 'ltr';
-  const oppositeLocale = locale === 'he' ? 'en' : 'he';
+  const dir: Dir = isRTL ? 'rtl' : 'ltr';
+  const oppositeLocale: Locale = locale === 'he' ? 'en' : 'he';
 
   // Radix UI dropdown alignment: In LTR, 'start' aligns with the trigger's left edge.
   // In RTL, logical start is the physical right edge, corresponding to Radix align="end".
-  const menuAlignStart = locale === 'he' ? 'end' : 'start';
-  const menuAlignEnd = locale === 'he' ? 'start' : 'end';
+  const menuAlignStart: 'start' | 'end' = locale === 'he' ? 'end' : 'start';
+  const menuAlignEnd: 'start' | 'end' = locale === 'he' ? 'start' : 'end';
 
   const t = useCallback(
-    (key, vars) => translate(locale, key, vars),
+    <T = string>(key: string, vars?: Vars) => translate<T>(locale, key, vars),
     [locale]
   );
 
   const pick = useCallback(
-    (source, fallback = '') => pickLocalized(source, locale, fallback),
+    <T = string>(source: unknown, fallback: T | '' = '') => pickLocalized<T>(source, locale, fallback),
     [locale]
   );
 
