@@ -1,3 +1,5 @@
+import { LEGACY_EXPERIMENT_PAGE_SLUGS } from '@/simulation/experimentRegistry';
+
 export const ROUTES = {
   HOME: '/',
   DASHBOARD: '/Dashboard',
@@ -13,22 +15,14 @@ export const ROUTES = {
   LOGIN: '/Login',
 } as const;
 
+// Legacy experiment page names come from the registry, so a new experiment needs no edit here.
+export const LEGACY_EXPERIMENT_PAGES: readonly string[] = Object.keys(LEGACY_EXPERIMENT_PAGE_SLUGS);
+
 export const FULL_SCREEN_PAGES: readonly string[] = [
   'LabWorkspace',
   'AdminExperimentForm',
-  'FreeFallExperiment',
-  'ShoExperiment',
-  'QuantumTunnelingExperiment',
-  'DoubleSlitExperiment',
+  ...LEGACY_EXPERIMENT_PAGES,
 ];
-
-export function getLabUrl(category?: string | null): string {
-  return category ? `/Lab?category=${encodeURIComponent(category)}` : '/Lab';
-}
-
-export function getAdminExperimentFormUrl(id?: string | null): string {
-  return id ? `/AdminExperimentForm?id=${encodeURIComponent(id)}` : '/AdminExperimentForm';
-}
 
 /**
  * Normalizes page names to route paths.

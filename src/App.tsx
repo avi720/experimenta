@@ -11,7 +11,7 @@ import { AppErrorFallback, ErrorBoundary } from '@/components/layout/ErrorBounda
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { useTranslation, I18nProvider } from '@/i18n';
-import { ROUTES } from '@/routes';
+import { LEGACY_EXPERIMENT_PAGES, ROUTES } from '@/routes';
 
 // Every page except Dashboard is split into its own chunk (T30); App wraps routes in Suspense.
 const Lab = lazy(() => import('./pages/Lab'));
@@ -94,12 +94,11 @@ const AppRoutes = () => (
     {/* Lab and Workspace routes */}
     <Route path={ROUTES.LAB} element={<LayoutWrapper currentPageName="Lab"><Lab /></LayoutWrapper>} />
     <Route path={ROUTES.LAB_WORKSPACE} element={<LayoutWrapper currentPageName="LabWorkspace"><LabWorkspace /></LayoutWrapper>} />
-    
+
     {/* Legacy experiment slug routes for backwards compatibility */}
-    <Route path="/FreeFallExperiment" element={<LayoutWrapper currentPageName="FreeFallExperiment"><LabWorkspace /></LayoutWrapper>} />
-    <Route path="/ShoExperiment" element={<LayoutWrapper currentPageName="ShoExperiment"><LabWorkspace /></LayoutWrapper>} />
-    <Route path="/QuantumTunnelingExperiment" element={<LayoutWrapper currentPageName="QuantumTunnelingExperiment"><LabWorkspace /></LayoutWrapper>} />
-    <Route path="/DoubleSlitExperiment" element={<LayoutWrapper currentPageName="DoubleSlitExperiment"><LabWorkspace /></LayoutWrapper>} />
+    {LEGACY_EXPERIMENT_PAGES.map((pageName) => (
+      <Route key={pageName} path={`/${pageName}`} element={<LayoutWrapper currentPageName={pageName}><LabWorkspace /></LayoutWrapper>} />
+    ))}
 
     {/* Protected routes */}
     <Route path={ROUTES.RESULTS} element={
