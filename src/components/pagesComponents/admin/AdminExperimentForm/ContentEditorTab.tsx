@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import I18nTextInput from './I18nTextInput';
 import I18nStepsEditor from './I18nStepsEditor';
 import { useTranslation } from '@/i18n';
-import type { ExperimentFormHandlers } from '@/components/hooks/experimentForm/useExperimentFormHandlers';
+import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { FormErrors } from '@/types/admin';
 import type { ExperimentFormData } from '@/types/experiment';
 

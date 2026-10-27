@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Home } from 'lucide-react';
-import { useAppData } from '@/components/hooks/useAppData';
+import { useAppData } from '@/hooks/useAppData';
 import { useTranslation } from '@/i18n';
 
 export default function PageNotFound() {

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import * as THREE from "three";
 import { computeBarrierVisualWidth, populateQuantumTunnelingScene } from "./QuantumTunnelingScene";
-import { disposeObject3D } from "./sceneUtils";
-import { calculateQuantumTunnelingStep } from "../engines/quantumTunnelingEngine";
+import { disposeObject3D } from "@/simulation/sceneUtils";
+import { calculateQuantumTunnelingStep } from "@/simulation/engines/quantumTunnelingEngine";
 
 describe("QuantumTunnelingScene barrier width scaling (T49)", () => {
     it("scales barrier_width_um from the engine into visible scene units", () => {

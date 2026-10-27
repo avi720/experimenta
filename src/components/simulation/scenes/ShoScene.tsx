@@ -2,7 +2,7 @@ import { memo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import type { ParameterValues } from '@/types/experiment';
 import type { SimulationDataPoint, SimulationSceneProps } from '@/types/simulation';
-import { createGroundPlane, setupScene } from './sceneUtils';
+import { createGroundPlane, setupScene } from '@/simulation/sceneUtils';
 
 const SPRING_SAMPLES = 128;
 const SPRING_TUBULAR_SEGMENTS = 64;

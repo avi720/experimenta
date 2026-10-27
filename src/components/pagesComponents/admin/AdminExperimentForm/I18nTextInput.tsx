@@ -1,7 +1,7 @@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import type { ExperimentFormHandlers } from '@/components/hooks/experimentForm/useExperimentFormHandlers';
+import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { FormErrors } from '@/types/admin';
 import type { ExperimentFormData } from '@/types/experiment';
 

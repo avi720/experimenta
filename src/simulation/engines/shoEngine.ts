@@ -48,7 +48,12 @@ export function calculateStep(t: number, parameters?: EngineParameters | null) {
         const gamma = damping_num / (2 * m_num);
         const omega_d = Math.sqrt(Math.abs(omega0 * omega0 - gamma * gamma));
         
-        if (omega0 > gamma) {
+        const CRITICAL_DAMPING_TOLERANCE = 1e-7;
+        if (Math.abs(omega0 - gamma) < CRITICAL_DAMPING_TOLERANCE) {
+            // דעיכה קריטית (Critically damped)
+            position = (x0_num + (v0_num + gamma * x0_num) * t) * Math.exp(-gamma * t);
+            velocity = (v0_num + gamma * x0_num - gamma * (x0_num + (v0_num + gamma * x0_num) * t)) * Math.exp(-gamma * t);
+        } else if (omega0 > gamma) {
             // דעיכה חלשה (Underdamped)
             // שינוי קטן: אם omega_d קרוב ל-0 (כאשר omega0 קרוב ל-gamma), למנוע חלוקה באפס
             const current_omega_d = omega_d === 0 ? 1e-9 : omega_d; // למנוע חלוקה באפס אם יש דעיכה קריטית/חזקה מאוד
@@ -57,10 +62,6 @@ export function calculateStep(t: number, parameters?: EngineParameters | null) {
             
             position = A * Math.exp(-gamma * t) * Math.cos(omega_d * t + phi);
             velocity = A * Math.exp(-gamma * t) * (-gamma * Math.cos(omega_d * t + phi) - omega_d * Math.sin(omega_d * t + phi));
-        } else if (omega0 === gamma) {
-            // דעיכה קריטית (Critically damped)
-            position = (x0_num + (v0_num + gamma * x0_num) * t) * Math.exp(-gamma * t);
-            velocity = (v0_num + gamma * x0_num - gamma * (x0_num + (v0_num + gamma * x0_num) * t)) * Math.exp(-gamma * t);
         } else {
             // דעיכה חזקה (Overdamped)
             const discriminant = gamma * gamma - omega0 * omega0;

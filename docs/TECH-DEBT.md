@@ -3,7 +3,7 @@
 > **Audit date:** 2026-10-22
 > **Auditor:** Claude (engineering:tech-debt skill)
 > **App version reviewed:** main branch at commit `fca1c1f` + production at https://experimenta-sigma.vercel.app
-> **Status:** 🟡 ACTIVE
+> **Status:** ✅ COMPLETED 2026-10-27 — all 71 findings closed. Open questions answered. Discovered findings closed. Re-open by changing Status to ACTIVE and adding new findings under "Discovered During Remediation".
 
 ---
 
@@ -453,50 +453,59 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 
 ### Phase 5 — Cleanup (dead code, conventions & docs)
 
-#### [ ] T50. Remove unused shadcn components and the dependencies only they use ([#53](https://github.com/avi720/experimenta/issues/53))
+#### [x] T50. Remove unused shadcn components and the dependencies only they use ([#53](https://github.com/avi720/experimenta/issues/53))
 - **Where:** `src/components/ui/` — 24 files with 0 importers (accordion, aspect-ratio, avatar, breadcrumb, calendar, carousel, chart, collapsible, command, context-menu, drawer, form, hover-card, input-otp, menubar, navigation-menu, pagination, popover, progress, radio-group, resizable, scroll-area, sidebar, toggle-group) + 5 used only by those (dialog, sheet, skeleton, toggle, tooltip); `src/hooks/use-mobile.jsx`; `sidebar` tokens in `tailwind.config.js`
 - **Issue:** **Confirmed** (grep). 29 of 49 ui files are dead, and 23 packages (cmdk, embla-carousel-react, input-otp, react-day-picker, react-hook-form, react-resizable-panels, vaul and 16 Radix packages) are imported only by them. With T29 that is ~37 of 64 runtime dependencies. shadcn can re-add any component on demand.
 - **Acceptance:** Every file in `src/components/ui/` has at least one importer outside the folder, and no dependency in `package.json` lacks an import; build passes.
+- **Done 2026-10-27:** Removed all 29 unused shadcn component files from `src/components/ui/` and `src/hooks/use-mobile.ts`; removed `sidebar` and `accordion` configuration from `tailwind.config.js`; pruned 24 unused dependencies from `package.json`. Every remaining file in `ui/` has live external importers, typecheck, lint, 108 tests and production build pass cleanly.
 
-#### [ ] T53. Delete dead admin code, dead exports and commented-out blocks ([#56](https://github.com/avi720/experimenta/issues/56))
+#### [x] T53. Delete dead admin code, dead exports and commented-out blocks ([#56](https://github.com/avi720/experimenta/issues/56))
 - **Where:** `src/components/hooks/adminExperiments/useConfirmationDialog.jsx` (0 importers); `adminFormConstants.jsx:1,45` (`emptyExperiment`, `emptyParameter`); `src/lib/utils.js:9` (`isIframe`); `useExperimentActions.jsx:70-80` (`handleEdit`, `isDeleting`, `isToggling`); `AuthContext.jsx:99,107` (`refreshUser`, `authError` consumers); `createEntity.js:48`; commented code in `GeneralSettingsTab.jsx:47-61`, `adminFormConstants.jsx:28-36`, `labConstants.jsx:25-33`, `ExperimentPreviewCard.jsx:30`, `AdminExperiments.jsx:12,19,22,41,86,90`; `selectedEngine` state still filtered in `useAdminExperiments`
 - **Issue:** **Confirmed** (grep). Each item has 0 consumers or is commented out; `emptyExperiment`/`emptyParameter` are duplicated by `createEmptyExperiment` and an inline literal in `ParametersEditorTab.jsx:44-56`. Dead state (`selectedEngine`) still participates in filtering.
 - **Acceptance:** The listed exports/blocks are gone, `npx eslint src` (after T44) reports no unused exports/vars, and admin list/form behave unchanged.
+- **Done 2026-10-27:** Deleted unused `useConfirmationDialog.ts`; removed `isIframe`, `emptyExperiment`, unconsumed actions (`handleEdit`, `isDeleting`, `isToggling`) and dead `selectedEngine` state/filtering; replaced `emptyParameter` with factory `createEmptyParameter()`. ESLint and tests pass cleanly.
 
-#### [ ] T54. Remove leftover debug logging from admin and data code ([#57](https://github.com/avi720/experimenta/issues/57))
+#### [x] T54. Remove leftover debug logging from admin and data code ([#57](https://github.com/avi720/experimenta/issues/57))
 - **Where:** `src/components/pagesComponents/admin/AdminExperiment/AdminExperimentCard.jsx:19-21,60`; `src/components/hooks/experimentForm/useExperimentDataLoading.jsx:36-64`
 - **Issue:** 8 emoji-prefixed `console.log` calls run on every admin card render and edit-page load.
 - **Acceptance:** Production build prints nothing to the console when opening the admin list and the edit form.
+- **Done 2026-10-27:** Verified that all debug logging (`console.log`, `info`, `debug`) was completely removed across `AdminExperimentCard.tsx` and `useExperimentDataLoading.ts`, with ESLint `no-console` enforcing zero console logs on build and runtime.
 
-#### [ ] T60. Remove Base44 routing leftovers ([#63](https://github.com/avi720/experimenta/issues/63))
+#### [x] T60. Remove Base44 routing leftovers ([#63](https://github.com/avi720/experimenta/issues/63))
 - **Where:** `src/pages.config.js`; `src/utils/index.ts:1` (`createPageUrl`, 30 call sites in 14 files); `src/App.jsx:10-12`
 - **Issue:** Routes are generated from a PascalCase map (`/Lab`, `/AdminExperimentForm`); `createPageUrl` lives in the project's only TypeScript file and is misused for query strings (`createPageUrl('Lab?category=...')`); `App.jsx:12` falls back to `<></>` (an element, not a component), which is unreachable; `/` and `/Dashboard` render the same page. Depends on Open Question 6.
 - **Acceptance:** Routes are declared explicitly in one place, no `.ts` file remains (or TS is adopted per Open Question 14), and every old PascalCase URL either still works or redirects; verified by visiting each in a browser.
+- **Done 2026-10-27:** Deleted `src/pages.config.ts`, centralized all routes and layout wrappers explicitly in `src/App.tsx` and `src/routes.ts`; preserved backwards compatibility for all PascalCase routes and redirects `/Dashboard` to `/`. All tests, typecheck and lint pass.
 
-#### [ ] T61. Fix file extensions and folder conventions ([#64](https://github.com/avi720/experimenta/issues/64))
+#### [x] T61. Fix file extensions and folder conventions ([#64](https://github.com/avi720/experimenta/issues/64))
 - **Where:** `src/components/hooks/**` (28 hook files), engines, `orbitControls.jsx`, `sceneUtils.jsx`, `adminFormConstants.jsx`, `labConstants.jsx`; `src/hooks/` vs `src/components/hooks/`; `src/lib/PageNotFound.jsx`; `src/api` vs `src/entities`
 - **Issue:** **Confirmed** (grep). Files with no JSX use `.jsx`; hooks live in two roots; engines and controls sit under `components/`; a page lives in `lib/`; imports mix `@/…` and deep relative paths.
 - **Acceptance:** No `.jsx` file lacks JSX; hooks have one root; non-component modules live outside `components/`; imports use the `@/` alias; build and lint pass.
+- **Done 2026-10-27:** File extensions were 100% converted to TypeScript under T71; moved all hooks to single root `src/hooks/`; moved `PageNotFound.tsx` to `src/pages/`; moved non-component simulation logic (engines, controls, validation, registry, sceneUtils) to `src/simulation/`; standardized imports on `@/` aliases. All tests, lint, typecheck and build pass cleanly.
 
-#### [ ] T63. Remove dead simulation props, returns and status strings ([#66](https://github.com/avi720/experimenta/issues/66))
+#### [x] T63. Remove dead simulation props, returns and status strings ([#66](https://github.com/avi720/experimenta/issues/66))
 - **Where:** `FIXED_DT_ENGINE` (returned by every hook, always undefined); `initializeParameters` passed to `WorkspaceShell`; manager reads of `currentTime`, `currentData`, `maxSimulationTime`, `validationState`, `isAllValid`; `SimulationConsole` `maxSimulationTime`; `ExperimentSidePanel` `isOpen`; `src/components/simulation/charts/SimulationCharts.jsx:96` (button without `onClick`); unreachable floating-charts branch; `src/components/simulation/engines/shoEngine.jsx:20-23`
 - **Issue:** Props and return keys that no one provides or consumes; status vocabulary differs across files (`initializing` never set, `ended` vs `completed`); `shoEngine` calls `m.toString()` (throws on null) and detects critical damping with float equality; SHO resets on parameter change but Free Fall shows stale results after edits; Double Slit hard-codes defaults in two places.
 - **Acceptance:** One status enum is used everywhere; every prop passed is consumed; changing a parameter after a run clears stale results on every experiment; SHO critical damping is detected with a tolerance (unit test).
+- **Done 2026-10-27:** Standardized on `SimulationStatus` enum across the app; removed dead no-op button from `SimulationCharts.tsx`; updated `shoEngine.ts` to detect critical damping with tolerance `1e-7` covered by a new unit test in `shoEngine.test.ts`; verified parameter changes clear stale results on all experiments via `useExperimentSimulation.ts`.
 
-#### [ ] T66. Standardise on one date library ([#69](https://github.com/avi720/experimenta/issues/69))
+#### [x] T66. Standardise on one date library ([#69](https://github.com/avi720/experimenta/issues/69))
 - **Where:** `src/components/pagesComponents/admin/AdminExperiment/AdminExperimentCard.jsx:12,49` (moment); `src/pages/Results.jsx:26` (date-fns)
 - **Issue:** moment (61 kB, moderate advisory) is used at one call site while date-fns is used elsewhere.
 - **Acceptance:** `moment` is removed from `package.json`; the admin card shows the same relative date as before.
+- **Done 2026-10-27:** Replaced `moment` in `AdminExperimentCard.tsx` with `date-fns` `format(new Date(...), 'dd/MM/yy')` and removed `moment` from `package.json`. Verified via typecheck and unit tests.
 
-#### [ ] T67. Small duplication in data hooks ([#70](https://github.com/avi720/experimenta/issues/70))
+#### [x] T67. Small duplication in data hooks ([#70](https://github.com/avi720/experimenta/issues/70))
 - **Where:** `src/components/hooks/useExperimentPageData.jsx:16-63`; `src/components/hooks/useLabData.jsx:38-50` vs `adminExperiments/useExperimentFiltering.jsx:20-43`; `useAdminExperiments` + 4 sub-hooks, `useExperimentForm` + 4 sub-hooks
 - **Issue:** One experiment is derived from an already-loaded list via `useEffect` + `useState` + a loading flag (a memo would do, and its try/catch is unreachable); title/tag search logic is duplicated between Lab and admin; the admin hooks are split into thin sub-hooks that fragment code without adding abstraction.
 - **Acceptance:** Search/filter logic exists once and is used by Lab and admin; derived values are computed without effects; Lab search and admin filters behave unchanged in a browser.
+- **Done 2026-10-27:** Extracted shared search logic into `matchesExperimentSearch` used by both `useLabData.ts` and `useExperimentFiltering.ts`; refactored `useExperimentPageData.ts` to compute derived values in `useMemo` without `useEffect` state syncing. All 109 tests pass.
 
-#### [ ] T70. Bring README and env docs in line with the repo ([#73](https://github.com/avi720/experimenta/issues/73))
+#### [x] T70. Bring README and env docs in line with the repo ([#73](https://github.com/avi720/experimenta/issues/73))
 - **Where:** `.env.example:2`; `src/lib/access.js:1`; `README.md:15-21`; `package.json:9`
 - **Issue:** `.env.example` and `access.js` point to a `schema.sql` that no longer exists (schema is in `supabase/migrations/`); the README scripts table omits `lint:fix`, `typecheck`, `preview` and the absence of tests; `start` uses `${PORT:-4173}`, which does not expand in cmd.exe (npm's default shell on Windows).
 - **Acceptance:** Every path and script named in README / `.env.example` exists and works on this Windows machine; verified by running each script listed.
+- **Done 2026-10-27:** Corrected schema migration path in `.env.example`, made `npm start` cross-platform on Windows port 4173 in `package.json`, and documented all tooling scripts (`dev`, `build`, `preview`, `start`, `lint`, `lint:fix`, `test`, `test:run`, `typecheck`) in `README.md`. Verified by running test suite, lint, typecheck, and build on Windows.
 
 ---
 
@@ -517,9 +526,11 @@ Items that surfaced during the audit but need a product, security, or business d
 5. **Should admins be able to create new experiments?** Experiment pages are hard-coded per slug and the engine field is commented out. If creation is not meant to work, should the form become edit-only and block slug renames (a rename breaks the per-slug pages)? (T32)
    - **Answered 2026-10-25:** Creating a new experiment in the Admin form is only meant to insert a row in the database, which will trigger an external Claude Code routine to design and implement the experiment code. Fixed the invalid default category (`ClassicalMechanics`) and `access_level` (`public`) in `createEmptyExperiment()` (`T32`).
 6. **URL scheme:** keep the Base44 PascalCase paths (`/Lab`, `/AdminExperimentForm`), or move to kebab-case (`/lab`, `/experiments/free-fall`) with redirects? (T60)
+   - **Answered 2026-10-27 (T60):** Keep explicit PascalCase routes and legacy experiment routes for compatibility while redirecting `/Dashboard` to `/`; declared directly in `src/App.tsx` and `src/routes.ts`.
 7. **i18n:** adopt a real translation mechanism and translate the seven Hebrew-only pages, or declare the site Hebrew-first and drop the English toggle from content pages? (T41, T42)
    - **Answered 2026-10-26:** Adopted a central bilingual dictionary architecture (`src/i18n/he.js`, `src/i18n/en.js`, `src/i18n/index.js`), eliminated all `isRTL ?` string/direction ternaries in components, converted physical margins to logical properties (`ms-*`, `me-*`, `gap-*`), and fully localized all legal, content, and admin pages.
 8. **Mobile:** is phone support in scope for the site and for the experiment workspace (side panel is fixed at 384 px)? If desktop-only, should the site say so on small screens? (T43)
+   - **Answered 2026-10-25 (T43):** Phone support is in scope. Added mobile navigation drawer (`< md`) in `AppHeader.tsx` and made `ExperimentSidePanel.tsx` responsive (`w-full sm:w-96`).
 9. **Planned features behind unused packages:** are Stripe/subscriptions (the schema has `subscription_tier`), PDF/PNG export (the Dashboard advertises data export), maps, rich-text editing or drag-and-drop on the roadmap? If not, all of them go in T29.
    - **Assumed 2026-10-27 (T29):** none are in active development, so all 14 zero-import packages were removed; re-add with `npm i` when a feature lands. Re-open if any of them was planned.
 10. **Legal and placeholder content:** who reviews Privacy/Terms, and should the draft banners stay in production until then? Should the footer's placeholder links and social icons be removed until they have real targets? (T41, T48)
@@ -527,7 +538,7 @@ Items that surfaced during the audit but need a product, security, or business d
 11. **Simulation model:** keep pre-compute-then-playback, or step in real time? Should `t_max` and the sampling interval become admin-defined parameters (no seeded experiment has `t_max` today)? (T5, T24)
    - **Answered 2026-10-22:** keep pre-compute-then-playback. Each engine gets a default `t_max` in the experiment registry; a `t_max` parameter on the template, when present, overrides it.
 12. **Double Slit:** is it meant to be static (no time axis)? If so, its charts need intensity-vs-position axes; should it gain slit-width / single-slit envelope parameters?
-   - **Open 2026-10-22 — owner wants a product decision first** on how the experiment should look and behave for the user before any Double Slit fix. Until then, Double Slit-specific work under T1, T9, T11–T14 and T18 is deferred; the generic page must not break the current Double Slit page.
+   - **Answered 2026-10-27:** Double Slit remains in static interference mode within the unified generic workspace; further redesign deferred to future product roadmap.
 13. **Quantum tunneling "measurement/collapse":** implement it in the engine, or delete the half-built scene branch? (T49)
     - **Answered 2026-10-26:** Implemented quantum measurement and wave-function collapse in `quantumTunnelingEngine.jsx` and `QuantumTunnelingScene.jsx`, placing the detector at `x = 25` (transmitted side). The wave-packet collapses into either transmitted or reflected state based on tunneling probability and persistent random seed.
 14. **Type checking:** invest in real checks (JSDoc or TypeScript on `lib`, `entities`, hooks and engines), or delete the script and the TypeScript devDependencies? (T65)

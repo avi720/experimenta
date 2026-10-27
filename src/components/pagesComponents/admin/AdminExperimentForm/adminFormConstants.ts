@@ -1,23 +1,6 @@
 import { categoryNames } from '@/components/pagesComponents/lab/labConstants';
 import type { AdminSelectOption } from '@/types/admin';
-import type { ExperimentFormData, Parameter } from '@/types/experiment';
-
-export const emptyExperiment: ExperimentFormData = {
-  slug: '',
-  category: 'ClassicalMechanics',
-  visualization_type: '3d',
-  access_level: 'public',
-  parameters: [],
-  outputs: [],
-  presets: [],
-  i18n_texts: {
-    he: { title: '', short_desc: '', steps: [], safety_notes: '' },
-    en: { title: '', short_desc: '', steps: [], safety_notes: '' },
-  },
-  thumbnail_url: '',
-  tags: [],
-  is_active: true,
-};
+import type { Parameter } from '@/types/experiment';
 
 export const categoryOptions: { value: string; label: string }[] = Object.entries(categoryNames).map(([value, labels]) => ({
   value,
@@ -37,7 +20,7 @@ export const parameterTypes: AdminSelectOption[] = [
   { value: 'bool', i18nKey: 'admin.form.parameters.typeBool', label: 'בוליאני (true/false)' }
 ];
 
-export const emptyParameter: Parameter = {
+export const createEmptyParameter = (): Parameter => ({
     key: '',
     type: 'float',
     unit: '',
@@ -49,4 +32,4 @@ export const emptyParameter: Parameter = {
     i18n_labels: { he: '', en: '' },
     tooltip: { he: '', en: '' },
     is_active: true
-};
+});

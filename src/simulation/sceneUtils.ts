@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { createCameraControls } from '../controls/cameraControls';
+import { createCameraControls } from './controls/cameraControls';
 
 const MAX_PIXEL_RATIO = 2;
 

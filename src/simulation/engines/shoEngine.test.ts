@@ -45,6 +45,21 @@ describe("SHO engine (T45)", () => {
         }
     });
 
+    it("detects and correctly solves critical damping with tolerance (T63)", () => {
+        // Critical damping condition: c = 2 * sqrt(k * m)
+        // With m = 1, k = 9: omega0 = 3, gamma = c / (2 * m) = 3 (exact: c = 6)
+        const criticalExact = { m: 1, k: 9, x0: 2, v0: 1, c: 6 };
+        const criticalTolerance = { m: 1, k: 9, x0: 2, v0: 1, c: 6 + 1e-8 };
+
+        for (const t of [0, 0.5, 1.5, 3]) {
+            expectSatisfiesOde(criticalExact, t);
+            expectSatisfiesOde(criticalTolerance, t);
+            const expectedX = (2 + (1 + 3 * 2) * t) * Math.exp(-3 * t);
+            expect(calculateStep(t, criticalExact).position).toBeCloseTo(expectedX, 6);
+            expect(calculateStep(t, criticalTolerance).position).toBeCloseTo(expectedX, 6);
+        }
+    });
+
     it("falls back to defaults instead of throwing on null parameters", () => {
         const p = calculateStep(0, { m: null, k: null, x0: null, v0: null });
         expect(p.position).toBe(1);

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type MouseEvent as ReactMouseEvent } from "react";
 import { motion } from "framer-motion";
-import { GripHorizontal, X, ExternalLink } from "lucide-react";
+import { GripHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     LineChart,
@@ -104,14 +104,6 @@ export default function SimulationCharts({
                 <GripHorizontal className="w-5 h-5 text-slate-400" />
                 
                 <div className="absolute end-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 hover:bg-slate-200"
-                        title={t("workspace.openInFloatingWindow")}
-                    >
-                        <ExternalLink className="w-3 h-3" />
-                    </Button>
                     <Button
                         variant="ghost"
                         size="icon"

@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
-import { validateParameterValue } from "./parameterValidation";
+import { validateParameterValue } from "@/simulation/parameterValidation";
 import type { Parameter, ParameterValues } from "@/types/experiment";
 import type { IsRTLProps } from "@/types/props";
 import type { ParameterValidationResult } from "@/types/simulation";

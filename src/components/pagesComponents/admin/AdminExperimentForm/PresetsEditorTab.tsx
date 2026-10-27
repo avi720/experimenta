@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { useTranslation } from '@/i18n';
-import type { ExperimentFormHandlers } from '@/components/hooks/experimentForm/useExperimentFormHandlers';
+import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { FormErrors, PresetTextValues } from '@/types/admin';
 import type { ExperimentFormData } from '@/types/experiment';
 

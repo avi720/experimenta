@@ -9,7 +9,7 @@ import SelectParameterOptionsEditor from './SelectParameterOptionsEditor';
 import BooleanParameterDefault from './BooleanParameterDefault';
 import ParameterTranslationFields from './ParameterTranslationFields';
 import { useTranslation } from '@/i18n';
-import type { ExperimentFormHandlers } from '@/components/hooks/experimentForm/useExperimentFormHandlers';
+import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { FormErrors } from '@/types/admin';
 import type { Parameter } from '@/types/experiment';
 

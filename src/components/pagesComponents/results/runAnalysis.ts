@@ -1,8 +1,8 @@
-import { resolveExperimentRegistryEntry } from "@/components/simulation/experimentRegistry";
+import { resolveExperimentRegistryEntry } from "@/simulation/experimentRegistry";
 import {
   parseStoredSimulationSamples,
   serializeSimulationSamples,
-} from "@/components/hooks/simulation/useExperimentPersistence";
+} from "@/hooks/simulation/useExperimentPersistence";
 import type { ExperimentRun } from "@/types/models";
 import type { ChartConfig, KeyStatistic, ParamState, PhysicsFormula, Sample } from "@/types/results";
 

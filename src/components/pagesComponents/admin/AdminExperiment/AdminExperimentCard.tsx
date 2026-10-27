@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { MoreHorizontal, Edit, Copy, Trash2, Power, PowerOff, ShieldCheck, ShieldAlert, Code, BookOpen, Clock, Tag } from 'lucide-react';
 import { createPageUrl } from '@/utils';
-import moment from 'moment';
+import { format } from 'date-fns';
 import { categoryNames } from '../../lab/labConstants';
 import { useTranslation } from '@/i18n';
 import type { ExperimentTemplateData, LocalizedTexts } from '@/types/experiment';
@@ -56,7 +56,7 @@ export default function AdminExperimentCard({ experiment, index, handleDelete, h
                 <span className="text-slate-300">|</span>
                 <div className="flex items-center gap-1.5"><BookOpen className="w-4 h-4 text-slate-400" /> <span>{categoryLabel}</span></div>
                 <span className="text-slate-300">|</span>
-                <div className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-slate-400" /> <span>{t('admin.list.createdPrefix')} {moment(experiment.created_date).format('DD/MM/YY')}</span></div>
+                <div className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-slate-400" /> <span>{t('admin.list.createdPrefix')} {experiment.created_date ? format(new Date(experiment.created_date), 'dd/MM/yy') : ''}</span></div>
               </div>
             </div>
 

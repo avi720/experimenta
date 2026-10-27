@@ -3,7 +3,7 @@ import { AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileDown, PlusCircle, Loader2 } from 'lucide-react';
-import { useAdminExperiments } from '../components/hooks/useAdminExperiments';
+import { useAdminExperiments } from '@/hooks/useAdminExperiments';
 import AdminExperimentCard from '../components/pagesComponents/admin/AdminExperiment/AdminExperimentCard';
 import AdminExperimentsFilters from '../components/pagesComponents/admin/AdminExperiment/AdminExperimentsFilters';
 import NoAdminExperimentsFound from '../components/pagesComponents/admin/AdminExperiment/NoAdminExperimentsFound';

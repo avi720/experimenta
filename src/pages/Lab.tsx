@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { categoryIcons, categoryNames } from "../components/pagesComponents/lab/labConstants";
-import { useAppData } from "../components/hooks/useAppData";
+import { useAppData } from "@/hooks/useAppData";
 import { useTranslation } from "@/i18n";
 // Import hooks and components
-import { useLabData } from "../components/hooks/useLabData";
+import { useLabData } from "@/hooks/useLabData";
 import LabUnavailableMessage from "../components/pagesComponents/lab/LabUnavailableMessage";
 import LabHeader from "../components/pagesComponents/lab/LabHeader";
 import LabFilters from "../components/pagesComponents/lab/LabFilters";

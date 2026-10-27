@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { matchesExperimentSearch } from '@/components/pagesComponents/lab/labConstants';
 import type { AdminExperimentStats } from '@/types/admin';
 import type { ExperimentTemplateData } from '@/types/experiment';
 
@@ -6,7 +7,6 @@ export function useExperimentFiltering(
     experiments: ExperimentTemplateData[] | null | undefined,
     searchTerm: string,
     selectedCategory: string,
-    selectedEngine: string,
     showInactive: boolean,
     sortBy: string,
     sortDirection: string
@@ -21,22 +21,12 @@ export function useExperimentFiltering(
 
         // Apply search filter
         if (searchTerm) {
-            filtered = filtered.filter(exp =>
-                (exp.i18n_texts?.he?.title?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                (exp.i18n_texts?.en?.title?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                (exp.slug?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                (exp.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
-            );
+            filtered = filtered.filter(exp => matchesExperimentSearch(exp, searchTerm));
         }
 
         // Apply category filter
         if (selectedCategory !== 'all') {
             filtered = filtered.filter(exp => exp.category === selectedCategory);
-        }
-
-        // Apply engine filter
-        if (selectedEngine !== 'all') {
-            filtered = filtered.filter(exp => exp.engine === selectedEngine);
         }
 
         // Apply active/inactive filter
@@ -62,7 +52,7 @@ export function useExperimentFiltering(
         });
 
         return filtered;
-    }, [experiments, searchTerm, selectedCategory, selectedEngine, showInactive, sortBy, sortDirection]);
+    }, [experiments, searchTerm, selectedCategory, showInactive, sortBy, sortDirection]);
 
     const stats = useMemo(() => {
         // Initialize with default values

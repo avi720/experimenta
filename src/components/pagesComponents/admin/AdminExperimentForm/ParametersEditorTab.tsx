@@ -2,9 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import ParameterInput from './ParameterInput/ParameterInput';
-import { emptyParameter } from './adminFormConstants';
+import { createEmptyParameter } from './adminFormConstants';
 import { useTranslation } from '@/i18n';
-import type { ExperimentFormHandlers } from '@/components/hooks/experimentForm/useExperimentFormHandlers';
+import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { FormErrors } from '@/types/admin';
 import type { ExperimentFormData } from '@/types/experiment';
 
@@ -53,7 +53,7 @@ export default function ParametersEditorTab({
           type="button" 
           variant="outline" 
           className="w-full"
-          onClick={() => addToArray('parameters', { ...emptyParameter })}
+          onClick={() => addToArray('parameters', createEmptyParameter())}
         >
           <PlusCircle className="me-2 h-5 w-5" />
           {t('admin.form.parameters.addParameter')}

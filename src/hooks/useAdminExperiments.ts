@@ -8,7 +8,6 @@ export function useAdminExperiments() {
     
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("all");
-    const [selectedEngine, setSelectedEngine] = useState("all");
     const [showInactive, setShowInactive] = useState(false);
     const [sortBy, setSortBy] = useState("created_date");
     const [sortDirection, setSortDirection] = useState("desc");
@@ -17,7 +16,6 @@ export function useAdminExperiments() {
         experiments,
         searchTerm,
         selectedCategory,
-        selectedEngine,
         showInactive,
         sortBy,
         sortDirection
@@ -33,8 +31,6 @@ export function useAdminExperiments() {
         setSearchTerm,
         selectedCategory,
         setSelectedCategory,
-        selectedEngine,
-        setSelectedEngine,
         showInactive,
         setShowInactive,
         sortBy,

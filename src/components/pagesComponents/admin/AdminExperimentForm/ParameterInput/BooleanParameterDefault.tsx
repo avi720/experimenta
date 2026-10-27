@@ -1,7 +1,7 @@
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from '@/i18n';
-import type { ExperimentFormHandlers } from '@/components/hooks/experimentForm/useExperimentFormHandlers';
+import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { Parameter } from '@/types/experiment';
 
 type BooleanParameterDefaultProps = Pick<ExperimentFormHandlers, 'handleDynamicArrayChange'> & {

@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import ExperimentPreviewCard from './ExperimentPreviewCard';
 import RawJsonViewer from './RawJsonViewer';
 import { useTranslation } from '@/i18n';
-import type { ExperimentFormHandlers } from '@/components/hooks/experimentForm/useExperimentFormHandlers';
+import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { ExperimentFormData } from '@/types/experiment';
 
 type AdvancedSettingsTabProps = Pick<ExperimentFormHandlers, 'handleTagsChange' | 'handleOutputsChange' | 'handleInputChange'> & {

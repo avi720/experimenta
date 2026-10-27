@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Beaker, Mail } from 'lucide-react';
 import { createPageUrl } from '@/utils';
-import { FULL_SCREEN_PAGES } from '@/pages.config';
+import { FULL_SCREEN_PAGES } from '@/routes';
 import { useTranslation } from '@/i18n';
 import type { IsRTLProps } from '@/types/props';
 

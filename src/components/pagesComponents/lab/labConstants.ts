@@ -1,5 +1,5 @@
 import { Zap, Waves, Atom, Flame, Magnet, Glasses, Rocket, type LucideIcon } from "lucide-react";
-import { getExperimentWorkspaceUrl } from "@/components/simulation/experimentRegistry";
+import { getExperimentWorkspaceUrl } from "@/simulation/experimentRegistry";
 import type { Bilingual } from "@/types/experiment";
 
 export const categoryIcons: Record<string, LucideIcon> = {
@@ -39,3 +39,24 @@ export const groupExperimentsByCategory = <T extends { category?: string | null 
 };
 
 export const getExperimentPageUrl = (slug: string | null | undefined): string => getExperimentWorkspaceUrl(slug);
+
+export function matchesExperimentSearch(
+  exp: { slug?: string | null; tags?: string[] | null; i18n_texts?: { he?: { title?: string | null }; en?: { title?: string | null } } | null },
+  searchTerm: string
+): boolean {
+  if (!searchTerm) return true;
+  const term = searchTerm.toLowerCase().trim();
+  if (!term) return true;
+
+  const heTitle = exp.i18n_texts?.he?.title?.toLowerCase();
+  const enTitle = exp.i18n_texts?.en?.title?.toLowerCase();
+  const slug = exp.slug?.toLowerCase();
+  const tags = exp.tags || [];
+
+  return Boolean(
+    (heTitle && heTitle.includes(term)) ||
+    (enTitle && enTitle.includes(term)) ||
+    (slug && slug.includes(term)) ||
+    tags.some(tag => tag.toLowerCase().includes(term))
+  );
+}

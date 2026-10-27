@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { createPageUrl } from "@/utils";
 import { useTranslation } from "@/i18n";
 import type { LocalizedTexts, ParameterValues } from "@/types/experiment";
-import { useAppData } from "../components/hooks/useAppData";
-import { useExperimentPageData } from "../components/hooks/useExperimentPageData";
-import { useExperimentSimulation } from "../components/hooks/simulation/useExperimentSimulation";
-import { resolveExperimentRegistryEntry } from "../components/simulation/experimentRegistry";
+import { useAppData } from "@/hooks/useAppData";
+import { useExperimentPageData } from "@/hooks/useExperimentPageData";
+import { useExperimentSimulation } from "@/hooks/simulation/useExperimentSimulation";
+import { resolveExperimentRegistryEntry } from "@/simulation/experimentRegistry";
 import WorkspaceShell from "../components/simulation/workspace/WorkspaceShell";
 import AppLoadingSpinner from "../components/layout/AppLoadingSpinner";
 

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import { createPageUrl } from '@/utils';
-import { useExperimentForm } from '../components/hooks/useExperimentForm';
+import { useExperimentForm } from '@/hooks/useExperimentForm';
 import { useTranslation } from '@/i18n';
 
 // Import UI components
