@@ -29,7 +29,7 @@ export function serializeCsvCell(value: unknown): string {
  * Turns an array of sample objects into a CSV string. Columns default to the keys of the
  * first row; pass `columns` to choose and order them.
  */
-export function samplesToCsv(rows: ReadonlyArray<Record<string, unknown>>, columns?: readonly string[]): string {
+export function samplesToCsv(rows: ReadonlyArray<Record<string, unknown>> | null | undefined, columns?: readonly string[]): string {
     if (!Array.isArray(rows) || rows.length === 0) return '';
     const keys = Array.isArray(columns) ? columns : Object.keys(rows[0] || {});
     const header = keys.map((key) => quoteIfNeeded(String(key))).join(',');
