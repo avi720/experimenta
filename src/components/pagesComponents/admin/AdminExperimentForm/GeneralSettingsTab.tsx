@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { accessLevelOptions } from './adminFormConstants';
 import { categoryNames } from '@/components/pagesComponents/lab/labConstants';
 import { useTranslation } from '@/i18n';
-import type { ExperimentFormHandlers } from '@/components/hooks/experimentForm/useExperimentFormHandlers';
+import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { FormErrors } from '@/types/admin';
 import type { ExperimentFormData } from '@/types/experiment';
 

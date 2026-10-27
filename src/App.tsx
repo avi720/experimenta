@@ -1,19 +1,29 @@
-import { Toaster as SonnerToaster } from "@/components/ui/sonner"
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClientInstance } from '@/lib/query-client'
-import { pagesConfig } from './pages.config'
+import { lazy, Suspense, type ReactNode } from 'react';
 import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import PageNotFound from './lib/PageNotFound';
+import { Toaster as SonnerToaster } from "@/components/ui/sonner";
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClientInstance } from '@/lib/query-client';
+import Layout from './Layout';
+import Dashboard from './pages/Dashboard';
+import PageNotFound from './pages/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { AppErrorFallback, ErrorBoundary } from '@/components/layout/ErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { useTranslation, I18nProvider } from '@/i18n';
-import { Suspense, type ReactNode } from 'react';
+import { ROUTES } from '@/routes';
 
-const { Pages, Layout, mainPage } = pagesConfig;
-const mainPageKey = mainPage ?? Object.keys(Pages)[0];
-const MainPage = Pages[mainPageKey];
+// Every page except Dashboard is split into its own chunk (T30); App wraps routes in Suspense.
+const Lab = lazy(() => import('./pages/Lab'));
+const LabWorkspace = lazy(() => import('./pages/LabWorkspace'));
+const AdminExperiments = lazy(() => import('./pages/AdminExperiments'));
+const AdminExperimentForm = lazy(() => import('./pages/AdminExperimentForm'));
+const Results = lazy(() => import('./pages/Results'));
+const AboutUs = lazy(() => import('./pages/AboutUs'));
+const WhatIsNew = lazy(() => import('./pages/WhatIsNew'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const Login = lazy(() => import('./pages/Login'));
 
 // Pages that require a signed-in user, and those that additionally require the admin role.
 const AUTH_REQUIRED_PAGES = ['Results'];
@@ -21,7 +31,7 @@ const ADMIN_PAGES = ['AdminExperiments', 'AdminExperimentForm'];
 
 const LayoutWrapper = ({ children, currentPageName }: { children: ReactNode; currentPageName: string }) => {
   const page = <Suspense fallback={<FullScreenSpinner />}>{children}</Suspense>;
-  return Layout ? <Layout currentPageName={currentPageName}>{page}</Layout> : page;
+  return <Layout currentPageName={currentPageName}>{page}</Layout>;
 };
 
 const FullScreenSpinner = () => (
@@ -77,35 +87,50 @@ const ProtectedRoute = ({ pageName, children }: { pageName: string; children: Re
 
 const AppRoutes = () => (
   <Routes>
-    <Route path="/" element={
-      <LayoutWrapper currentPageName={mainPageKey}>
-        <MainPage />
-      </LayoutWrapper>
+    {/* Home and Dashboard */}
+    <Route path="/" element={<LayoutWrapper currentPageName="Dashboard"><Dashboard /></LayoutWrapper>} />
+    <Route path={ROUTES.DASHBOARD} element={<Navigate to="/" replace />} />
+
+    {/* Lab and Workspace routes */}
+    <Route path={ROUTES.LAB} element={<LayoutWrapper currentPageName="Lab"><Lab /></LayoutWrapper>} />
+    <Route path={ROUTES.LAB_WORKSPACE} element={<LayoutWrapper currentPageName="LabWorkspace"><LabWorkspace /></LayoutWrapper>} />
+    
+    {/* Legacy experiment slug routes for backwards compatibility */}
+    <Route path="/FreeFallExperiment" element={<LayoutWrapper currentPageName="FreeFallExperiment"><LabWorkspace /></LayoutWrapper>} />
+    <Route path="/ShoExperiment" element={<LayoutWrapper currentPageName="ShoExperiment"><LabWorkspace /></LayoutWrapper>} />
+    <Route path="/QuantumTunnelingExperiment" element={<LayoutWrapper currentPageName="QuantumTunnelingExperiment"><LabWorkspace /></LayoutWrapper>} />
+    <Route path="/DoubleSlitExperiment" element={<LayoutWrapper currentPageName="DoubleSlitExperiment"><LabWorkspace /></LayoutWrapper>} />
+
+    {/* Protected routes */}
+    <Route path={ROUTES.RESULTS} element={
+      <ProtectedRoute pageName="Results">
+        <LayoutWrapper currentPageName="Results"><Results /></LayoutWrapper>
+      </ProtectedRoute>
     } />
-    {Object.entries(Pages).map(([path, Page]) => (
-      <Route
-        key={path}
-        path={`/${path}`}
-        element={
-          <ProtectedRoute pageName={path}>
-            <LayoutWrapper currentPageName={path}>
-              <Page />
-            </LayoutWrapper>
-          </ProtectedRoute>
-        }
-      />
-    ))}
-    <Route path="*" element={
-      <LayoutWrapper currentPageName="PageNotFound">
-        <PageNotFound />
-      </LayoutWrapper>
+    <Route path={ROUTES.ADMIN_EXPERIMENTS} element={
+      <ProtectedRoute pageName="AdminExperiments">
+        <LayoutWrapper currentPageName="AdminExperiments"><AdminExperiments /></LayoutWrapper>
+      </ProtectedRoute>
     } />
+    <Route path={ROUTES.ADMIN_EXPERIMENT_FORM} element={
+      <ProtectedRoute pageName="AdminExperimentForm">
+        <LayoutWrapper currentPageName="AdminExperimentForm"><AdminExperimentForm /></LayoutWrapper>
+      </ProtectedRoute>
+    } />
+
+    {/* Content and Auth pages */}
+    <Route path={ROUTES.ABOUT} element={<LayoutWrapper currentPageName="AboutUs"><AboutUs /></LayoutWrapper>} />
+    <Route path={ROUTES.WHAT_IS_NEW} element={<LayoutWrapper currentPageName="WhatIsNew"><WhatIsNew /></LayoutWrapper>} />
+    <Route path={ROUTES.PRIVACY} element={<LayoutWrapper currentPageName="PrivacyPolicy"><PrivacyPolicy /></LayoutWrapper>} />
+    <Route path={ROUTES.TERMS} element={<LayoutWrapper currentPageName="TermsOfService"><TermsOfService /></LayoutWrapper>} />
+    <Route path={ROUTES.LOGIN} element={<LayoutWrapper currentPageName="Login"><Login /></LayoutWrapper>} />
+
+    {/* 404 Catch-all */}
+    <Route path="*" element={<LayoutWrapper currentPageName="PageNotFound"><PageNotFound /></LayoutWrapper>} />
   </Routes>
 );
 
-
 function App() {
-
   return (
     <ErrorBoundary fallback={() => <AppErrorFallback />}>
       <QueryClientProvider client={queryClientInstance}>
@@ -119,7 +144,7 @@ function App() {
         <SonnerToaster position="top-center" richColors />
       </QueryClientProvider>
     </ErrorBoundary>
-  )
+  );
 }
 
-export default App
+export default App;

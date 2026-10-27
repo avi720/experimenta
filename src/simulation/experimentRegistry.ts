@@ -6,10 +6,10 @@ import { lazy } from "react";
 import type { ExperimentRegistryEntry } from "@/types/simulation";
 
 // Scenes pull in three.js, so they load only when an experiment is opened (T30).
-const FreeFallScene = lazy(() => import("./scenes/FreeFallScene"));
-const ShoScene = lazy(() => import("./scenes/ShoScene"));
-const QuantumTunnelingScene = lazy(() => import("./scenes/QuantumTunnelingScene"));
-const DoubleSlitScene = lazy(() => import("./scenes/DoubleSlitScene"));
+const FreeFallScene = lazy(() => import("@/components/simulation/scenes/FreeFallScene"));
+const ShoScene = lazy(() => import("@/components/simulation/scenes/ShoScene"));
+const QuantumTunnelingScene = lazy(() => import("@/components/simulation/scenes/QuantumTunnelingScene"));
+const DoubleSlitScene = lazy(() => import("@/components/simulation/scenes/DoubleSlitScene"));
 
 /**
  * Single source of truth for simulation engines and 3D/2D scenes.

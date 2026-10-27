@@ -1,17 +1,12 @@
-import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback } from 'react';
 import { useExperimentTemplateMutations } from '@/hooks/useDataQueries';
-import { createPageUrl } from '@/utils';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
 import type { ExperimentTemplateData } from '@/types/experiment';
 
 export function useExperimentActions(filteredExperiments: ExperimentTemplateData[] = []) {
-    const navigate = useNavigate();
     const { createTemplate, updateTemplate, deleteTemplate } = useExperimentTemplateMutations();
     const { t } = useTranslation();
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [isToggling, setIsToggling] = useState(false);
 
     const exportExperiments = useCallback(() => {
         if (!Array.isArray(filteredExperiments) || filteredExperiments.length === 0) {
@@ -41,20 +36,16 @@ export function useExperimentActions(filteredExperiments: ExperimentTemplateData
     }, [filteredExperiments, t]);
 
     const handleDelete = useCallback(async (experimentId: string) => {
-        setIsDeleting(true);
         try {
             await deleteTemplate(experimentId);
             toast.success(t('admin.list.toasts.deleteSuccess'));
         } catch (error) {
             console.error('Error deleting experiment:', error);
             toast.error(t('admin.list.toasts.deleteError'));
-        } finally {
-            setIsDeleting(false);
         }
     }, [deleteTemplate, t]);
 
     const toggleActive = useCallback(async (experiment: ExperimentTemplateData) => {
-        setIsToggling(true);
         try {
             await updateTemplate(experiment.id, {
                 is_active: !experiment.is_active
@@ -63,8 +54,6 @@ export function useExperimentActions(filteredExperiments: ExperimentTemplateData
         } catch (error) {
             console.error('Error toggling experiment:', error);
             toast.error(t('admin.list.toasts.toggleError'));
-        } finally {
-            setIsToggling(false);
         }
     }, [updateTemplate, t]);
 
@@ -94,17 +83,10 @@ export function useExperimentActions(filteredExperiments: ExperimentTemplateData
         }
     }, [createTemplate, t]);
 
-    const handleEdit = useCallback((experiment: ExperimentTemplateData) => {
-        navigate(createPageUrl('AdminExperimentForm') + `?id=${experiment.id}`, { state: { experiment } });
-    }, [navigate]);
-
     return {
-        isDeleting,
-        isToggling,
         exportExperiments,
         handleDelete,
         toggleActive,
-        handleDuplicate,
-        handleEdit
+        handleDuplicate
     };
 }

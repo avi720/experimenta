@@ -1,15 +1,15 @@
 import { describe, it, expect, vi } from "vitest";
 
-vi.mock("./scenes/FreeFallScene", () => ({ default: () => null }));
-vi.mock("./scenes/ShoScene", () => ({ default: () => null }));
-vi.mock("./scenes/QuantumTunnelingScene", () => ({ default: () => null }));
-vi.mock("./scenes/DoubleSlitScene", () => ({ default: () => null }));
+vi.mock("@/components/simulation/scenes/FreeFallScene", () => ({ default: () => null }));
+vi.mock("@/components/simulation/scenes/ShoScene", () => ({ default: () => null }));
+vi.mock("@/components/simulation/scenes/QuantumTunnelingScene", () => ({ default: () => null }));
+vi.mock("@/components/simulation/scenes/DoubleSlitScene", () => ({ default: () => null }));
 
 import {
     EXPERIMENT_REGISTRY,
     resolveExperimentRegistryEntry,
     getExperimentWorkspaceUrl,
-} from "./experimentRegistry.js";
+} from "./experimentRegistry";
 
 describe("experimentRegistry (T18)", () => {
     it("registers all 4 built-in experiments with engines, scenes, and defaultMaxTime", () => {

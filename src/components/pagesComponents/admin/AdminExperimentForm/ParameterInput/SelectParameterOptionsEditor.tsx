@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { useTranslation } from '@/i18n';
-import type { ExperimentFormHandlers } from '@/components/hooks/experimentForm/useExperimentFormHandlers';
+import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { FormErrors } from '@/types/admin';
 import type { Parameter } from '@/types/experiment';
 

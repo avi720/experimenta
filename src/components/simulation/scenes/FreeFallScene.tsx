@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import type { SimulationSceneProps } from '@/types/simulation';
-import { createGroundPlane, disposeObject3D, setupScene } from './sceneUtils';
+import { createGroundPlane, disposeObject3D, setupScene } from '@/simulation/sceneUtils';
 
 export { disposeObject3D };
 

@@ -1,4 +1,4 @@
-import { useAppData } from "../components/hooks/useAppData";
+import { useAppData } from "@/hooks/useAppData";
 import { useTranslation } from "@/i18n";
 
 // Import the dashboard components from the new location

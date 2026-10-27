@@ -2,8 +2,8 @@ import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import type { ParameterValues } from '@/types/experiment';
 import type { SimulationDataPoint, SimulationSceneProps } from '@/types/simulation';
-import { DETECTOR_X_POSITION } from '../engines/quantumTunnelingEngine';
-import { createGroundPlane, setupScene } from './sceneUtils';
+import { DETECTOR_X_POSITION } from '@/simulation/engines/quantumTunnelingEngine';
+import { createGroundPlane, setupScene } from '@/simulation/sceneUtils';
 
 const UM_TO_NM = 1000;
 const VISUAL_L_SCALE_FACTOR = 0.25;

@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Save, Eye, FileDown } from 'lucide-react';
 import { createPageUrl } from '@/utils';
-import { getExperimentWorkspaceUrl } from '@/components/simulation/experimentRegistry';
+import { getExperimentWorkspaceUrl } from '@/simulation/experimentRegistry';
 import { useTranslation } from '@/i18n';
 import type { NavigateFunction } from 'react-router-dom';
 import type { ExperimentFormData } from '@/types/experiment';

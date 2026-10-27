@@ -3,7 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { useTranslation } from '@/i18n';
-import type { ExperimentFormHandlers } from '@/components/hooks/experimentForm/useExperimentFormHandlers';
+import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { Locale } from '@/types/experiment';
 
 type I18nStepsEditorProps = Pick<ExperimentFormHandlers, 'handleI18nStepsChange' | 'addI18nStep' | 'removeI18nStep'> & {

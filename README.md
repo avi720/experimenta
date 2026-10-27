@@ -16,8 +16,13 @@ npm run dev
 | --- | --- |
 | `npm run dev` | Start the Vite dev server |
 | `npm run build` | Production build into `dist/` |
-| `npm start` | Serve the production build (`vite preview`, honours `$PORT`) |
-| `npm run lint` | ESLint |
+| `npm start` | Serve the production build (`vite preview`, port 4173) |
+| `npm run preview` | Preview production build locally |
+| `npm run lint` | ESLint (enforces zero warnings) |
+| `npm run lint:fix` | ESLint with automatic fixes |
+| `npm test` | Run Vitest in interactive watch mode |
+| `npm run test:run` | Run Vitest test suite once |
+| `npm run typecheck` | TypeScript strict typecheck (`tsc -p tsconfig.json`) |
 
 ## Supabase setup
 

@@ -9,7 +9,7 @@ vi.mock("@/entities/User", () => ({
 vi.mock("@/lib/AuthContext", () => ({
   useAuth: () => ({}),
 }));
-vi.mock("@/components/hooks/useAppData", () => ({
+vi.mock("@/hooks/useAppData", () => ({
   useAppData: () => ({ isRTL: true }),
 }));
 

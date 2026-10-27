@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback, type Dispatch, type SetStateAction } from "react";
-import { resolveExperimentRegistryEntry } from "@/components/simulation/experimentRegistry";
-import { validateExperimentParameters } from "@/components/simulation/parameters/parameterValidation";
+import { resolveExperimentRegistryEntry } from "@/simulation/experimentRegistry";
+import { validateExperimentParameters } from "@/simulation/parameterValidation";
 import { useExperimentParameters } from "./useExperimentParameters";
 import { useSimulationManager } from "./useSimulationManager";
 import { useExperimentPersistence } from "./useExperimentPersistence";

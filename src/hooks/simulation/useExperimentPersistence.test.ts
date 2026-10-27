@@ -38,7 +38,7 @@ import {
     parseStoredSimulationSamples,
     useExperimentPersistence,
 } from "./useExperimentPersistence";
-import { calculateFreeFallStep } from "@/components/simulation/engines/freeFallEngine";
+import { calculateFreeFallStep } from "@/simulation/engines/freeFallEngine";
 
 describe("useExperimentPersistence sample serialization (T16, T52)", () => {
     it("flattens nested position.y, strips internal keys, and preserves exact final impact point", () => {
