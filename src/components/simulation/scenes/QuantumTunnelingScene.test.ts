@@ -33,11 +33,12 @@ describe("QuantumTunnelingScene resource management (T26)", () => {
         const objects = populateQuantumTunnelingScene(scene, computeBarrierVisualWidth({ L: 0.005 }, null));
         expect(objects.barrier.scale.x).toBeCloseTo(1.25, 5);
 
-        const geometries = new Set();
-        const materials = new Set();
+        const geometries = new Set<THREE.BufferGeometry>();
+        const materials = new Set<THREE.Material>();
         scene.traverse((node) => {
-            if (node.geometry) geometries.add(node.geometry);
-            if (node.material) materials.add(node.material);
+            if (!(node instanceof THREE.Mesh)) return;
+            geometries.add(node.geometry);
+            for (const material of [node.material].flat()) materials.add(material);
         });
 
         // floor, gun body/barrel/base, barrier, detector body/cone/arm, shared particle sphere

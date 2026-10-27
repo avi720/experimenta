@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { calculateFreeFallStep } from './freeFallEngine';
+import type { EngineParameters } from './types';
 
 const DT = 0.001; // same fixed step as the simulation engine loop
 
 /** Runs the step function the way the simulation loop does and returns every point. */
-function runToImpact(params, maxTime = 120) {
-    const points = [];
+function runToImpact(params: EngineParameters, maxTime = 120) {
+    const points: ReturnType<typeof calculateFreeFallStep>[] = [];
     for (let step = 0; step * DT <= maxTime; step++) {
         const point = calculateFreeFallStep(step * DT, params);
         points.push(point);

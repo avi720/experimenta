@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const supabaseFromMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/api/supabaseClient", async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal<typeof import("@/api/supabaseClient")>();
   return {
     ...actual,
     supabase: {
@@ -77,11 +77,11 @@ describe("Data layer & guest locale persistence (T46, T56)", () => {
 
   describe("guest locale persistence (T46)", () => {
     it("persists and restores 'en' and 'he' in storage", () => {
-      const store = new Map();
+      const store = new Map<string, string>();
       const mockStorage = {
-        getItem: (k) => store.get(k) ?? null,
-        setItem: (k, v) => store.set(k, v),
-        removeItem: (k) => store.delete(k),
+        getItem: (k: string) => store.get(k) ?? null,
+        setItem: (k: string, v: string) => store.set(k, v),
+        removeItem: (k: string) => store.delete(k),
       };
 
       expect(readStoredGuestLocale(mockStorage)).toBeNull();

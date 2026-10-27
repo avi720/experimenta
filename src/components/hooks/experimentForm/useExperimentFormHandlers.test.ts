@@ -1,24 +1,29 @@
 import { describe, it, expect } from "vitest";
+import type { SetStateAction } from "react";
 import { useExperimentFormHandlers } from "./useExperimentFormHandlers";
+import { createEmptyExperiment } from "./useExperimentDataLoading";
+import type { ExperimentFormData } from "@/types/experiment";
 
 // Minimal mock for React's useCallback so we can test the state-updater functions directly in Node
 import { vi } from "vitest";
 vi.mock("react", () => ({
-    useCallback: (fn) => fn,
+    useCallback: (fn: unknown) => fn,
 }));
 
 describe("useExperimentFormHandlers (T4)", () => {
     it("updates nested object keys when nestedIndex is null and field is provided (i18n_labels / tooltip)", () => {
-        let state = {
+        let state: ExperimentFormData | null = {
+            ...createEmptyExperiment(),
             parameters: [
                 {
                     key: "g",
+                    type: "float",
                     i18n_labels: { he: "כבידה", en: "Gravity" },
                     tooltip: { he: "", en: "" },
                 },
             ],
         };
-        const setExperiment = (updater) => {
+        const setExperiment = (updater: SetStateAction<ExperimentFormData | null>) => {
             state = typeof updater === "function" ? updater(state) : updater;
         };
 
@@ -35,7 +40,7 @@ describe("useExperimentFormHandlers (T4)", () => {
             "he",
             "תאוצת הכובד"
         );
-        expect(state.parameters[0].i18n_labels).toEqual({
+        expect(state?.parameters[0].i18n_labels).toEqual({
             he: "תאוצת הכובד",
             en: "Gravity",
         });
@@ -48,14 +53,15 @@ describe("useExperimentFormHandlers (T4)", () => {
             "en",
             "Gravitational acceleration"
         );
-        expect(state.parameters[0].tooltip).toEqual({
+        expect(state?.parameters[0].tooltip).toEqual({
             he: "",
             en: "Gravitational acceleration",
         });
     });
 
     it("replaces entire nested object when both nestedIndex and field are null (preset values JSON)", () => {
-        let state = {
+        let state: ExperimentFormData | null = {
+            ...createEmptyExperiment(),
             presets: [
                 {
                     name_he: "ירח",
@@ -64,7 +70,7 @@ describe("useExperimentFormHandlers (T4)", () => {
                 },
             ],
         };
-        const setExperiment = (updater) => {
+        const setExperiment = (updater: SetStateAction<ExperimentFormData | null>) => {
             state = typeof updater === "function" ? updater(state) : updater;
         };
 
@@ -81,7 +87,8 @@ describe("useExperimentFormHandlers (T4)", () => {
     });
 
     it("updates nested array item when nestedIndex is a number (select parameter options)", () => {
-        let state = {
+        let state: ExperimentFormData | null = {
+            ...createEmptyExperiment(),
             parameters: [
                 {
                     key: "medium",
@@ -92,7 +99,7 @@ describe("useExperimentFormHandlers (T4)", () => {
                 },
             ],
         };
-        const setExperiment = (updater) => {
+        const setExperiment = (updater: SetStateAction<ExperimentFormData | null>) => {
             state = typeof updater === "function" ? updater(state) : updater;
         };
 
@@ -109,7 +116,7 @@ describe("useExperimentFormHandlers (T4)", () => {
             "label_en",
             "Outer Space"
         );
-        expect(state.parameters[0].options[0]).toEqual({
+        expect(state?.parameters[0].options?.[0]).toEqual({
             value: "vacuum",
             label_he: "ריק",
             label_en: "Outer Space",

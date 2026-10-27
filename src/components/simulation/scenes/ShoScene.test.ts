@@ -6,7 +6,7 @@ import { disposeObject3D } from "./sceneUtils";
 describe("ShoScene spring geometry (T26)", () => {
     it("reshapes the spring in place without allocating or disposing the live geometry", () => {
         const geometry = createSpringGeometry(50);
-        const position = geometry.getAttribute("position");
+        const position = geometry.getAttribute("position") as THREE.BufferAttribute;
         const vertexCount = position.count;
         const before = Float32Array.from(position.array);
         const disposeSpy = vi.spyOn(geometry, "dispose");

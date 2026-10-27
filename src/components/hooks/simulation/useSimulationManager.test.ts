@@ -1,7 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Lightweight React hook harness for testing useSimulationManager + useSimulationEngineLogic in Node
-const hookState = {
+type Deps = readonly unknown[] | undefined;
+type Cleanup = (() => void) | null;
+type Effect = { fn: () => void | (() => void); deps: Deps; pending: boolean };
+
+const hookState: {
+    states: unknown[];
+    refs: { current: unknown }[];
+    effects: Effect[];
+    cleanups: Cleanup[];
+    callbacks: { fn: unknown; deps: Deps }[];
+    cursor: number;
+    rerender: (() => void) | null;
+} = {
     states: [],
     refs: [],
     effects: [],
@@ -11,7 +23,7 @@ const hookState = {
     rerender: null,
 };
 
-function depsChanged(prevDeps, nextDeps) {
+function depsChanged(prevDeps: Deps, nextDeps: Deps) {
     if (!prevDeps || !nextDeps) return true;
     if (prevDeps.length !== nextDeps.length) return true;
     for (let i = 0; i < nextDeps.length; i++) {
@@ -21,16 +33,16 @@ function depsChanged(prevDeps, nextDeps) {
 }
 
 vi.mock("react", () => ({
-    useState: (initial) => {
+    useState: (initial: unknown) => {
         const idx = hookState.cursor++;
         if (!(idx in hookState.states)) {
             hookState.states[idx] =
-                typeof initial === "function" ? initial() : initial;
+                typeof initial === "function" ? (initial as () => unknown)() : initial;
         }
-        const setState = (updater) => {
+        const setState = (updater: unknown) => {
             const next =
                 typeof updater === "function"
-                    ? updater(hookState.states[idx])
+                    ? (updater as (prev: unknown) => unknown)(hookState.states[idx])
                     : updater;
             if (!Object.is(hookState.states[idx], next)) {
                 hookState.states[idx] = next;
@@ -39,14 +51,14 @@ vi.mock("react", () => ({
         };
         return [hookState.states[idx], setState];
     },
-    useRef: (initial) => {
+    useRef: (initial: unknown) => {
         const idx = hookState.cursor++;
         if (!(idx in hookState.refs)) {
             hookState.refs[idx] = { current: initial };
         }
         return hookState.refs[idx];
     },
-    useCallback: (fn, deps) => {
+    useCallback: (fn: unknown, deps: Deps) => {
         const idx = hookState.cursor++;
         const prev = hookState.callbacks[idx];
         if (!prev || depsChanged(prev.deps, deps)) {
@@ -54,7 +66,7 @@ vi.mock("react", () => ({
         }
         return hookState.callbacks[idx].fn;
     },
-    useEffect: (fn, deps) => {
+    useEffect: (fn: Effect["fn"], deps: Deps) => {
         const idx = hookState.cursor++;
         const prev = hookState.effects[idx];
         if (!prev || depsChanged(prev.deps, deps)) {
@@ -65,22 +77,20 @@ vi.mock("react", () => ({
 
 import { useSimulationManager } from "./useSimulationManager";
 
-function mountHook(renderFn) {
+function mountHook<T>(renderFn: () => T) {
     hookState.states = [];
     hookState.refs = [];
     hookState.effects = [];
     hookState.cleanups = [];
     hookState.callbacks = [];
-    let latestResult;
+    let latestResult!: T;
 
     const flushEffects = () => {
         for (let i = 0; i < hookState.effects.length; i++) {
             const eff = hookState.effects[i];
             if (eff?.pending) {
                 eff.pending = false;
-                if (typeof hookState.cleanups[i] === "function") {
-                    hookState.cleanups[i]();
-                }
+                hookState.cleanups[i]?.();
                 hookState.cleanups[i] = eff.fn() || null;
             }
         }
@@ -103,10 +113,8 @@ function mountHook(renderFn) {
         unmount: () => {
             hookState.rerender = null;
             for (let i = 0; i < hookState.cleanups.length; i++) {
-                if (typeof hookState.cleanups[i] === "function") {
-                    hookState.cleanups[i]();
-                    hookState.cleanups[i] = null;
-                }
+                hookState.cleanups[i]?.();
+                hookState.cleanups[i] = null;
             }
         },
     };
@@ -123,7 +131,7 @@ describe("useSimulationManager & useSimulationEngineLogic (T23)", () => {
 
     it("creates only one playback interval per play and does not rebuild it on every tick", async () => {
         const setIntervalSpy = vi.spyOn(globalThis, "setInterval");
-        const stepFn = (t) => ({
+        const stepFn = (t: number) => ({
             time: Number(t.toFixed(3)),
             position: t,
             shouldStop: t >= 0.1,
@@ -160,7 +168,7 @@ describe("useSimulationManager & useSimulationEngineLogic (T23)", () => {
 
     it("pressing Reset mid-calculation cancels runEngine and leaves status idle with empty data", async () => {
         // 2.5 seconds = 2500 steps -> yields twice at 1000-step boundaries
-        const stepFn = (t) => ({
+        const stepFn = (t: number) => ({
             time: Number(t.toFixed(3)),
             position: t,
             shouldStop: false,
@@ -190,7 +198,7 @@ describe("useSimulationManager & useSimulationEngineLogic (T23)", () => {
     });
 
     it("unmounting mid-calculation aborts cleanly without mutating state after unmount", async () => {
-        const stepFn = (t) => ({
+        const stepFn = (t: number) => ({
             time: Number(t.toFixed(3)),
             position: t,
             shouldStop: false,
@@ -213,7 +221,7 @@ describe("useSimulationManager & useSimulationEngineLogic (T23)", () => {
 
     it("continueSimulation extends calculation when paused before maxSimulationTime", async () => {
         let maxTime = 0.05;
-        const stepFn = (t) => ({
+        const stepFn = (t: number) => ({
             time: Number(t.toFixed(3)),
             position: t,
             shouldStop: false,

@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { validateExperimentForm } from "./useExperimentValidation";
 import { createEmptyExperiment } from "./useExperimentDataLoading";
+import type { ExperimentFormData } from "@/types/experiment";
 import { categoryOptions } from "@/components/pagesComponents/admin/AdminExperimentForm/adminFormConstants";
 
 describe("Admin experiment form validation & defaults (T32, T33, T34)", () => {
-    const validBaseExperiment = () => ({
+    const validBaseExperiment = (): ExperimentFormData => ({
+        ...createEmptyExperiment(),
         id: "exp-1",
         slug: "free-fall",
         category: "ClassicalMechanics",

@@ -4,7 +4,7 @@ import { calculateInterference } from "./doubleSlitEngine";
 describe("double slit engine (T45)", () => {
     const params = { wavelength: 500, slit_separation: 2000, screen_distance: 1 };
     const pattern = calculateInterference(params);
-    const intensityAt = (mm) =>
+    const intensityAt = (mm: number) =>
         pattern.reduce((best, p) =>
             Math.abs(p.position - mm) < Math.abs(best.position - mm) ? p : best
         ).intensity;
@@ -20,7 +20,7 @@ describe("double slit engine (T45)", () => {
     it("places the first dark fringe where d·sinθ = λ/2", () => {
         // With d = 20 µm the first minimum (~12.5 mm) falls on the 50 mm screen.
         const wide = calculateInterference({ wavelength: 500, slit_separation: 20000, screen_distance: 1 });
-        const wideIntensityAt = (mm) =>
+        const wideIntensityAt = (mm: number) =>
             wide.reduce((best, p) =>
                 Math.abs(p.position - mm) < Math.abs(best.position - mm) ? p : best
             ).intensity;

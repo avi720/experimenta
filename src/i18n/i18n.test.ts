@@ -4,8 +4,8 @@ import en from './en';
 import { translate, pickLocalized, resolveLocale } from './index';
 import { queryClientInstance, appQueryKeys } from '@/lib/query-client';
 
-function collectKeys(obj, prefix = '') {
-  const keys = [];
+function collectKeys(obj: object, prefix = ''): string[] {
+  const keys: string[] = [];
   for (const [k, v] of Object.entries(obj)) {
     const full = prefix ? `${prefix}.${k}` : k;
     if (v && typeof v === 'object' && !Array.isArray(v)) {

@@ -6,7 +6,7 @@ import {
     createCameraControls,
     pickPivotPoint,
     pointerToNdc,
-} from "./cameraControls.js";
+} from "./cameraControls";
 
 function makeCamera(position = [0, 10, 30], lookAt = [0, 0, 0]) {
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
@@ -25,8 +25,8 @@ function makeGroundScene() {
     return { scene, ground };
 }
 
-/** Minimal stand-in for a canvas: enough for OrbitControls to connect and handle pointer events. */
-function makeDomElement() {
+/** Minimal stand-in for a canvas: enough for OrbitControls to connect and handle pointer events (a test double, hence the cast). */
+function makeDomElement(): HTMLElement {
     const root = new EventTarget();
     return Object.assign(new EventTarget(), {
         style: {},
@@ -36,10 +36,10 @@ function makeDomElement() {
         getBoundingClientRect: () => ({ left: 0, top: 0, width: 400, height: 400 }),
         setPointerCapture: () => {},
         releasePointerCapture: () => {},
-    });
+    }) as unknown as HTMLElement;
 }
 
-function pointerDown(props) {
+function pointerDown(props: Partial<PointerEventInit>) {
     return Object.assign(new Event("pointerdown"), {
         pointerId: 1,
         pointerType: "mouse",
@@ -55,9 +55,9 @@ function pointerDown(props) {
 describe("pointerToNdc", () => {
     it("maps the rect centre to the origin and corners to ±1 with +Y up", () => {
         const rect = { left: 10, top: 20, width: 200, height: 100 };
-        expect(pointerToNdc(110, 70, rect).toArray()).toEqual([0, 0]);
-        expect(pointerToNdc(10, 20, rect).toArray()).toEqual([-1, 1]);
-        expect(pointerToNdc(210, 120, rect).toArray()).toEqual([1, -1]);
+        expect(pointerToNdc(110, 70, rect)?.toArray()).toEqual([0, 0]);
+        expect(pointerToNdc(10, 20, rect)?.toArray()).toEqual([-1, 1]);
+        expect(pointerToNdc(210, 120, rect)?.toArray()).toEqual([1, -1]);
     });
 
     it("returns null for an empty rect", () => {
@@ -118,9 +118,9 @@ describe("pickPivotPoint", () => {
         const camera = makeCamera([0, 10, 30], [0, 0, 0]);
         const point = pickPivotPoint(scene, camera, new THREE.Vector2(0, 0));
         expect(point).not.toBeNull();
-        expect(point.x).toBeCloseTo(0, 6);
-        expect(point.y).toBeCloseTo(0, 6);
-        expect(point.z).toBeCloseTo(0, 6);
+        expect(point?.x).toBeCloseTo(0, 6);
+        expect(point?.y).toBeCloseTo(0, 6);
+        expect(point?.z).toBeCloseTo(0, 6);
     });
 
     it("ignores hidden objects and returns null when nothing visible is hit", () => {
@@ -133,7 +133,7 @@ describe("pickPivotPoint", () => {
         const camera = makeCamera([0, 10, 30], [0, 0, 0]);
 
         const throughHiddenBox = pickPivotPoint(scene, camera, new THREE.Vector2(0, 0));
-        expect(throughHiddenBox.y).toBeCloseTo(0, 6); // ground, not the box top
+        expect(throughHiddenBox?.y).toBeCloseTo(0, 6); // ground, not the box top
 
         ground.visible = false;
         expect(pickPivotPoint(scene, camera, new THREE.Vector2(0, 0))).toBeNull();

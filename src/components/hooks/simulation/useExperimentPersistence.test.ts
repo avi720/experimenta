@@ -14,10 +14,10 @@ const authMock = vi.hoisted(() => ({
 }));
 
 vi.mock("react", () => ({
-    useCallback: (fn) => fn,
-    useMemo: (fn) => fn(),
+    useCallback: (fn: unknown) => fn,
+    useMemo: (fn: () => unknown) => fn(),
     useContext: () => authMock,
-    createContext: () => ({ Provider: ({ children }) => children }),
+    createContext: () => ({ Provider: ({ children }: { children?: unknown }) => children }),
     useEffect: vi.fn(),
     createElement: vi.fn(),
 }));

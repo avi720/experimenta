@@ -11,22 +11,23 @@ const ELECTRON_MASS = 9.1093837e-31; // kg
 const EV = 1.602176634e-19; // J
 
 // --- Minimal complex arithmetic for the reference solver ---
-const c = (re, im = 0) => ({ re, im });
-const add = (a, b) => c(a.re + b.re, a.im + b.im);
-const sub = (a, b) => c(a.re - b.re, a.im - b.im);
-const mul = (a, b) => c(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
-const div = (a, b) => {
+type Complex = { re: number; im: number };
+const c = (re: number, im = 0): Complex => ({ re, im });
+const add = (a: Complex, b: Complex) => c(a.re + b.re, a.im + b.im);
+const sub = (a: Complex, b: Complex) => c(a.re - b.re, a.im - b.im);
+const mul = (a: Complex, b: Complex) => c(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
+const div = (a: Complex, b: Complex) => {
     const d = b.re * b.re + b.im * b.im;
     return c((a.re * b.re + a.im * b.im) / d, (a.im * b.re - a.re * b.im) / d);
 };
-const scale = (a, s) => c(a.re * s, a.im * s);
+const scale = (a: Complex, s: number) => c(a.re * s, a.im * s);
 // e^{i·k·x} for complex k and real x
-const expIkx = (k, x) => {
+const expIkx = (k: Complex, x: number) => {
     const mag = Math.exp(-k.im * x);
     return c(mag * Math.cos(k.re * x), mag * Math.sin(k.re * x));
 };
 // Wavenumber sqrt(2m(E - V))/ħ; imaginary (evanescent) when E < V
-const wavenumber = (m, E, V) => {
+const wavenumber = (m: number, E: number, V: number) => {
     const k2 = (2 * m * (E - V)) / (HBAR * HBAR);
     return k2 >= 0 ? c(Math.sqrt(k2)) : c(0, Math.sqrt(-k2));
 };
@@ -36,12 +37,12 @@ const wavenumber = (m, E, V) => {
  * computed by matching ψ and ψ' at both interfaces (transfer-matrix method).
  * Independent of the closed-form formulas used by the engine.
  */
-function referenceTransmission(E, V0, L, m) {
+function referenceTransmission(E: number, V0: number, L: number, m: number) {
     const k1 = wavenumber(m, E, 0);
     const k2 = wavenumber(m, E, V0);
 
     // Given (A_r, B_r) in the right region, return (A_l, B_l) in the left region at interface x = a.
-    const matchLeft = (kl, kr, a, Ar, Br) => {
+    const matchLeft = (kl: Complex, kr: Complex, a: number, Ar: Complex, Br: Complex) => {
         const ratio = div(kr, kl);
         const plus = add(c(1), ratio);
         const minus = sub(c(1), ratio);

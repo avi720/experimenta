@@ -5,9 +5,11 @@ const h = 1e-5;
 
 // Checks m·x'' + c·x' + k·x = 0 using finite differences of the engine's own position output,
 // so a wrong closed-form solution fails even if acceleration is derived from it.
-function expectSatisfiesOde(params, t) {
+type ShoParams = { m: number; k: number; c: number; x0: number; v0?: number };
+
+function expectSatisfiesOde(params: ShoParams, t: number) {
     const { m, k, c } = params;
-    const x = (tt) => calculateStep(tt, params).position;
+    const x = (tt: number) => calculateStep(tt, params).position;
     const v = (x(t + h) - x(t - h)) / (2 * h);
     const a = (x(t + h) - 2 * x(t) + x(t - h)) / (h * h);
     const residual = m * a + c * v + k * x(t);

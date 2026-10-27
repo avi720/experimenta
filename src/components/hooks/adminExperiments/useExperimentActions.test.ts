@@ -7,11 +7,11 @@ const toastMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react", () => ({
-  useState: (init) => [init, vi.fn()],
-  useCallback: (fn) => fn,
-  useMemo: (fn) => fn(),
+  useState: (init: unknown) => [init, vi.fn()],
+  useCallback: (fn: unknown) => fn,
+  useMemo: (fn: () => unknown) => fn(),
   useContext: () => ({ user: { locale_preference: "he" } }),
-  createContext: () => ({ Provider: ({ children }) => children }),
+  createContext: () => ({ Provider: ({ children }: { children?: unknown }) => children }),
   useEffect: vi.fn(),
   createElement: vi.fn(),
 }));
@@ -34,6 +34,7 @@ vi.mock("sonner", () => ({
 }));
 
 import { useExperimentActions } from "./useExperimentActions";
+import { createEmptyExperiment } from "../experimentForm/useExperimentDataLoading";
 
 describe("useExperimentActions (T36, T55)", () => {
   beforeEach(() => {
@@ -45,11 +46,18 @@ describe("useExperimentActions (T36, T55)", () => {
     const { toggleActive } = useExperimentActions([]);
 
     await toggleActive({
+      ...createEmptyExperiment(),
       id: "exp-1",
       slug: "free-fall",
       is_active: true,
-      parameters: [{ key: "h0" }],
-      presets: [{ name_he: "ירח" }],
+      parameters: [{ key: "h0", type: "float" }],
+      presets: [{ name_he: "ירח", values: {} }],
+      created_date: "2026-01-01T00:00:00Z",
+      updated_date: "2026-01-01T00:00:00Z",
+      created_by: null,
+      type: null,
+      name: null,
+      engine: "freeFall",
     });
 
     expect(updateMock).toHaveBeenCalledTimes(1);
