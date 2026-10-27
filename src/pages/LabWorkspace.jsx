@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react";
+import React, { Suspense, useCallback, useMemo } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Lock, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -176,11 +176,13 @@ export default function LabWorkspace({ forcedSlug = null }) {
             maxSimulationTime={maxSimulationTime}
         >
             {SceneComponent ? (
-                <SceneComponent
-                    parameters={parameters}
-                    paramValues={parameters}
-                    dataPointToRender={displayedDataPoint}
-                />
+                <Suspense fallback={<AppLoadingSpinner />}>
+                    <SceneComponent
+                        parameters={parameters}
+                        paramValues={parameters}
+                        dataPointToRender={displayedDataPoint}
+                    />
+                </Suspense>
             ) : null}
         </WorkspaceShell>
     );

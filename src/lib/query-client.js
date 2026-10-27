@@ -13,4 +13,5 @@ export const queryClientInstance = new QueryClient({
 export const appQueryKeys = {
 	settings: ['app-settings'],
 	experiments: ['experiment-templates'],
+	runs: ['experiment-runs'],
 };

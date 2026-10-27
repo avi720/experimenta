@@ -75,6 +75,9 @@ export function createOrbitControls(camera, domElement) {
                 domElement.removeEventListener('pointerdown', onPointerDown);
                 domElement.removeEventListener('wheel', onWheel);
             }
+            // A drag may still be in progress: detach the document-level drag listeners too.
+            removeDocumentListeners();
+            controls.state = controls.STATE.NONE;
         }
     };
 
@@ -116,10 +119,14 @@ export function createOrbitControls(camera, domElement) {
         }
     }
 
-    function onPointerUp() {
-        controls.state = controls.STATE.NONE;
+    function removeDocumentListeners() {
         document.removeEventListener('pointermove', onPointerMove);
         document.removeEventListener('pointerup', onPointerUp);
+    }
+
+    function onPointerUp() {
+        controls.state = controls.STATE.NONE;
+        removeDocumentListeners();
     }
 
     function onWheel(event) {

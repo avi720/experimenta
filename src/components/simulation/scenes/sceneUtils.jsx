@@ -1,9 +1,71 @@
 import * as THREE from 'three';
 
+function disposeMaterialTextures(material, textures) {
+    Object.values(material).forEach((value) => {
+        if (value && value.isTexture) {
+            textures.add(value);
+        }
+    });
+}
+
+/**
+ * Releases the GPU resources held by an object tree: every unique geometry, material,
+ * texture referenced by a material, and light shadow map. Shared resources are disposed once.
+ * @param {THREE.Object3D} root
+ */
+export function disposeObject3D(root) {
+    if (!root) return;
+    const geometries = new Set();
+    const materials = new Set();
+    const textures = new Set();
+
+    root.traverse((node) => {
+        if (node.geometry) {
+            geometries.add(node.geometry);
+        }
+        if (node.material) {
+            if (Array.isArray(node.material)) {
+                node.material.forEach((m) => m && materials.add(m));
+            } else {
+                materials.add(node.material);
+            }
+        }
+        if (node.isLight && typeof node.dispose === 'function') {
+            node.dispose();
+        }
+    });
+
+    if (root.background && root.background.isTexture) {
+        textures.add(root.background);
+    }
+
+    materials.forEach((mat) => disposeMaterialTextures(mat, textures));
+
+    geometries.forEach((geom) => geom.dispose());
+    materials.forEach((mat) => mat.dispose());
+    textures.forEach((tex) => tex.dispose());
+}
+
+/**
+ * Disposes a WebGLRenderer and detaches its canvas from the mount element.
+ * @param {THREE.WebGLRenderer} renderer
+ * @param {HTMLElement} mountElement
+ */
+export function disposeRenderer(renderer, mountElement) {
+    if (!renderer) return;
+    const canvas = renderer.domElement;
+    if (mountElement && canvas && canvas.parentNode === mountElement) {
+        mountElement.removeChild(canvas);
+    }
+    renderer.dispose();
+}
+
 /**
  * Sets up a basic Three.js scene with lighting and a ground plane.
  * @param {HTMLElement} mountElement - The DOM element to attach the renderer to.
- * @returns {{scene: THREE.Scene, camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer}}
+ * @returns {{scene: THREE.Scene, camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer, dispose: () => void}}
+ *   `dispose` releases everything in the scene graph (including objects the caller added),
+ *   disposes the renderer and removes its canvas from `mountElement`.
  */
 export function setupBasicScene(mountElement) {
     const scene = new THREE.Scene();
@@ -40,7 +102,7 @@ export function setupBasicScene(mountElement) {
 
     // Ground
     const groundGeometry = new THREE.PlaneGeometry(200, 200);
-    const groundMaterial = new THREE.MeshStandardMaterial({ 
+    const groundMaterial = new THREE.MeshStandardMaterial({
         color: 0x228B22, // ForestGreen
         roughness: 0.9,
         metalness: 0.1
@@ -50,5 +112,11 @@ export function setupBasicScene(mountElement) {
     ground.receiveShadow = true;
     scene.add(ground);
 
-    return { scene, camera, renderer };
+    const dispose = () => {
+        disposeObject3D(scene);
+        scene.clear();
+        disposeRenderer(renderer, mountElement);
+    };
+
+    return { scene, camera, renderer, dispose };
 }

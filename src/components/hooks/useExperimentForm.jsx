@@ -1,9 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ExperimentTemplate } from '@/entities/all';
+import { useExperimentTemplateMutations, useExperimentTemplatesQuery } from '@/hooks/useDataQueries';
 import { createPageUrl } from '@/utils';
 import { toast } from 'sonner';
-import { useAppData } from './useAppData';
 
 import { useExperimentDataLoading } from './experimentForm/useExperimentDataLoading';
 import { useExperimentValidation, validateExperimentForm } from './experimentForm/useExperimentValidation';
@@ -20,7 +19,9 @@ function firstTabWithError(errorKeys) {
 
 export function useExperimentForm() {
     const navigate = useNavigate();
-    const { experiments: existingExperiments } = useAppData();
+    // Slug uniqueness must include inactive templates, so use the unfiltered list.
+    const { data: existingExperiments = [] } = useExperimentTemplatesQuery();
+    const { createTemplate, updateTemplate } = useExperimentTemplateMutations();
     const { experiment, setExperiment, isLoading, isEditMode, notFound } = useExperimentDataLoading();
     const { errors, setErrors } = useExperimentValidation();
     const [isSaving, setIsSaving] = useState(false);
@@ -111,10 +112,10 @@ export function useExperimentForm() {
             };
 
             if (isEditMode && experiment.id) {
-                await ExperimentTemplate.update(experiment.id, dataToSave);
+                await updateTemplate(experiment.id, dataToSave);
                 toast.success('הניסוי עודכן בהצלחה');
             } else {
-                await ExperimentTemplate.create(dataToSave);
+                await createTemplate(dataToSave);
                 toast.success('הניסוי נוצר בהצלחה');
             }
 
@@ -137,7 +138,7 @@ export function useExperimentForm() {
         } finally {
             setIsSaving(false);
         }
-    }, [experiment, notFound, existingExperiments, presetTextValues, setErrors, isEditMode, navigate]);
+    }, [experiment, notFound, existingExperiments, presetTextValues, setErrors, isEditMode, navigate, createTemplate, updateTemplate]);
 
     const exportExperiment = useCallback(() => {
         if (!experiment) return;

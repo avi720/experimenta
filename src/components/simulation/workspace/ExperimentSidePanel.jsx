@@ -31,8 +31,7 @@ export default function ExperimentSidePanel({
     simulationData,
     validationState,
     onFloatConsole,
-    showConsole = true,
-    maxSimulationTime
+    showConsole = true
 }) {
     const { t, locale } = useTranslation(isRTL);
     const slideOffset = locale === "he" ? -400 : 400;

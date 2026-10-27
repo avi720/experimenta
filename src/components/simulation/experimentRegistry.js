@@ -2,10 +2,13 @@ import { calculateFreeFallStep } from "./engines/freeFallEngine";
 import { calculateStep as calculateShoStep } from "./engines/shoEngine";
 import { calculateQuantumTunnelingStep } from "./engines/quantumTunnelingEngine";
 import { calculateInterference } from "./engines/doubleSlitEngine";
-import FreeFallScene from "./scenes/FreeFallScene";
-import ShoScene from "./scenes/ShoScene";
-import QuantumTunnelingScene from "./scenes/QuantumTunnelingScene";
-import DoubleSlitScene from "./scenes/DoubleSlitScene";
+import { lazy } from "react";
+
+// Scenes pull in three.js, so they load only when an experiment is opened (T30).
+const FreeFallScene = lazy(() => import("./scenes/FreeFallScene"));
+const ShoScene = lazy(() => import("./scenes/ShoScene"));
+const QuantumTunnelingScene = lazy(() => import("./scenes/QuantumTunnelingScene"));
+const DoubleSlitScene = lazy(() => import("./scenes/DoubleSlitScene"));
 
 /**
  * Single source of truth for simulation engines and 3D/2D scenes.

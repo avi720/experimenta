@@ -48,13 +48,21 @@ export function useExperimentSimulation(experiment, user, isRTL = true) {
         parameters,
         maxSimulationTime,
     });
+    const {
+        startSimulation,
+        resetSimulation,
+        simulationStatus,
+        simulationData: timeSimulationData,
+        getDataPointAtTime,
+        playbackTime,
+    } = manager;
 
     const guardedStartSimulation = useCallback(() => {
         if (!validationState.isAllValid) {
             return;
         }
-        manager.startSimulation();
-    }, [validationState.isAllValid, manager.startSimulation]);
+        startSimulation();
+    }, [validationState.isAllValid, startSimulation]);
 
     // Clear stale completed/paused time-series results when parameters change after a run.
     const prevParametersRef = useRef(null);
@@ -67,18 +75,18 @@ export function useExperimentSimulation(experiment, user, isRTL = true) {
 
         if (
             changed &&
-            manager.simulationStatus !== "running" &&
-            manager.simulationStatus !== "calculating" &&
-            manager.simulationData.length > 0
+            simulationStatus !== "running" &&
+            simulationStatus !== "calculating" &&
+            timeSimulationData.length > 0
         ) {
-            manager.resetSimulation();
+            resetSimulation();
         }
     }, [
         isStaticMode,
         parameters,
-        manager.simulationStatus,
-        manager.simulationData.length,
-        manager.resetSimulation,
+        simulationStatus,
+        timeSimulationData.length,
+        resetSimulation,
     ]);
 
     // Static mode (e.g. Double Slit) — preserve existing behaviour until OQ 12 is decided.
@@ -104,16 +112,16 @@ export function useExperimentSimulation(experiment, user, isRTL = true) {
 
     const timeDisplayedDataPoint = useMemo(() => {
         if (isStaticMode) return null;
-        if (manager.simulationData.length === 0) return null;
-        return manager.getDataPointAtTime(manager.playbackTime);
+        if (timeSimulationData.length === 0) return null;
+        return getDataPointAtTime(playbackTime);
     }, [
         isStaticMode,
-        manager.simulationData.length,
-        manager.getDataPointAtTime,
-        manager.playbackTime,
+        timeSimulationData.length,
+        getDataPointAtTime,
+        playbackTime,
     ]);
 
-    const simulationData = isStaticMode ? staticData : manager.simulationData;
+    const simulationData = isStaticMode ? staticData : timeSimulationData;
     const displayedDataPoint = isStaticMode
         ? staticDisplayedPoint
         : timeDisplayedDataPoint;

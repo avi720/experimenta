@@ -20,7 +20,6 @@ export default function FloatingWindowsManager({
     playbackTime,
     displayedDataPoint,
     simulationData,
-    maxSimulationTime,
     validationState,
     onToggleConsole,
     onToggleCharts

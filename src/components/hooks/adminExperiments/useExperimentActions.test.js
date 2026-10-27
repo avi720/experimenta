@@ -22,12 +22,12 @@ vi.mock("@/lib/AuthContext", () => ({
 vi.mock("react-router-dom", () => ({
   useNavigate: () => vi.fn(),
 }));
-vi.mock("@/entities/all", () => ({
-  ExperimentTemplate: {
-    update: updateMock,
-    delete: vi.fn(),
-    create: vi.fn(),
-  },
+vi.mock("@/hooks/useDataQueries", () => ({
+  useExperimentTemplateMutations: () => ({
+    updateTemplate: updateMock,
+    deleteTemplate: vi.fn(),
+    createTemplate: vi.fn(),
+  }),
 }));
 vi.mock("sonner", () => ({
   toast: toastMocks,
@@ -42,8 +42,7 @@ describe("useExperimentActions (T36, T55)", () => {
 
   it("toggleActive sends only { is_active } instead of the full row (T55)", async () => {
     updateMock.mockResolvedValueOnce({ id: "exp-1", is_active: false });
-    const loadExperiments = vi.fn();
-    const { toggleActive } = useExperimentActions(loadExperiments, []);
+    const { toggleActive } = useExperimentActions([]);
 
     await toggleActive({
       id: "exp-1",
@@ -58,7 +57,7 @@ describe("useExperimentActions (T36, T55)", () => {
   });
 
   it("exportExperiments shows an error toast when filteredExperiments is empty (T36)", () => {
-    const { exportExperiments } = useExperimentActions(vi.fn(), []);
+    const { exportExperiments } = useExperimentActions([]);
     exportExperiments();
     expect(toastMocks.error).toHaveBeenCalledWith("אין ניסויים לייצוא");
   });

@@ -4,7 +4,7 @@ import { useExperimentFiltering } from './adminExperiments/useExperimentFilterin
 import { useExperimentActions } from './adminExperiments/useExperimentActions';
 
 export function useAdminExperiments() {
-    const { experiments, isLoading, loadExperiments } = useExperimentListFetching();
+    const { experiments, isLoading } = useExperimentListFetching();
     
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("all");
@@ -23,10 +23,7 @@ export function useAdminExperiments() {
         sortDirection
     ) || {};
     
-    const { handleDelete, handleDuplicate, toggleActive, exportExperiments } = useExperimentActions(
-        loadExperiments,
-        filteredExperiments
-    );
+    const { handleDelete, handleDuplicate, toggleActive, exportExperiments } = useExperimentActions(filteredExperiments);
 
     return {
         filteredExperiments,

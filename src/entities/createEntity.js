@@ -24,14 +24,9 @@ const unwrap = ({ data, error }) => {
 /**
  * Creates a Supabase-backed entity exposing the same API the app's data hooks expect:
  * list(sort, limit), filter(criteria, sort, limit), get(id), create(data), update(id, data), delete(id).
- * `onChange` runs after every successful write (e.g. to invalidate cached queries).
+ * Cache invalidation after writes is done by the mutation hooks in `@/hooks/useDataQueries`.
  */
-export function createEntity(table, { onChange } = {}) {
-  const afterWrite = (result) => {
-    onChange?.();
-    return result;
-  };
-
+export function createEntity(table) {
   return {
     async list(sort, limit) {
       let query = applySort(supabase.from(table).select('*'), sort);
@@ -50,11 +45,11 @@ export function createEntity(table, { onChange } = {}) {
     },
 
     async create(data) {
-      return afterWrite(unwrap(await supabase.from(table).insert(stripReadOnly(data)).select().single()));
+      return unwrap(await supabase.from(table).insert(stripReadOnly(data)).select().single());
     },
 
     async update(id, data) {
-      return afterWrite(unwrap(await supabase.from(table).update(stripReadOnly(data)).eq('id', id).select().single()));
+      return unwrap(await supabase.from(table).update(stripReadOnly(data)).eq('id', id).select().single());
     },
 
     async delete(id) {
@@ -62,7 +57,7 @@ export function createEntity(table, { onChange } = {}) {
       if (!Array.isArray(deletedRows) || deletedRows.length === 0) {
         throw new Error(`Delete failed: row "${id}" in "${table}" was not found or access was denied.`);
       }
-      return afterWrite(deletedRows[0]);
+      return deletedRows[0];
     },
   };
 }

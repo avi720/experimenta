@@ -1,7 +1,6 @@
 import { createContext, useContext, useMemo, useCallback, useEffect, createElement } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { AuthContext, readStoredGuestLocale } from '@/lib/AuthContext';
-import { AppSettings } from '@/entities/all';
+import { useAppSettingsQuery } from '@/hooks/useDataQueries';
 import { appQueryKeys, queryClientInstance } from '@/lib/query-client';
 import he from './he';
 import en from './en';
@@ -13,7 +12,6 @@ const LOCALE_TO_BOOL = {
   en: false,
 };
 
-const DEFAULT_SETTINGS = { virtual_lab_enabled: true, locale_default: 'he' };
 
 export const I18nContext = typeof createContext === 'function' ? createContext(null) : null;
 
@@ -112,11 +110,7 @@ export function pickLocalized(source, localeOrIsRTL, fallback = '') {
 export function I18nProvider({ children }) {
   const auth = useContext(AuthContext);
 
-  const settingsQuery = useQuery({
-    queryKey: appQueryKeys.settings,
-    queryFn: async () => (await AppSettings.list())[0] || DEFAULT_SETTINGS,
-    staleTime: 5 * 60 * 1000,
-  });
+  const settingsQuery = useAppSettingsQuery();
 
   const locale = useMemo(() => {
     const fromAuth = auth?.user?.locale_preference || auth?.guestLocale;

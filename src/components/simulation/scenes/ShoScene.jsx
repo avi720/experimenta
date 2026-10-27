@@ -3,6 +3,52 @@ import * as THREE from 'three';
 import { setupBasicScene } from './sceneUtils';
 import { createOrbitControls } from '../controls/orbitControls';
 
+const SPRING_SAMPLES = 128;
+const SPRING_TUBULAR_SEGMENTS = 64;
+const SPRING_TUBE_RADIUS = 0.8;
+const SPRING_RADIAL_SEGMENTS = 8;
+const SPRING_COIL_RADIUS = 3;
+
+/**
+ * Builds a helical spring tube of the given length along +X. The vertex count is fixed
+ * (it depends only on the segment constants), so a spring can be reshaped in place.
+ */
+export function createSpringGeometry(length) {
+    const springPoints = [];
+    const coils = Math.max(8, Math.floor(length / 8));
+
+    for (let i = 0; i <= SPRING_SAMPLES; i++) {
+        const t = i / SPRING_SAMPLES;
+        const x = t * length;
+        const y = SPRING_COIL_RADIUS * Math.cos(t * coils * 2 * Math.PI);
+        const z = SPRING_COIL_RADIUS * Math.sin(t * coils * 2 * Math.PI);
+        springPoints.push(new THREE.Vector3(x, y, z));
+    }
+
+    const springCurve = new THREE.CatmullRomCurve3(springPoints);
+    return new THREE.TubeGeometry(springCurve, SPRING_TUBULAR_SEGMENTS, SPRING_TUBE_RADIUS, SPRING_RADIAL_SEGMENTS, false);
+}
+
+/**
+ * Reshapes an existing spring geometry to `length` by rewriting its vertex buffers in place,
+ * so the GPU buffers are reused instead of a new geometry being allocated per change.
+ */
+export function updateSpringGeometry(geometry, length) {
+    const next = createSpringGeometry(length);
+    ['position', 'normal', 'uv'].forEach((name) => {
+        const target = geometry.getAttribute(name);
+        const source = next.getAttribute(name);
+        if (target && source) {
+            target.array.set(source.array);
+            target.needsUpdate = true;
+        }
+    });
+    next.dispose();
+    geometry.computeBoundingSphere();
+    geometry.computeBoundingBox();
+    return geometry;
+}
+
 const ShoScene = ({ parameters, dataPointToRender }) => {
     const mountRef = useRef(null);
     const sceneRef = useRef(null);
@@ -33,7 +79,7 @@ const ShoScene = ({ parameters, dataPointToRender }) => {
             return;
         }
 
-        const { scene, camera, renderer } = setupBasicScene(currentMount);
+        const { scene, camera, renderer, dispose: disposeBasicScene } = setupBasicScene(currentMount);
         sceneRef.current = scene;
         cameraRef.current = camera;
         rendererRef.current = renderer;
@@ -58,24 +104,6 @@ const ShoScene = ({ parameters, dataPointToRender }) => {
         massRef.current.castShadow = true;
         massRef.current.position.y = 10;
         scene.add(massRef.current);
-
-        // Create spring geometry function
-        const createSpringGeometry = (length) => {
-            const springPoints = [];
-            const coils = Math.max(8, Math.floor(length / 8));
-            const radius = 3;
-            
-            for (let i = 0; i <= 128; i++) {
-                const t = i / 128;
-                const x = t * length;
-                const y = radius * Math.cos(t * coils * 2 * Math.PI);
-                const z = radius * Math.sin(t * coils * 2 * Math.PI);
-                springPoints.push(new THREE.Vector3(x, y, z));
-            }
-            
-            const springCurve = new THREE.CatmullRomCurve3(springPoints);
-            return new THREE.TubeGeometry(springCurve, 64, 0.8, 8, false);
-        };
 
         // Initial spring
         const springMaterial = new THREE.MeshStandardMaterial({ 
@@ -120,14 +148,15 @@ const ShoScene = ({ parameters, dataPointToRender }) => {
         // אתחול מיקום ראשוני - קריטי לתצוגה הנכונה מההתחלה
         const initialSpringLength = updateMassAndSpringPosition(parametersRef.current, dataPointRef.current);
         if (initialSpringLength && springRef.current) {
-            springRef.current.geometry.dispose();
-            springRef.current.geometry = createSpringGeometry(initialSpringLength);
+            updateSpringGeometry(springRef.current.geometry, initialSpringLength);
             springRef.current.position.x = wallEdgeX;
         }
 
         let lastSpringLength = initialSpringLength || 50;
 
+        let isDisposed = false;
         const animate = () => {
+            if (isDisposed) return;
             animationFrameId.current = requestAnimationFrame(animate);
             controlsRef.current.update();
 
@@ -135,8 +164,7 @@ const ShoScene = ({ parameters, dataPointToRender }) => {
 
             if (currentSpringLength && Math.abs(currentSpringLength - lastSpringLength) > 2) {
                 if (springRef.current) {
-                    springRef.current.geometry.dispose();
-                    springRef.current.geometry = createSpringGeometry(currentSpringLength);
+                    updateSpringGeometry(springRef.current.geometry, currentSpringLength);
                     lastSpringLength = currentSpringLength;
                 }
             }
@@ -167,22 +195,25 @@ const ShoScene = ({ parameters, dataPointToRender }) => {
         window.addEventListener('resize', handleResize);
 
         return () => {
-            cancelAnimationFrame(animationFrameId.current);
+            isDisposed = true;
+            if (animationFrameId.current !== null) {
+                cancelAnimationFrame(animationFrameId.current);
+                animationFrameId.current = null;
+            }
             window.removeEventListener('resize', handleResize);
-            if (resizeObserver && currentMount) {
-                resizeObserver.unobserve(currentMount);
-                resizeObserver.disconnect();
-            }
+            resizeObserver.disconnect();
             if (controlsRef.current) controlsRef.current.dispose();
-            if (rendererRef.current) {
-                if (springRef.current && springRef.current.geometry) {
-                    springRef.current.geometry.dispose();
-                }
-                if(currentMount && rendererRef.current.domElement.parentElement === currentMount) {
-                    currentMount.removeChild(rendererRef.current.domElement);
-                }
-                rendererRef.current.dispose();
-            }
+
+            // Disposes every geometry/material in the scene (wall, mass, spring, ground, lights),
+            // the renderer, and removes the canvas.
+            disposeBasicScene();
+
+            sceneRef.current = null;
+            cameraRef.current = null;
+            rendererRef.current = null;
+            massRef.current = null;
+            springRef.current = null;
+            controlsRef.current = null;
         };
     }, [wallEdgeX]);
 

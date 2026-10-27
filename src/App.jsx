@@ -9,6 +9,7 @@ import { AppErrorFallback, ErrorBoundary } from '@/components/layout/ErrorBounda
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { useTranslation, I18nProvider } from '@/i18n';
+import { Suspense } from 'react';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -18,9 +19,10 @@ const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
 const AUTH_REQUIRED_PAGES = ['Results'];
 const ADMIN_PAGES = ['AdminExperiments', 'AdminExperimentForm'];
 
-const LayoutWrapper = ({ children, currentPageName }) => Layout ?
-  <Layout currentPageName={currentPageName}>{children}</Layout>
-  : <>{children}</>;
+const LayoutWrapper = ({ children, currentPageName }) => {
+  const page = <Suspense fallback={<FullScreenSpinner />}>{children}</Suspense>;
+  return Layout ? <Layout currentPageName={currentPageName}>{page}</Layout> : page;
+};
 
 const FullScreenSpinner = () => (
   <div className="fixed inset-0 flex items-center justify-center">

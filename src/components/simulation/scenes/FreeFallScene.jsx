@@ -1,27 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
+import { disposeObject3D } from './sceneUtils';
 
-export function disposeObject3D(root) {
-    if (!root) return;
-    const geometries = new Set();
-    const materials = new Set();
-
-    root.traverse((node) => {
-        if (node.geometry) {
-            geometries.add(node.geometry);
-        }
-        if (node.material) {
-            if (Array.isArray(node.material)) {
-                node.material.forEach((m) => m && materials.add(m));
-            } else {
-                materials.add(node.material);
-            }
-        }
-    });
-
-    geometries.forEach((geom) => geom.dispose());
-    materials.forEach((mat) => mat.dispose());
-}
+export { disposeObject3D };
 
 export function createBuildingWithWindows(height) {
     const buildingGroup = new THREE.Group();

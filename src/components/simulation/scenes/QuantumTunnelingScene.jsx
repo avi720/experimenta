@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { createOrbitControls } from '../controls/orbitControls';
 import { DETECTOR_X_POSITION } from '../engines/quantumTunnelingEngine';
+import { disposeObject3D, disposeRenderer } from './sceneUtils';
 
 const UM_TO_NM = 1000;
 const VISUAL_L_SCALE_FACTOR = 0.25;
@@ -21,6 +22,131 @@ export function computeBarrierVisualWidth(parameters = {}, dataPointToRender = n
     const widthUm = !Number.isNaN(parsedUm) && parsedUm > 0 ? parsedUm : 0.005;
     const widthNm = widthUm <= 0.5 ? widthUm * UM_TO_NM : widthUm;
     return widthNm * VISUAL_L_SCALE_FACTOR;
+}
+
+/**
+ * Adds the lights, floor, particle gun, barrier, detector and particles to `scene`.
+ * Returns the objects the component updates afterwards.
+ */
+export function populateQuantumTunnelingScene(scene, barrierWidth) {
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(10, 10, 5);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    scene.add(directionalLight);
+
+    // Floor
+    const floorGeometry = new THREE.PlaneGeometry(100, 50);
+    const floorMaterial = new THREE.MeshLambertMaterial({ color: 0xf0f0f0 });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // Particle Gun
+    const gunGroup = new THREE.Group();
+    gunGroup.position.set(-48, 0, 0);
+
+    const bodyGeometry = new THREE.CylinderGeometry(0.8, 1.2, 4, 8);
+    const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x4a5568 });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    gunGroup.add(body);
+
+    const barrelGeometry = new THREE.CylinderGeometry(0.3, 0.3, 3, 8);
+    const barrelMaterial = new THREE.MeshLambertMaterial({ color: 0x2d3748 });
+    const barrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
+    barrel.position.set(2.5, 0, 0);
+    barrel.rotation.z = Math.PI / 2;
+    gunGroup.add(barrel);
+
+    const baseGeometry = new THREE.CylinderGeometry(1.5, 1.5, 0.5, 8);
+    const baseMaterial = new THREE.MeshLambertMaterial({ color: 0x718096 });
+    const base = new THREE.Mesh(baseGeometry, baseMaterial);
+    base.position.set(0, -1.5, 0);
+    gunGroup.add(base);
+
+    scene.add(gunGroup);
+
+    // Barrier
+    const barrierGeometry = new THREE.BoxGeometry(1, 8, 2);
+    const barrierMaterial = new THREE.MeshLambertMaterial({
+        color: 0xe53e3e,
+        transparent: true,
+        opacity: 0.7
+    });
+    const barrier = new THREE.Mesh(barrierGeometry, barrierMaterial);
+    barrier.position.set(0, 2, 0);
+    barrier.scale.x = barrierWidth;
+    scene.add(barrier);
+
+    // Detector (Camera-like shape placed on the transmitted side at DETECTOR_X_POSITION)
+    const detectorGroup = new THREE.Group();
+    detectorGroup.position.set(DETECTOR_X_POSITION, 3, -4);
+
+    const detectorBodyGeometry = new THREE.BoxGeometry(2, 1.5, 3);
+    const detectorBodyMaterial = new THREE.MeshLambertMaterial({ color: 0x606060 });
+    const detectorBody = new THREE.Mesh(detectorBodyGeometry, detectorBodyMaterial);
+    detectorGroup.add(detectorBody);
+
+    const detectorConeGeometry = new THREE.ConeGeometry(0.8, 2, 8);
+    const detectorConeMaterial = new THREE.MeshLambertMaterial({ color: 0x404040 });
+    const detectorCone = new THREE.Mesh(detectorConeGeometry, detectorConeMaterial);
+    detectorCone.position.set(0, -0.5, 2);
+    detectorCone.rotation.x = -Math.PI / 6;
+    detectorGroup.add(detectorCone);
+
+    const armGeometry = new THREE.CylinderGeometry(0.2, 0.2, 5, 8);
+    const armMaterial = new THREE.MeshLambertMaterial({ color: 0x505050 });
+    const arm = new THREE.Mesh(armGeometry, armMaterial);
+    arm.position.set(0, -3, 0);
+    detectorGroup.add(arm);
+
+    scene.add(detectorGroup);
+
+    // Particles
+    const particleGeometry = new THREE.SphereGeometry(0.4, 16, 16);
+
+    // Incoming Particle (Blue)
+    const incomingMaterial = new THREE.MeshLambertMaterial({ color: 0x2b6cb0 });
+    const incomingParticle = new THREE.Mesh(particleGeometry, incomingMaterial);
+    incomingParticle.castShadow = true;
+    incomingParticle.visible = false;
+    scene.add(incomingParticle);
+
+    // Transmitted Particle (Green)
+    const transmittedMaterial = new THREE.MeshLambertMaterial({
+        color: 0x38a169,
+        transparent: true,
+    });
+    const transmittedParticle = new THREE.Mesh(particleGeometry, transmittedMaterial);
+    transmittedParticle.castShadow = true;
+    transmittedParticle.visible = false;
+    scene.add(transmittedParticle);
+
+    // Reflected Particle (Yellow)
+    const reflectedMaterial = new THREE.MeshLambertMaterial({
+        color: 0xd69e2e,
+        transparent: true,
+    });
+    const reflectedParticle = new THREE.Mesh(particleGeometry, reflectedMaterial);
+    reflectedParticle.castShadow = true;
+    reflectedParticle.visible = false;
+    scene.add(reflectedParticle);
+
+    return {
+        barrier,
+        detectorGroup,
+        detectorCone,
+        incomingParticle,
+        transmittedParticle,
+        reflectedParticle,
+    };
 }
 
 export default function QuantumTunnelingScene({ parameters, dataPointToRender }) {
@@ -75,124 +201,18 @@ export default function QuantumTunnelingScene({ parameters, dataPointToRender })
         controls.maxDistance = 100;
         controlsRef.current = controls;
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-        scene.add(ambientLight);
-
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(10, 10, 5);
-        directionalLight.castShadow = true;
-        directionalLight.shadow.mapSize.width = 2048;
-        directionalLight.shadow.mapSize.height = 2048;
-        scene.add(directionalLight);
-
-        // Floor
-        const floorGeometry = new THREE.PlaneGeometry(100, 50);
-        const floorMaterial = new THREE.MeshLambertMaterial({ color: 0xf0f0f0 });
-        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-        floor.rotation.x = -Math.PI / 2;
-        floor.position.y = -2;
-        floor.receiveShadow = true;
-        scene.add(floor);
-
-        // Particle Gun
-        const gunGroup = new THREE.Group();
-        gunGroup.position.set(-48, 0, 0);
-
-        const bodyGeometry = new THREE.CylinderGeometry(0.8, 1.2, 4, 8);
-        const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x4a5568 });
-        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-        gunGroup.add(body);
-
-        const barrelGeometry = new THREE.CylinderGeometry(0.3, 0.3, 3, 8);
-        const barrelMaterial = new THREE.MeshLambertMaterial({ color: 0x2d3748 });
-        const barrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
-        barrel.position.set(2.5, 0, 0);
-        barrel.rotation.z = Math.PI / 2;
-        gunGroup.add(barrel);
-
-        const baseGeometry = new THREE.CylinderGeometry(1.5, 1.5, 0.5, 8);
-        const baseMaterial = new THREE.MeshLambertMaterial({ color: 0x718096 });
-        const base = new THREE.Mesh(baseGeometry, baseMaterial);
-        base.position.set(0, -1.5, 0);
-        gunGroup.add(base);
-
-        scene.add(gunGroup);
-
-        // Barrier
-        const barrierGeometry = new THREE.BoxGeometry(1, 8, 2);
-        const barrierMaterial = new THREE.MeshLambertMaterial({
-            color: 0xe53e3e,
-            transparent: true,
-            opacity: 0.7
-        });
-        const barrier = new THREE.Mesh(barrierGeometry, barrierMaterial);
-        barrier.position.set(0, 2, 0);
-        barrier.scale.x = computeBarrierVisualWidth(parameters, dataPointToRender);
-        barrierRef.current = barrier;
-        scene.add(barrier);
-
-        // Detector (Camera-like shape placed on the transmitted side at DETECTOR_X_POSITION)
-        const detectorGroup = new THREE.Group();
-        detectorGroup.position.set(DETECTOR_X_POSITION, 3, -4);
-
-        const detectorBodyGeometry = new THREE.BoxGeometry(2, 1.5, 3);
-        const detectorBodyMaterial = new THREE.MeshLambertMaterial({ color: 0x606060 });
-        const detectorBody = new THREE.Mesh(detectorBodyGeometry, detectorBodyMaterial);
-        detectorGroup.add(detectorBody);
-
-        const detectorConeGeometry = new THREE.ConeGeometry(0.8, 2, 8);
-        const detectorConeMaterial = new THREE.MeshLambertMaterial({ color: 0x404040 });
-        const detectorCone = new THREE.Mesh(detectorConeGeometry, detectorConeMaterial);
-        detectorCone.position.set(0, -0.5, 2);
-        detectorCone.rotation.x = -Math.PI / 6;
-        detectorConeRef.current = detectorCone;
-        detectorGroup.add(detectorCone);
-
-        const armGeometry = new THREE.CylinderGeometry(0.2, 0.2, 5, 8);
-        const armMaterial = new THREE.MeshLambertMaterial({ color: 0x505050 });
-        const arm = new THREE.Mesh(armGeometry, armMaterial);
-        arm.position.set(0, -3, 0);
-        detectorGroup.add(arm);
-
-        detectorRef.current = detectorGroup;
-        scene.add(detectorGroup);
-
-        // Particles
-        const particleGeometry = new THREE.SphereGeometry(0.4, 16, 16);
-
-        // Incoming Particle (Blue)
-        const incomingMaterial = new THREE.MeshLambertMaterial({ color: 0x2b6cb0 });
-        const incomingParticle = new THREE.Mesh(particleGeometry, incomingMaterial);
-        incomingParticle.castShadow = true;
-        incomingParticle.visible = false;
-        scene.add(incomingParticle);
-        incomingParticleRef.current = incomingParticle;
-
-        // Transmitted Particle (Green)
-        const transmittedMaterial = new THREE.MeshLambertMaterial({
-            color: 0x38a169,
-            transparent: true,
-        });
-        const transmittedParticle = new THREE.Mesh(particleGeometry, transmittedMaterial);
-        transmittedParticle.castShadow = true;
-        transmittedParticle.visible = false;
-        scene.add(transmittedParticle);
-        transmittedParticleRef.current = transmittedParticle;
-
-        // Reflected Particle (Yellow)
-        const reflectedMaterial = new THREE.MeshLambertMaterial({
-            color: 0xd69e2e,
-            transparent: true,
-        });
-        const reflectedParticle = new THREE.Mesh(particleGeometry, reflectedMaterial);
-        reflectedParticle.castShadow = true;
-        reflectedParticle.visible = false;
-        scene.add(reflectedParticle);
-        reflectedParticleRef.current = reflectedParticle;
+        const objects = populateQuantumTunnelingScene(scene, computeBarrierVisualWidth(parameters, dataPointToRender));
+        barrierRef.current = objects.barrier;
+        detectorRef.current = objects.detectorGroup;
+        detectorConeRef.current = objects.detectorCone;
+        incomingParticleRef.current = objects.incomingParticle;
+        transmittedParticleRef.current = objects.transmittedParticle;
+        reflectedParticleRef.current = objects.reflectedParticle;
 
         // Animation loop
+        let isDisposed = false;
         const animate = () => {
+            if (isDisposed) return;
             animationIdRef.current = requestAnimationFrame(animate);
 
             if (controlsRef.current) {
@@ -222,18 +242,31 @@ export default function QuantumTunnelingScene({ parameters, dataPointToRender })
 
         // Cleanup
         return () => {
-            if (animationIdRef.current) {
+            isDisposed = true;
+            if (animationIdRef.current !== null) {
                 cancelAnimationFrame(animationIdRef.current);
+                animationIdRef.current = null;
             }
-            if (controlsRef.current) {
-                controlsRef.current.dispose();
-            }
-            if (mountElement && renderer.domElement) {
-                mountElement.removeChild(renderer.domElement);
-            }
-            renderer.dispose();
             window.removeEventListener('resize', handleResize);
+            controls.dispose();
+
+            disposeObject3D(scene);
+            scene.clear();
+            disposeRenderer(renderer, mountElement);
+
+            sceneRef.current = null;
+            rendererRef.current = null;
+            cameraRef.current = null;
+            controlsRef.current = null;
+            incomingParticleRef.current = null;
+            transmittedParticleRef.current = null;
+            reflectedParticleRef.current = null;
+            barrierRef.current = null;
+            detectorRef.current = null;
+            detectorConeRef.current = null;
         };
+    // Mount-only scene setup; later parameter/data changes are applied by the update effect below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Effect to update scene based on simulation data and parameters

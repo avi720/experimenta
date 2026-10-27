@@ -24,8 +24,9 @@ vi.mock("react", () => ({
 vi.mock("sonner", () => ({
     toast: toastMocks,
 }));
-vi.mock("@/entities/ExperimentRun", () => ({
-    ExperimentRun: { create: vi.fn() },
+const createRunMock = vi.hoisted(() => vi.fn());
+vi.mock("@/hooks/useDataQueries", () => ({
+    useExperimentRunMutations: () => ({ createRun: createRunMock }),
 }));
 vi.mock("@/lib/AuthContext", () => ({
     useAuth: () => authMock,
@@ -37,7 +38,6 @@ import {
     parseStoredSimulationSamples,
     useExperimentPersistence,
 } from "./useExperimentPersistence.jsx";
-import { ExperimentRun } from "@/entities/ExperimentRun";
 import { calculateFreeFallStep } from "@/components/simulation/engines/freeFallEngine.jsx";
 
 describe("useExperimentPersistence sample serialization (T16, T52)", () => {
@@ -95,10 +95,10 @@ describe("useExperimentPersistence sample serialization (T16, T52)", () => {
         });
 
         it("shows a success toast after saving a run", async () => {
-            ExperimentRun.create.mockResolvedValueOnce({ id: "run-1" });
+            createRunMock.mockResolvedValueOnce({ id: "run-1" });
             const { saveRun } = useExperimentPersistence({ slug: "free-fall" }, null, { h0: 10 }, [{ time: 0, position: 10 }]);
             await saveRun();
-            expect(ExperimentRun.create).toHaveBeenCalledTimes(1);
+            expect(createRunMock).toHaveBeenCalledTimes(1);
             expect(toastMocks.success).toHaveBeenCalledWith("Run saved successfully!");
         });
     });
