@@ -1,13 +1,41 @@
-import React, { createContext, useState, useContext, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, useMemo, useRef } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/api/supabaseClient';
 import { User } from '@/entities/User';
+import type { Locale } from '@/i18n';
+import type { AppUser } from '@/types/models';
+import type { ChildrenProps } from '@/types/props';
 
-export const AuthContext = createContext();
+export type AuthError = { type: 'profile_load_failed'; message: string };
+
+export type AuthContextValue = {
+  session: Session | null;
+  user: AppUser | null;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  isLoadingAuth: boolean;
+  authError: AuthError | null;
+  isPasswordRecovery: boolean;
+  guestLocale: Locale | null;
+  setGuestLocale: (locale: Locale | null) => void;
+  signIn: typeof User.signIn;
+  signUp: typeof User.signUp;
+  signInWithGoogle: typeof User.signInWithGoogle;
+  logout: () => Promise<void>;
+  navigateToLogin: () => void;
+  updatePassword: (password: string) => Promise<void>;
+  updateProfile: (updates: Record<string, unknown>) => Promise<AppUser>;
+  refreshUser: () => Promise<void>;
+};
+
+type LocaleStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 export const GUEST_LOCALE_STORAGE_KEY = 'experimenta_guest_locale';
 
-export function readStoredGuestLocale(storage = typeof window !== 'undefined' ? window.localStorage : null) {
+export function readStoredGuestLocale(storage: LocaleStorage | null = typeof window !== 'undefined' ? window.localStorage : null): Locale | null {
   try {
     const val = storage?.getItem(GUEST_LOCALE_STORAGE_KEY);
     return val === 'he' || val === 'en' ? val : null;
@@ -16,7 +44,7 @@ export function readStoredGuestLocale(storage = typeof window !== 'undefined' ? 
   }
 }
 
-export function writeStoredGuestLocale(locale, storage = typeof window !== 'undefined' ? window.localStorage : null) {
+export function writeStoredGuestLocale(locale: string | null, storage: LocaleStorage | null = typeof window !== 'undefined' ? window.localStorage : null) {
   try {
     if (!storage) return;
     if (locale === 'he' || locale === 'en') {
@@ -30,32 +58,31 @@ export function writeStoredGuestLocale(locale, storage = typeof window !== 'unde
 }
 
 // Minimal user built from the auth session, used if the profile row cannot be loaded.
-const userFromSession = (session) => ({
+const userFromSession = (session: Session): AppUser => ({
   id: session.user.id,
   email: session.user.email,
   role: 'user',
   subscription_tier: 'free',
-  locale_preference: null,
 });
 
-export const AuthProvider = ({ children }) => {
+export const AuthProvider = ({ children }: ChildrenProps) => {
   const navigate = useNavigate();
-  const [session, setSession] = useState(null);
-  const [user, setUser] = useState(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [authError, setAuthError] = useState(null);
+  const [authError, setAuthError] = useState<AuthError | null>(null);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   // Persist guest language preference in localStorage (holds no personal data).
   const [guestLocale, setGuestLocaleState] = useState(() => readStoredGuestLocale());
   // Only the latest profile request may update state (sign-in/out can overlap).
   const profileRequestId = useRef(0);
 
-  const setGuestLocale = useCallback((nextLocale) => {
+  const setGuestLocale = useCallback((nextLocale: Locale | null) => {
     writeStoredGuestLocale(nextLocale);
     setGuestLocaleState(nextLocale);
   }, []);
 
-  const loadProfile = useCallback(async (nextSession) => {
+  const loadProfile = useCallback(async (nextSession: Session | null) => {
     const requestId = ++profileRequestId.current;
     if (!nextSession?.user) {
       setUser(null);
@@ -71,7 +98,8 @@ export const AuthProvider = ({ children }) => {
       if (requestId !== profileRequestId.current) return;
       console.error('Failed to load user profile:', error);
       setUser((prev) => prev?.id === nextSession.user.id ? prev : userFromSession(nextSession));
-      setAuthError({ type: 'profile_load_failed', message: error.message || 'Failed to load user profile' });
+      const message = error instanceof Error && error.message ? error.message : 'Failed to load user profile';
+      setAuthError({ type: 'profile_load_failed', message });
     }
   }, []);
 
@@ -100,9 +128,9 @@ export const AuthProvider = ({ children }) => {
     };
   }, [loadProfile]);
 
-  const signIn = useCallback((credentials) => User.signIn(credentials), []);
-  const signUp = useCallback((details) => User.signUp(details), []);
-  const signInWithGoogle = useCallback((redirectPath) => User.signInWithGoogle(redirectPath), []);
+  const signIn = useCallback<AuthContextValue['signIn']>((credentials) => User.signIn(credentials), []);
+  const signUp = useCallback<AuthContextValue['signUp']>((details) => User.signUp(details), []);
+  const signInWithGoogle = useCallback<AuthContextValue['signInWithGoogle']>((redirectPath) => User.signInWithGoogle(redirectPath), []);
 
   const logout = useCallback(async () => {
     profileRequestId.current++;
@@ -117,12 +145,12 @@ export const AuthProvider = ({ children }) => {
     navigate(`/Login?redirect=${redirect}`);
   }, [navigate]);
 
-  const updatePassword = useCallback(async (password) => {
+  const updatePassword = useCallback(async (password: string) => {
     await User.updatePassword(password);
     setIsPasswordRecovery(false);
   }, []);
 
-  const updateProfile = useCallback(async (updates) => {
+  const updateProfile = useCallback(async (updates: Record<string, unknown>) => {
     const updated = await User.updateMe(updates);
     setUser((prev) => (prev ? { ...prev, ...updated } : prev));
     return updated;
@@ -130,7 +158,7 @@ export const AuthProvider = ({ children }) => {
 
   const refreshUser = useCallback(() => loadProfile(session), [loadProfile, session]);
 
-  const value = useMemo(() => ({
+  const value = useMemo((): AuthContextValue => ({
     session,
     user,
     isAuthenticated: !!session?.user,

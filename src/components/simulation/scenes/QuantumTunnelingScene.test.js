@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import * as THREE from "three";
-import { computeBarrierVisualWidth, populateQuantumTunnelingScene } from "./QuantumTunnelingScene.jsx";
-import { disposeObject3D } from "./sceneUtils.jsx";
+import { computeBarrierVisualWidth, populateQuantumTunnelingScene } from "./QuantumTunnelingScene";
+import { disposeObject3D } from "./sceneUtils";
 import { calculateQuantumTunnelingStep } from "../engines/quantumTunnelingEngine";
 
 describe("QuantumTunnelingScene barrier width scaling (T49)", () => {

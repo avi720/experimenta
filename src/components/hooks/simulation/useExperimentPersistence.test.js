@@ -37,7 +37,7 @@ import {
     serializeSimulationSamples,
     parseStoredSimulationSamples,
     useExperimentPersistence,
-} from "./useExperimentPersistence.jsx";
+} from "./useExperimentPersistence";
 import { calculateFreeFallStep } from "@/components/simulation/engines/freeFallEngine";
 
 describe("useExperimentPersistence sample serialization (T16, T52)", () => {

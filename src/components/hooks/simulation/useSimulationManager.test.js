@@ -63,7 +63,7 @@ vi.mock("react", () => ({
     },
 }));
 
-import { useSimulationManager } from "./useSimulationManager.jsx";
+import { useSimulationManager } from "./useSimulationManager";
 
 function mountHook(renderFn) {
     hookState.states = [];

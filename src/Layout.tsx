@@ -1,4 +1,3 @@
-import React from "react";
 import { useLocation } from "react-router-dom";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import AppHeader from "./components/layout/AppHeader";
@@ -11,8 +10,10 @@ import { useAppData } from "./components/hooks/useAppData";
 import { useAuth } from "./lib/AuthContext";
 import { FULL_SCREEN_PAGES } from "./pages.config";
 import { useTranslation } from "@/i18n";
+import type { ReactNode } from "react";
+import type { ErrorFallbackProps } from "@/types/props";
 
-export default function Layout({ children, currentPageName }) {
+export default function Layout({ children, currentPageName }: { children: ReactNode; currentPageName: string }) {
   const location = useLocation();
   const { authError, refreshUser } = useAuth();
   const {
@@ -58,7 +59,7 @@ export default function Layout({ children, currentPageName }) {
   );
 
   // The standard site chrome: header, main content, footer.
-  const withSiteChrome = (content) => (
+  const withSiteChrome = (content: ReactNode) => (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50" dir={dir}>
       <AppHeader
         isRTL={isRTL}
@@ -80,7 +81,7 @@ export default function Layout({ children, currentPageName }) {
     </div>
   );
 
-  const pageErrorFallback = ({ reset }) => <PageErrorFallback isRTL={isRTL} reset={reset} />;
+  const pageErrorFallback = ({ reset }: ErrorFallbackProps) => <PageErrorFallback isRTL={isRTL} reset={reset} />;
 
   // On specific pages, render only children without the main layout wrapper
   if (FULL_SCREEN_PAGES.includes(currentPageName)) {
@@ -89,7 +90,7 @@ export default function Layout({ children, currentPageName }) {
     return (
       <ErrorBoundary
         resetKey={location.pathname}
-        fallback={(props) => withSiteChrome(pageErrorFallback(props))}
+        fallback={(props: ErrorFallbackProps) => withSiteChrome(pageErrorFallback(props))}
       >
         <main className="h-screen bg-slate-50">
           {profileErrorBanner}

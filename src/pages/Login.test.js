@@ -13,7 +13,7 @@ vi.mock("@/components/hooks/useAppData", () => ({
   useAppData: () => ({ isRTL: true }),
 }));
 
-import { localizeAuthError } from "./Login.jsx";
+import { localizeAuthError } from "./Login";
 
 describe("localizeAuthError (T57)", () => {
   it("translates common Supabase Auth errors into Hebrew and English", () => {

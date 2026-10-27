@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { validateExperimentForm } from "./useExperimentValidation.jsx";
-import { createEmptyExperiment } from "./useExperimentDataLoading.jsx";
-import { categoryOptions } from "@/components/pagesComponents/admin/AdminExperimentForm/adminFormConstants.jsx";
+import { validateExperimentForm } from "./useExperimentValidation";
+import { createEmptyExperiment } from "./useExperimentDataLoading";
+import { categoryOptions } from "@/components/pagesComponents/admin/AdminExperimentForm/adminFormConstants";
 
 describe("Admin experiment form validation & defaults (T32, T33, T34)", () => {
     const validBaseExperiment = () => ({

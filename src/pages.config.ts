@@ -1,4 +1,4 @@
-import { lazy } from 'react';
+import { lazy, type ComponentType } from 'react';
 import Dashboard from './pages/Dashboard';
 
 // Every page except the landing page is split into its own chunk (T30); App wraps routes in Suspense.
@@ -12,7 +12,7 @@ const WhatIsNew = lazy(() => import('./pages/WhatIsNew'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const Login = lazy(() => import('./pages/Login'));
-import __Layout from './Layout.jsx';
+import __Layout from './Layout';
 import { LEGACY_EXPERIMENT_PAGE_SLUGS } from './components/simulation/experimentRegistry';
 
 const LEGACY_EXPERIMENT_PAGES = Object.fromEntries(
@@ -22,7 +22,7 @@ const LEGACY_EXPERIMENT_PAGES = Object.fromEntries(
     ])
 );
 
-export const PAGES = {
+export const PAGES: Record<string, ComponentType> = {
     "Dashboard": Dashboard,
     "Lab": Lab,
     "LabWorkspace": LabWorkspace,
@@ -37,7 +37,7 @@ export const PAGES = {
     "Login": Login,
 };
 
-export const FULL_SCREEN_PAGES = [
+export const FULL_SCREEN_PAGES: string[] = [
     "LabWorkspace",
     "AdminExperimentForm",
     ...Object.keys(LEGACY_EXPERIMENT_PAGE_SLUGS),

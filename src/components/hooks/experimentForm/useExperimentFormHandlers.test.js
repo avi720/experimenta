@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { useExperimentFormHandlers } from "./useExperimentFormHandlers.jsx";
+import { useExperimentFormHandlers } from "./useExperimentFormHandlers";
 
 // Minimal mock for React's useCallback so we can test the state-updater functions directly in Node
 import { vi } from "vitest";

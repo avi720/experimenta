@@ -9,17 +9,17 @@ import { AppErrorFallback, ErrorBoundary } from '@/components/layout/ErrorBounda
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { useTranslation, I18nProvider } from '@/i18n';
-import { Suspense } from 'react';
+import { Suspense, type ReactNode } from 'react';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
-const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
+const MainPage = Pages[mainPageKey];
 
 // Pages that require a signed-in user, and those that additionally require the admin role.
 const AUTH_REQUIRED_PAGES = ['Results'];
 const ADMIN_PAGES = ['AdminExperiments', 'AdminExperimentForm'];
 
-const LayoutWrapper = ({ children, currentPageName }) => {
+const LayoutWrapper = ({ children, currentPageName }: { children: ReactNode; currentPageName: string }) => {
   const page = <Suspense fallback={<FullScreenSpinner />}>{children}</Suspense>;
   return Layout ? <Layout currentPageName={currentPageName}>{page}</Layout> : page;
 };
@@ -30,7 +30,7 @@ const FullScreenSpinner = () => (
   </div>
 );
 
-const ProfileLoadErrorFallback = ({ onRetry }) => {
+const ProfileLoadErrorFallback = ({ onRetry }: { onRetry: () => void }) => {
   const { t, dir } = useTranslation();
   return (
     <div className="max-w-lg mx-auto px-4 py-16 text-center space-y-4" dir={dir}>
@@ -51,12 +51,12 @@ const ProfileLoadErrorFallback = ({ onRetry }) => {
   );
 };
 
-const ProtectedRoute = ({ pageName, children }) => {
+const ProtectedRoute = ({ pageName, children }: { pageName: string; children: ReactNode }) => {
   const { isAuthenticated, isAdmin, isLoadingAuth, user, authError, refreshUser } = useAuth();
   const location = useLocation();
   const needsAuth = AUTH_REQUIRED_PAGES.includes(pageName) || ADMIN_PAGES.includes(pageName);
 
-  if (!needsAuth) return children;
+  if (!needsAuth) return <>{children}</>;
   if (isLoadingAuth || (isAuthenticated && !user)) return <FullScreenSpinner />;
   if (!isAuthenticated) {
     const redirect = encodeURIComponent(location.pathname + location.search);
@@ -72,7 +72,7 @@ const ProtectedRoute = ({ pageName, children }) => {
     }
     return <Navigate to="/" replace />;
   }
-  return children;
+  return <>{children}</>;
 };
 
 const AppRoutes = () => (

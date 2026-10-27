@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { createBuildingWithWindows, disposeObject3D } from "./FreeFallScene.jsx";
+import { createBuildingWithWindows, disposeObject3D } from "./FreeFallScene";
 
 describe("FreeFallScene resource management (T25)", () => {
     it("shares window geometries across floors and disposes all geometries and materials on rebuild", () => {

@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useAuth } from "@/lib/AuthContext";
-import { useTranslation } from "@/i18n";
+import { useTranslation, type Locale } from "@/i18n";
 import { DEFAULT_SETTINGS, useAppSettingsQuery, useExperimentTemplatesQuery } from "@/hooks/useDataQueries";
 
 export function useAppData() {
@@ -23,7 +23,7 @@ export function useAppData() {
         }
     }, [logout]);
 
-    const handleLanguageChange = useCallback(async (newLocale) => {
+    const handleLanguageChange = useCallback(async (newLocale: Locale) => {
         if (!user) {
             setGuestLocale(newLocale);
             return;

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import * as THREE from "three";
-import { createSpringGeometry, updateSpringGeometry } from "./ShoScene.jsx";
-import { disposeObject3D } from "./sceneUtils.jsx";
+import { createSpringGeometry, updateSpringGeometry } from "./ShoScene";
+import { disposeObject3D } from "./sceneUtils";
 
 describe("ShoScene spring geometry (T26)", () => {
     it("reshapes the spring in place without allocating or disposing the live geometry", () => {

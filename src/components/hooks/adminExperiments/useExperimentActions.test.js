@@ -33,7 +33,7 @@ vi.mock("sonner", () => ({
   toast: toastMocks,
 }));
 
-import { useExperimentActions } from "./useExperimentActions.jsx";
+import { useExperimentActions } from "./useExperimentActions";
 
 describe("useExperimentActions (T36, T55)", () => {
   beforeEach(() => {

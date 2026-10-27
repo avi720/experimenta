@@ -4,7 +4,7 @@ import {
     sampleIndexAtTime,
     MAX_SAMPLES,
     MIN_SAMPLE_DT,
-} from "./useSimulationEngineLogic.jsx";
+} from "./useSimulationEngineLogic";
 
 describe("simulation sampling (T24)", () => {
     it("bounds a 60 s run to at most MAX_SAMPLES grid points that never pass t_max", () => {
