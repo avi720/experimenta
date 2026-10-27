@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/i18n";
 import { validateParameterValue } from "./parameterValidation";
 
 export default function ParameterInput({
@@ -15,6 +16,8 @@ export default function ParameterInput({
     validationState,
     isRTL
 }) {
+    const { t, pick } = useTranslation(isRTL);
+
     // בדיקת תקינות הפרמטר
     if (!parameter || !parameter.key) {
         console.error('ParameterInput: parameter is undefined or missing key');
@@ -32,20 +35,8 @@ export default function ParameterInput({
     const isValid = computedValidation.isValid !== false;
     const errorMessage = error || computedValidation.error;
 
-    // קבלת תווית בשפה הנכונה
-    const getLabel = () => {
-        if (!parameter.i18n_labels) return parameter.key;
-        return isRTL ? (parameter.i18n_labels.he || parameter.key) : (parameter.i18n_labels.en || parameter.key);
-    };
-
-    // קבלת tooltip בשפה הנכונה
-    const getTooltip = () => {
-        if (!parameter.tooltip) return '';
-        return isRTL ? (parameter.tooltip.he || '') : (parameter.tooltip.en || '');
-    };
-
-    const label = getLabel();
-    const tooltip = getTooltip();
+    const label = pick(parameter.i18n_labels, parameter.key);
+    const tooltip = pick(parameter.tooltip, '');
 
     // טיפול בפרמטרים מסוג boolean
     if (parameter.type === 'bool') {
@@ -79,12 +70,12 @@ export default function ParameterInput({
                         id={parameter.key}
                         className={cn(!isValid && "border-red-500")}
                     >
-                        <SelectValue placeholder={isRTL ? "בחר ערך" : "Select value"} />
+                        <SelectValue placeholder={t("workspace.selectValuePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                         {parameter.options.map((option) => (
                             <SelectItem key={option.value} value={option.value}>
-                                {isRTL ? (option.label_he || option.value) : (option.label_en || option.value)}
+                                {pick(option, option.value)}
                             </SelectItem>
                         ))}
                     </SelectContent>
@@ -143,7 +134,7 @@ export default function ParameterInput({
             )}
             {isNumeric && (parameter.min !== undefined || parameter.max !== undefined) && isValid && (
                 <p className="text-xs text-slate-400">
-                    {isRTL ? "טווח: " : "Range: "}
+                    {t("workspace.rangePrefix")}
                     {parameter.min !== undefined ? parameter.min : '∞'} - {parameter.max !== undefined ? parameter.max : '∞'}
                 </p>
             )}

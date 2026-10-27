@@ -1,54 +1,42 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Beaker } from 'lucide-react';
+import { Beaker, Mail } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { FULL_SCREEN_PAGES } from '@/pages.config';
-import { Facebook, Twitter, Instagram, Linkedin, Mail } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 export default function AppFooter({ isRTL, currentPageName }) {
+    const { t, dir } = useTranslation(isRTL);
+
     if (FULL_SCREEN_PAGES.includes(currentPageName)) {
         return null;
     }
 
     const footerSections = [
         {
-            title: isRTL ? "אודותינו" : "About Us",
+            title: t('footer.aboutSectionTitle'),
             links: [
-                { text: isRTL ? "אודות Experimenta" : "About Experimenta", url: createPageUrl("AboutUs") },
-                { text: isRTL ? "צור קשר" : "Contact Us", url: "#", isPlaceholder: true }
+                { text: t('footer.aboutExperimenta'), url: createPageUrl("AboutUs") },
+                { text: t('footer.contactUs'), href: "mailto:info@experimenta.com" }
             ]
         },
         {
-            title: isRTL ? "מה חדש" : "What's New",
+            title: t('footer.whatsNewSectionTitle'),
             links: [
-                { text: isRTL ? "עדכונים" : "Updates", url: createPageUrl("WhatIsNew") },
-                { text: isRTL ? "בלוג המדע" : "Science Matters Blog", url: "#", isPlaceholder: true }
+                { text: t('footer.updates'), url: createPageUrl("WhatIsNew") }
             ]
         },
         {
-            title: isRTL ? "משאבים" : "Resources",
+            title: t('footer.legalSectionTitle'),
             links: [
-                { text: isRTL ? "משאבים" : "Resources", url: createPageUrl("Resources") },
-                { text: isRTL ? "מסמכים ודוחות" : "Documents & Reports", url: "#", isPlaceholder: true },
-                { text: isRTL ? "גישה ציבורית" : "Public Access", url: "#", isPlaceholder: true },
-                { text: isRTL ? "אבטחת מחקר" : "Research Security", url: "#", isPlaceholder: true },
-                { text: isRTL ? "יושרה מדעית" : "Scientific Integrity", url: "#", isPlaceholder: true },
-                { text: "Research.gov", url: "#", isPlaceholder: true },
-                { text: isRTL ? "מדיניות פרטיות" : "Privacy Policy", url: createPageUrl("PrivacyPolicy"), isBold: true },
-                { text: isRTL ? "תנאי שירות" : "Terms of Service", url: createPageUrl("TermsOfService"), isBold: true }
+                { text: t('footer.privacyPolicy'), url: createPageUrl("PrivacyPolicy"), isBold: true },
+                { text: t('footer.termsOfService'), url: createPageUrl("TermsOfService"), isBold: true }
             ]
         }
     ];
 
-    const socialLinks = [
-        { icon: Facebook, label: "Facebook", url: "#" },
-        { icon: Twitter, label: "X", url: "#" },
-        { icon: Instagram, label: "Instagram", url: "#" },
-        { icon: Linkedin, label: "LinkedIn", url: "#" },
-    ];
-
     return (
-        <footer className="bg-slate-900 text-slate-300 mt-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+        <footer className="bg-slate-900 text-slate-300 mt-auto" dir={dir}>
             <div className="max-w-7xl mx-auto px-4 py-12">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     {/* Logo and Contact Section */}
@@ -60,33 +48,13 @@ export default function AppFooter({ isRTL, currentPageName }) {
                             <span className="text-2xl font-bold text-white">Experimenta</span>
                         </div>
                         <p className="text-sm text-slate-400 leading-relaxed">
-                            {isRTL
-                                ? "פלטפורמה חדשנית לסימולציות פיזיקליות אינטראקטיביות"
-                                : "Innovative platform for interactive physics simulations"
-                            }
+                            {t('footer.tagline')}
                         </p>
                         <div className="flex items-center gap-2 text-sm">
                             <Mail className="w-4 h-4 text-blue-400" />
                             <a href="mailto:info@experimenta.com" className="hover:text-white transition-colors">
                                 info@experimenta.com
                             </a>
-                        </div>
-                        {/* Social Icons */}
-                        <div className="flex gap-3 pt-2">
-                            {socialLinks.map((social, index) => {
-                                const Icon = social.icon;
-                                return (
-                                    <a
-                                        key={index}
-                                        href={social.url}
-                                        aria-label={social.label}
-                                        className="w-9 h-9 bg-slate-800 hover:bg-blue-600 rounded-lg flex items-center justify-center transition-colors"
-                                        onClick={(e) => e.preventDefault()}
-                                    >
-                                        <Icon className="w-4 h-4" />
-                                    </a>
-                                );
-                            })}
                         </div>
                     </div>
 
@@ -97,10 +65,13 @@ export default function AppFooter({ isRTL, currentPageName }) {
                             <ul className="space-y-2">
                                 {section.links.map((link, linkIndex) => (
                                     <li key={linkIndex}>
-                                        {link.isPlaceholder ? (
-                                            <span className="text-sm text-slate-500 cursor-not-allowed">
+                                        {link.href ? (
+                                            <a
+                                                href={link.href}
+                                                className="text-sm hover:text-white transition-colors"
+                                            >
                                                 {link.text}
-                                            </span>
+                                            </a>
                                         ) : (
                                             <Link
                                                 to={link.url}
@@ -123,13 +94,10 @@ export default function AppFooter({ isRTL, currentPageName }) {
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-400">
                         <p>
                             © {new Date().getFullYear()} Experimenta.
-                            {isRTL ? " כל הזכויות שמורות." : " All rights reserved."}
+                            {t('footer.allRightsReserved')}
                         </p>
                         <p className="text-xs">
-                            {isRTL
-                                ? "נבנה עם אהבה למדע ולחינוך"
-                                : "Built with love for science and education"
-                            }
+                            {t('footer.builtWithLove')}
                         </p>
                     </div>
                 </div>

@@ -10,6 +10,7 @@ import { Button } from "./components/ui/button";
 import { useAppData } from "./components/hooks/useAppData";
 import { useAuth } from "./lib/AuthContext";
 import { FULL_SCREEN_PAGES } from "./pages.config";
+import { useTranslation } from "@/i18n";
 
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
@@ -23,24 +24,23 @@ export default function Layout({ children, currentPageName }) {
     handleLogout,
     handleLanguageChange
   } = useAppData();
+  const { t, dir } = useTranslation(isRTL);
 
   if (isLoading) {
     return <AppLoadingSpinner />;
   }
 
   const profileErrorBanner = authError?.type === 'profile_load_failed' && (
-    <div className="max-w-7xl mx-auto px-4 pt-4" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="max-w-7xl mx-auto px-4 pt-4" dir={dir}>
       <Alert variant="destructive" className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0" />
           <div>
             <AlertTitle>
-              {isRTL ? "שגיאה בטעינת פרופיל המשתמש" : "Failed to load user profile"}
+              {t('errors.profileLoadFailedTitle')}
             </AlertTitle>
             <AlertDescription>
-              {isRTL
-                ? "טעינת פרטי הפרופיל והרשאות הניהול נכשלה. ניתן לנסות שוב."
-                : "Could not load your profile details and permissions. Please try again."}
+              {t('errors.profileLoadBannerDescription')}
             </AlertDescription>
           </div>
         </div>
@@ -51,7 +51,7 @@ export default function Layout({ children, currentPageName }) {
           className="self-start sm:self-center gap-2 bg-white text-slate-900 hover:bg-slate-100"
         >
           <RefreshCw className="w-4 h-4" />
-          {isRTL ? "נסה שוב" : "Try Again"}
+          {t('common.tryAgain')}
         </Button>
       </Alert>
     </div>
@@ -59,7 +59,7 @@ export default function Layout({ children, currentPageName }) {
 
   // The standard site chrome: header, main content, footer.
   const withSiteChrome = (content) => (
-    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50 ${dir}`} dir={dir}>
       <style>{`
         .rtl { direction: rtl; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
         .ltr { direction: ltr; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }

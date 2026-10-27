@@ -10,9 +10,16 @@ import { MoreHorizontal, Edit, Copy, Trash2, Power, PowerOff, ShieldCheck, Shiel
 import { createPageUrl } from '@/utils';
 import moment from 'moment';
 import { categoryNames } from '../../lab/labConstants';
+import { useTranslation } from '@/i18n';
 
 export default function AdminExperimentCard({ experiment, index, handleDelete, handleDuplicate, toggleActive }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const { t, pick, dir, locale } = useTranslation();
+
+  const localizedTexts = pick(experiment.i18n_texts, null);
+  const title = localizedTexts?.title || experiment.slug;
+  const shortDesc = localizedTexts?.short_desc || '';
+  const categoryLabel = pick(categoryNames[experiment.category], experiment.category);
 
   return (
     <motion.div
@@ -32,15 +39,15 @@ export default function AdminExperimentCard({ experiment, index, handleDelete, h
                 ) : (
                   <ShieldAlert className="w-5 h-5 text-amber-600" />
                 )}
-                <h3 className="text-lg font-bold text-slate-800">{experiment.i18n_texts?.he?.title || experiment.slug}</h3>
+                <h3 className="text-lg font-bold text-slate-800">{title}</h3>
               </div>
-              <p className="text-sm text-slate-500 mb-3">{experiment.i18n_texts?.he?.short_desc}</p>
+              <p className="text-sm text-slate-500 mb-3">{shortDesc}</p>
               <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
                 <div className="flex items-center gap-1.5"><Code className="w-4 h-4 text-slate-400" /> <span>{experiment.slug}</span></div>
                 <span className="text-slate-300">|</span>
-                <div className="flex items-center gap-1.5"><BookOpen className="w-4 h-4 text-slate-400" /> <span>{categoryNames[experiment.category]?.he || experiment.category}</span></div>
+                <div className="flex items-center gap-1.5"><BookOpen className="w-4 h-4 text-slate-400" /> <span>{categoryLabel}</span></div>
                 <span className="text-slate-300">|</span>
-                <div className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-slate-400" /> <span>נוצר: {moment(experiment.created_date).format('DD/MM/YY')}</span></div>
+                <div className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-slate-400" /> <span>{t('admin.list.createdPrefix')} {moment(experiment.created_date).format('DD/MM/YY')}</span></div>
               </div>
             </div>
 
@@ -53,19 +60,19 @@ export default function AdminExperimentCard({ experiment, index, handleDelete, h
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
                   <Link to={createPageUrl(`AdminExperimentForm?id=${experiment.id}`)}>
-                    <Edit className="w-4 h-4 ml-2" />
-                    <span>עריכה</span>
+                    <Edit className="w-4 h-4 me-2" />
+                    <span>{t('common.edit')}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleDuplicate(experiment)}>
-                  <Copy className="w-4 h-4 ml-2" />
-                  <span>שכפול</span>
+                  <Copy className="w-4 h-4 me-2" />
+                  <span>{t('common.duplicate')}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => toggleActive(experiment)}>
                   {experiment.is_active !== false ? (
-                    <><PowerOff className="w-4 h-4 ml-2" /><span>השבתה</span></>
+                    <><PowerOff className="w-4 h-4 me-2" /><span>{t('common.deactivate')}</span></>
                   ) : (
-                    <><Power className="w-4 h-4 ml-2" /><span>הפעלה</span></>
+                    <><Power className="w-4 h-4 me-2" /><span>{t('common.activate')}</span></>
                   )}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -73,8 +80,8 @@ export default function AdminExperimentCard({ experiment, index, handleDelete, h
                   className="text-red-600 focus:text-red-600 focus:bg-red-50"
                   onClick={() => setIsDeleteDialogOpen(true)}
                 >
-                  <Trash2 className="w-4 h-4 ml-2" />
-                  <span>מחיקה</span>
+                  <Trash2 className="w-4 h-4 me-2" />
+                  <span>{t('common.delete')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -91,21 +98,20 @@ export default function AdminExperimentCard({ experiment, index, handleDelete, h
       </Card>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent dir={dir}>
           <AlertDialogHeader>
-            <AlertDialogTitle>אישור מחיקת ניסוי</AlertDialogTitle>
+            <AlertDialogTitle>{t('admin.list.confirmDeleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              האם אתה בטוח שברצונך למחוק את הניסוי &quot;{experiment.i18n_texts?.he?.title || experiment.slug}&quot;?
-              לא ניתן לשחזר פעולה זו.
+              {t('admin.list.confirmDeleteDescription', { title })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700"
               onClick={() => handleDelete(experiment.id)}
             >
-              מחק
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

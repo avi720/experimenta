@@ -4,42 +4,45 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import ExperimentPreviewCard from './ExperimentPreviewCard';
 import RawJsonViewer from './RawJsonViewer';
+import { useTranslation } from '@/i18n';
 
 export default function AdvancedSettingsTab({ experiment, handleTagsChange, handleOutputsChange, handleInputChange }) {
+  const { t } = useTranslation();
+
   return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>הגדרות מתקדמות</CardTitle>
+            <CardTitle>{t('admin.form.advanced.cardTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label className="text-base font-medium">תגיות חיפוש</Label>
+              <Label className="text-base font-medium">{t('admin.form.advanced.searchTagsLabel')}</Label>
               <Input 
                 value={(experiment.tags || []).join(', ')} 
                 onChange={e => handleTagsChange(e.target.value)}
-                placeholder="פיזיקה, מכניקה, נפילה, כבידה"
+                placeholder={t('admin.form.advanced.searchTagsPlaceholder')}
               />
               <p className="text-xs text-slate-500 mt-1">
-                הפרד תגיות בפסיק. יעזרו למשתמשים למצוא את הניסוי בחיפוש.
+                {t('admin.form.advanced.searchTagsHint')}
               </p>
             </div>
 
             <div>
-              <Label className="text-base font-medium">פלטי מדידה</Label>
+              <Label className="text-base font-medium">{t('admin.form.advanced.outputsLabel')}</Label>
               <Input 
                 value={(experiment.outputs || []).join(', ')} 
                 onChange={e => handleOutputsChange(e.target.value)}
                 placeholder="position, velocity, energy_total"
               />
               <p className="text-xs text-slate-500 mt-1">
-                רשימת הנתונים שהמנוע מחזיר ויוצגו בגרפים ובקונסולה. לדוגמה: `position.y, velocity.y`
+                {t('admin.form.advanced.outputsHint')}
               </p>
             </div>
 
             <div>
-              <Label className="text-base font-medium">תמונה ממוזערת (URL)</Label>
+              <Label className="text-base font-medium">{t('admin.form.advanced.thumbnailUrlLabel')}</Label>
               <Input 
                 value={experiment.thumbnail_url || ''} 
                 onChange={e => handleInputChange('thumbnail_url', e.target.value)}
@@ -51,7 +54,7 @@ export default function AdvancedSettingsTab({ experiment, handleTagsChange, hand
 
         <Card>
           <CardHeader>
-            <CardTitle>תצוגה מקדימה</CardTitle>
+            <CardTitle>{t('admin.form.advanced.previewCardTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
             <ExperimentPreviewCard experiment={experiment} />

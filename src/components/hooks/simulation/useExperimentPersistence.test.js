@@ -15,6 +15,11 @@ const authMock = vi.hoisted(() => ({
 
 vi.mock("react", () => ({
     useCallback: (fn) => fn,
+    useMemo: (fn) => fn(),
+    useContext: () => authMock,
+    createContext: () => ({ Provider: ({ children }) => children }),
+    useEffect: vi.fn(),
+    createElement: vi.fn(),
 }));
 vi.mock("sonner", () => ({
     toast: toastMocks,
@@ -24,6 +29,7 @@ vi.mock("@/entities/ExperimentRun", () => ({
 }));
 vi.mock("@/lib/AuthContext", () => ({
     useAuth: () => authMock,
+    AuthContext: {},
 }));
 
 import {

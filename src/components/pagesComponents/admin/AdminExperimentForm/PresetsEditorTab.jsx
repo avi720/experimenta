@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { PlusCircle, Trash2 } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 export default function PresetsEditorTab({
   experiment,
@@ -16,12 +17,14 @@ export default function PresetsEditorTab({
   removeFromArray,
   errors = {}
 }) {
+  const { t } = useTranslation();
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>תבניות מוכנות</CardTitle>
+        <CardTitle>{t('admin.form.presets.cardTitle')}</CardTitle>
         <CardDescription>
-          הגדר תבניות של פרמטרים כדי לאפשר למשתמשים לטעון הגדרות מוכנות.
+          {t('admin.form.presets.cardDescription')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -33,15 +36,15 @@ export default function PresetsEditorTab({
 
           let liveParseError = null;
           if (!rawValue.trim()) {
-            liveParseError = 'פורמט JSON לא תקין - התבנית לא תישמר עד לתיקון';
+            liveParseError = t('admin.form.validation.presetJsonSyntaxError');
           } else {
             try {
               const parsed = JSON.parse(rawValue);
               if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-                liveParseError = 'פורמט JSON לא תקין - יש להזין אובייקט JSON תקני';
+                liveParseError = t('admin.form.validation.presetJsonObjectRequired');
               }
             } catch {
-              liveParseError = 'פורמט JSON לא תקין - התבנית לא תישמר עד לתיקון';
+              liveParseError = t('admin.form.validation.presetJsonSyntaxError');
             }
           }
 
@@ -56,7 +59,9 @@ export default function PresetsEditorTab({
               className="p-6 border rounded-lg space-y-4 bg-green-50 relative"
             >
               <div className="flex justify-between items-center">
-                <h4 className="text-lg font-semibold">תבנית #{index + 1}</h4>
+                <h4 className="text-lg font-semibold">
+                  {t('admin.form.presets.presetItemTitle', { index: index + 1 })}
+                </h4>
                 <Button
                   type="button"
                   variant="ghost"
@@ -69,25 +74,25 @@ export default function PresetsEditorTab({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>שם התבנית בעברית</Label>
+                  <Label>{t('admin.form.presets.nameHeLabel')}</Label>
                   <Input
                     value={preset.name_he || ''}
                     onChange={e => handleDynamicArrayChange('presets', index, 'name_he', e.target.value)}
-                    placeholder="טיפה מבניין"
+                    placeholder={t('admin.form.presets.nameHePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label>שם התבנית באנגלית</Label>
+                  <Label>{t('admin.form.presets.nameEnLabel')}</Label>
                   <Input
                     value={preset.name_en || ''}
                     onChange={e => handleDynamicArrayChange('presets', index, 'name_en', e.target.value)}
-                    placeholder="Drop from Building"
+                    placeholder={t('admin.form.presets.nameEnPlaceholder')}
                   />
                 </div>
               </div>
 
               <div>
-                <Label>ערכי הפרמטרים (JSON)</Label>
+                <Label>{t('admin.form.presets.valuesJsonLabel')}</Label>
                 <Textarea
                   value={rawValue}
                   onChange={e => handlePresetValuesChange(index, e.target.value)}
@@ -97,7 +102,7 @@ export default function PresetsEditorTab({
                   className={`font-mono text-sm ${errorMessage ? 'border-red-500' : ''}`}
                 />
                 <p className="text-xs text-slate-500 mt-1">
-                  הזן את ערכי הפרמטרים בפורמט JSON. השתמש במפתחות הפרמטרים שהגדרת למעלה.
+                  {t('admin.form.presets.valuesJsonHint')}
                 </p>
                 {errorMessage && (
                   <p className="text-xs text-red-500 mt-1" role="alert">
@@ -119,8 +124,8 @@ export default function PresetsEditorTab({
           })}
           className="w-full h-16 text-lg"
         >
-          <PlusCircle className="ml-2 h-5 w-5" />
-          הוסף תבנית חדשה
+          <PlusCircle className="me-2 h-5 w-5" />
+          {t('admin.form.presets.addPreset')}
         </Button>
       </CardContent>
     </Card>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { ExperimentTemplate} from "@/entities/all";
+import { ExperimentTemplate } from "@/entities/all";
+import { pickLocalized } from "@/i18n";
 
 export function useLabData(searchTerm = "", selectedCategory = "all", isRTL) {
     const [experiments, setExperiments] = useState([]);
@@ -37,7 +38,7 @@ export function useLabData(searchTerm = "", selectedCategory = "all", isRTL) {
     // Filter experiments based on search term and category
     const filteredExperiments = useMemo(() => {
         return experiments.filter(exp => {
-            const title = isRTL ? exp.i18n_texts?.he?.title : exp.i18n_texts?.en?.title;
+            const title = pickLocalized(exp.i18n_texts, isRTL)?.title;
             
             const matchesSearch = !searchTerm || 
                 (title && title.toLowerCase().includes(searchTerm.toLowerCase())) ||

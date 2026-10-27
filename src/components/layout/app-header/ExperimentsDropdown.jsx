@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Beaker, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Beaker, ChevronDown, ChevronRight } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -16,12 +16,17 @@ import {
     getExperimentPageUrl,
     groupExperimentsByCategory,
 } from '@/components/pagesComponents/lab/labConstants';
+import { useTranslation } from '@/i18n';
 
 export default function ExperimentsDropdown({ experiments, isRTL }) {
     const navigate = useNavigate();
+    const { t, pick, dir, menuAlignStart } = useTranslation(isRTL);
     const experimentsByCategory = groupExperimentsByCategory(experiments);
     const categories = Object.entries(experimentsByCategory);
     const [expandedCategory, setExpandedCategory] = useState(null);
+
+    const expandKey = dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
+    const collapseKey = dir === 'rtl' ? 'ArrowRight' : 'ArrowLeft';
 
     if (!experiments || experiments.length === 0) {
         return null;
@@ -31,38 +36,34 @@ export default function ExperimentsDropdown({ experiments, isRTL }) {
         setExpandedCategory((prev) => (prev === category ? null : category));
     };
 
-    const CategoryChevron = isRTL ? ChevronLeft : ChevronRight;
-
     return (
         <DropdownMenu onOpenChange={(open) => { if (!open) setExpandedCategory(null); }}>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 px-3 sm:px-4 py-2 font-medium">
                     <Beaker className="w-5 h-5" />
-                    <span>{isRTL ? "ניסויים" : "Experiments"}</span>
+                    <span>{t('common.experiments')}</span>
                     <ChevronDown className="w-4 h-4" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-                align={isRTL ? "end" : "start"}
+                align={menuAlignStart}
                 className="w-72 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto"
-                dir={isRTL ? "rtl" : "ltr"}
+                dir={dir}
             >
                 <DropdownMenuItem asChild>
                     <Link to={createPageUrl("Lab")} className="w-full cursor-pointer font-medium">
-                        {isRTL ? "כל הניסויים" : "All Experiments"}
+                        {t('common.allExperiments')}
                     </Link>
                 </DropdownMenuItem>
                 {categories.length > 0 && (
                     <>
                         <DropdownMenuSeparator />
                         <DropdownMenuLabel className="text-xs text-slate-500 uppercase tracking-wider">
-                            {isRTL ? "קטגוריות" : "Categories"}
+                            {t('common.categories')}
                         </DropdownMenuLabel>
                         {categories.map(([category, categoryExperiments]) => {
                             const isExpanded = expandedCategory === category;
-                            const categoryLabel = isRTL
-                                ? categoryNames[category]?.he || category
-                                : categoryNames[category]?.en || category;
+                            const categoryLabel = pick(categoryNames[category], category);
 
                             return (
                                 <div key={category} className="space-y-1">
@@ -73,14 +74,12 @@ export default function ExperimentsDropdown({ experiments, isRTL }) {
                                             toggleCategory(category);
                                         }}
                                         onKeyDown={(event) => {
-                                            const expandKey = isRTL ? 'ArrowLeft' : 'ArrowRight';
-                                            const collapseKey = isRTL ? 'ArrowRight' : 'ArrowLeft';
-                                            if (event.key === expandKey) {
+                                            if (event.key === expandKey && !isExpanded) {
                                                 event.preventDefault();
-                                                setExpandedCategory(category);
+                                                toggleCategory(category);
                                             } else if (event.key === collapseKey && isExpanded) {
                                                 event.preventDefault();
-                                                setExpandedCategory(null);
+                                                toggleCategory(category);
                                             }
                                         }}
                                         className="flex items-center justify-between w-full cursor-pointer font-medium"
@@ -88,9 +87,9 @@ export default function ExperimentsDropdown({ experiments, isRTL }) {
                                         <span>{categoryLabel}</span>
                                         <span className="flex items-center gap-1 text-xs text-slate-400">
                                             <span>({categoryExperiments.length})</span>
-                                            <CategoryChevron
-                                                className={`w-4 h-4 transition-transform ${
-                                                    isExpanded ? 'rotate-90 rtl:-rotate-90' : ''
+                                            <ChevronRight
+                                                className={`w-4 h-4 transition-transform rtl:rotate-180 ${
+                                                    isExpanded ? 'rotate-90 rtl:rotate-90' : ''
                                                 }`}
                                             />
                                         </span>
@@ -106,7 +105,7 @@ export default function ExperimentsDropdown({ experiments, isRTL }) {
                                                 onSelect={() => navigate(createPageUrl(`Lab?category=${encodeURIComponent(category)}`))}
                                                 className="text-xs text-blue-600 font-medium cursor-pointer"
                                             >
-                                                {isRTL ? `כל הניסויים ב${categoryLabel}` : `All in ${categoryLabel}`}
+                                                {t('header.allInCategory', { category: categoryLabel })}
                                             </DropdownMenuItem>
                                             {categoryExperiments.map((experiment) => (
                                                 <DropdownMenuItem
@@ -120,9 +119,7 @@ export default function ExperimentsDropdown({ experiments, isRTL }) {
                                                     >
                                                         <Beaker className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
                                                         <span className="flex-1 truncate">
-                                                            {isRTL
-                                                                ? experiment.i18n_texts?.he?.title || experiment.slug
-                                                                : experiment.i18n_texts?.en?.title || experiment.slug}
+                                                            {pick(experiment.i18n_texts)?.title || experiment.slug}
                                                         </span>
                                                     </Link>
                                                 </DropdownMenuItem>

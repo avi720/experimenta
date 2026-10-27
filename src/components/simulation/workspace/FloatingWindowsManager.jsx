@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "@/i18n";
 import FloatingWindow from "../FloatingWindow";
 import SimulationConsole from "../SimulationConsole";
 import SimulationCharts from "../charts/SimulationCharts";
@@ -24,11 +25,13 @@ export default function FloatingWindowsManager({
     onToggleConsole,
     onToggleCharts
 }) {
+    const { t } = useTranslation(isRTL);
+
     return (
         <>
             {floatingWindows?.console && (
                 <FloatingWindow
-                    title={isRTL ? "קונסולת סימולציה" : "Simulation Console"}
+                    title={t("workspace.simulationConsoleTitle")}
                     defaultPosition={{ x: 20, y: 100 }}
                     defaultSize={{ width: 400, height: 500 }}
                     onClose={onToggleConsole}
@@ -49,7 +52,6 @@ export default function FloatingWindowsManager({
                         simulationData={simulationData}
                         experiment={experiment}
                         isRTL={isRTL}
-                        maxSimulationTime={maxSimulationTime}
                         validationState={validationState}
                     />
                 </FloatingWindow>
@@ -57,7 +59,7 @@ export default function FloatingWindowsManager({
 
             {floatingWindows?.charts && (
                 <FloatingWindow
-                    title={isRTL ? "גרפים" : "Charts"}
+                    title={t("workspace.chartsWindowTitle")}
                     defaultPosition={{ x: 440, y: 100 }}
                     defaultSize={{ width: 600, height: 500 }}
                     onClose={onToggleCharts}

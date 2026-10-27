@@ -1,8 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 export default function NoExperimentsFound({ isRTL }) {
+    const { t } = useTranslation(isRTL);
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -13,13 +16,10 @@ export default function NoExperimentsFound({ isRTL }) {
                 <Search className="w-10 h-10 text-slate-400" />
             </div>
             <h3 className="text-2xl font-bold text-slate-900 mb-2">
-                {isRTL ? "לא נמצאו ניסויים" : "No Experiments Found"}
+                {t('lab.noExperimentsTitle')}
             </h3>
             <p className="text-slate-600">
-                {isRTL 
-                    ? "נסו לשנות את הפילטרים או מונח החיפוש"
-                    : "Try adjusting your filters or search terms"
-                }
+                {t('lab.noExperimentsDescription')}
             </p>
         </motion.div>
     );

@@ -23,16 +23,16 @@ export const categoryOptions = Object.entries(categoryNames).map(([value, labels
 }));
 
 export const accessLevelOptions = [
-  { value: 'public', label: 'פתוח לכולם (Public)' },
-  { value: 'registered', label: 'משתמשים רשומים בלבד (Registered)' },
-  { value: 'premium', label: 'מנויי פרימיום בלבד (Premium)' },
+  { value: 'public', i18nKey: 'admin.form.general.accessPublic', label: 'פתוח לכולם (Public)' },
+  { value: 'registered', i18nKey: 'admin.form.general.accessRegistered', label: 'משתמשים רשומים בלבד (Registered)' },
+  { value: 'premium', i18nKey: 'admin.form.general.accessPremium', label: 'מנויי פרימיום בלבד (Premium)' },
 ];
 
 export const parameterTypes = [
-  { value: 'float', label: 'מספר עשרוני (float)' },
-  { value: 'int', label: 'מספר שלם (integer)' },
-  { value: 'select', label: 'רשימת בחירה (select)' },
-  { value: 'bool', label: 'בוליאני (true/false)' }
+  { value: 'float', i18nKey: 'admin.form.parameters.typeFloat', label: 'מספר עשרוני (float)' },
+  { value: 'int', i18nKey: 'admin.form.parameters.typeInt', label: 'מספר שלם (integer)' },
+  { value: 'select', i18nKey: 'admin.form.parameters.typeSelect', label: 'רשימת בחירה (select)' },
+  { value: 'bool', i18nKey: 'admin.form.parameters.typeBool', label: 'בוליאני (true/false)' }
 ];
 
 export const emptyParameter = {

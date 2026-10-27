@@ -10,6 +10,7 @@ export function useSimulationEngineLogic({ calculateStepFn, onSimulationComplete
     const shouldStopRef = useRef(false);
     const isMountedRef = useRef(true);
     const runIdRef = useRef(0);
+    const runSeedRef = useRef(null);
     const onCompleteRef = useRef(onSimulationComplete);
 
     useEffect(() => {
@@ -98,18 +99,38 @@ export function useSimulationEngineLogic({ calculateStepFn, onSimulationComplete
             return;
         }
 
+        const seed =
+            typeof parameters?.randomSeed === 'number' && !Number.isNaN(parameters.randomSeed)
+                ? parameters.randomSeed
+                : Math.random();
+        runSeedRef.current = seed;
+
         setIsSimulating(true);
         setSimulationData([]);
 
-        runEngine(parameters, maxSimulationTime, []);
+        runEngine(
+            { ...parameters, randomSeed: seed },
+            maxSimulationTime,
+            []
+        );
     }, [isSimulating, runEngine]);
 
     const continueSimulation = useCallback((parameters, toTime) => {
         if (isSimulating) return;
 
+        const seed =
+            typeof parameters?.randomSeed === 'number' && !Number.isNaN(parameters.randomSeed)
+                ? parameters.randomSeed
+                : runSeedRef.current ?? Math.random();
+        runSeedRef.current = seed;
+
         setIsSimulating(true);
 
-        runEngine(parameters, toTime, simulationData);
+        runEngine(
+            { ...parameters, randomSeed: seed },
+            toTime,
+            simulationData
+        );
     }, [isSimulating, runEngine, simulationData]);
 
     const stopSimulation = useCallback(() => {
@@ -123,6 +144,7 @@ export function useSimulationEngineLogic({ calculateStepFn, onSimulationComplete
     const resetSimulation = useCallback(() => {
         shouldStopRef.current = true;
         runIdRef.current += 1;
+        runSeedRef.current = null;
         if (isMountedRef.current) {
             setIsSimulating(false);
             setSimulationData([]);

@@ -7,7 +7,6 @@
 // SI Constants
 const H_BAR = 1.054571817e-34; // Reduced Planck constant (J·s)
 const SPEED_OF_LIGHT = 299792458; // (m/s)
-const ELECTRON_MASS = 9.1093837e-31; // (kg)
 const EV_TO_JOULE = 1.602176634e-19; // (J/eV)
 
 // Unit conversion constants - Updated for new UI units
@@ -16,6 +15,9 @@ const EV_PER_C_SQUARED_TO_KG = EV_TO_JOULE / (SPEED_OF_LIGHT * SPEED_OF_LIGHT); 
 
 // Visual Scaling - Adjusted for lower velocity range (max 0.1c) with improved non-linear scaling
 const VISUAL_SPEED_SCALE_FACTOR = 1.5e6; // Further reduced for higher overall speeds
+
+// Detector position on the transmitted (+x) side of the barrier
+export const DETECTOR_X_POSITION = 25;
 
 /**
  * Calculates the transmission and reflection coefficients for a quantum particle
@@ -85,6 +87,7 @@ export function calculateQuantumTunnelingStep(t, parameters = {}) {
         m = 5.11,   // Particle mass in 10^5 eV/c² (UI unit). 5.11 is electron mass.
         V0 = 1.0,   // Barrier height in eV
         L = 0.005,  // Barrier width in µm (micrometers)
+        randomSeed,
     } = parameters || {};
 
     // Convert to numbers to handle string inputs from UI
@@ -136,6 +139,21 @@ export function calculateQuantumTunnelingStep(t, parameters = {}) {
     let position = -50 + visual_speed * t; 
     position = Math.min(position, 50); // Cap at x = 50
 
+    // --- Quantum Measurement & Wave-Function Collapse ---
+    // Once the transmitted wave reaches the detector at DETECTOR_X_POSITION (x = 25),
+    // a measurement occurs: the state collapses into 'transmitted' with probability T
+    // or 'reflected' with probability R = 1 - T.
+    // When randomSeed is not provided (e.g. legacy reconstructed runs),
+    // do not trigger a collapse.
+    const rawRandom =
+        typeof randomSeed === 'number' && !Number.isNaN(randomSeed) ? randomSeed : null;
+    const collapseRandom = rawRandom;
+    const hasRandom = rawRandom !== null;
+    const hasCollapsed = hasRandom && position >= DETECTOR_X_POSITION;
+    const measurementResult = hasCollapsed
+        ? (rawRandom < transmission ? 'transmitted' : 'reflected')
+        : null;
+
     // --- Phase Calculation ---
     const k_si = m_si * v_si / H_BAR; // Wavenumber
     const omega_si = E_si / H_BAR;    // Angular frequency
@@ -160,6 +178,8 @@ export function calculateQuantumTunnelingStep(t, parameters = {}) {
         phase,
         transmission,
         reflection,
+        hasCollapsed,
+        measurementResult,
         shouldStop,
         // Debug information 
         debug: {
@@ -168,7 +188,8 @@ export function calculateQuantumTunnelingStep(t, parameters = {}) {
             ratio_E_V0: V0_si > 0 ? E_si / V0_si : Infinity,
             barrier_width_um: L_num,
             velocity_fraction_c: v_num,
-            mass_eV_per_c2: m_eV_c2 // Show the actual mass in eV/c²
+            mass_eV_per_c2: m_eV_c2, // Show the actual mass in eV/c²
+            collapse_random: collapseRandom,
         }
     };
 }

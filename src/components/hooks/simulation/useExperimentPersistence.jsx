@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { ExperimentRun } from '@/entities/ExperimentRun';
 import { useAuth } from '@/lib/AuthContext';
+import { useTranslation } from '@/i18n';
 
 const MAX_STORED_SAMPLES = 500;
 
@@ -87,32 +88,22 @@ export function parseStoredSimulationSamples(resultsUrl) {
  * Hook לניהול שמירה וייצוא של תוצאות ניסוי
  */
 export function useExperimentPersistence(experiment, _user, parameters, simulationData) {
-    const { isAuthenticated, navigateToLogin, user, guestLocale } = useAuth();
-    const activeLocale =
-        user?.locale_preference ||
-        guestLocale ||
-        (typeof document !== 'undefined' && document.documentElement?.lang) ||
-        'he';
-    const isRTL = activeLocale === 'he';
+    const { isAuthenticated, navigateToLogin } = useAuth();
+    const { t } = useTranslation();
 
     // שמירת ריצה - זמינה רק למשתמשים מחוברים (אורחים לא שומרים מידע)
     const saveRun = useCallback(async () => {
         if (!isAuthenticated) {
-            toast.info(
-                isRTL
-                    ? 'שמירת ריצות זמינה למשתמשים רשומים בלבד.'
-                    : 'Saving runs is available to registered users only.',
-                {
-                    action: {
-                        label: isRTL ? 'התחברות' : 'Sign in',
-                        onClick: () => navigateToLogin(),
-                    },
-                }
-            );
+            toast.info(t('workspace.saveRegisteredOnlyToast'), {
+                action: {
+                    label: t('common.signIn'),
+                    onClick: () => navigateToLogin(),
+                },
+            });
             return;
         }
         if (!experiment || !simulationData || simulationData.length === 0) {
-            toast.warning(isRTL ? 'אין נתונים לשמירה' : 'No data to save');
+            toast.warning(t('workspace.noDataToSaveToast'));
             return;
         }
 
@@ -127,17 +118,17 @@ export function useExperimentPersistence(experiment, _user, parameters, simulati
             };
 
             await ExperimentRun.create(runData);
-            toast.success(isRTL ? 'הריצה נשמרה בהצלחה!' : 'Run saved successfully!');
+            toast.success(t('workspace.runSavedToast'));
         } catch (error) {
             console.error('Error saving run:', error);
-            toast.error((isRTL ? 'שגיאה בשמירת הריצה: ' : 'Error saving run: ') + error.message);
+            toast.error(t('workspace.saveErrorPrefix') + error.message);
         }
-    }, [experiment, parameters, simulationData, isAuthenticated, navigateToLogin, isRTL]);
+    }, [experiment, parameters, simulationData, isAuthenticated, navigateToLogin, t]);
 
     // ייצוא נתונים ל-CSV
     const exportData = useCallback(() => {
         if (!simulationData || simulationData.length === 0) {
-            toast.warning(isRTL ? 'אין נתונים לייצוא' : 'No data to export');
+            toast.warning(t('workspace.noDataToExportToast'));
             return;
         }
 
@@ -162,12 +153,12 @@ export function useExperimentPersistence(experiment, _user, parameters, simulati
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-            toast.success(isRTL ? 'הנתונים יוצאו בהצלחה' : 'Data exported successfully');
+            toast.success(t('workspace.dataExportedToast'));
         } catch (error) {
             console.error('Error exporting data:', error);
-            toast.error((isRTL ? 'שגיאה בייצוא הנתונים: ' : 'Error exporting data: ') + error.message);
+            toast.error(t('workspace.exportErrorPrefix') + error.message);
         }
-    }, [simulationData, experiment, isRTL]);
+    }, [simulationData, experiment, t]);
 
     return {
         saveRun,

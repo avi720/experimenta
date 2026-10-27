@@ -1,9 +1,10 @@
 import React, { useCallback, useMemo } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { Lock, ArrowLeft, ArrowRight } from "lucide-react";
+import { Lock, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createPageUrl } from "@/utils";
+import { useTranslation } from "@/i18n";
 import { useAppData } from "../components/hooks/useAppData";
 import { useExperimentPageData } from "../components/hooks/useExperimentPageData";
 import { useExperimentSimulation } from "../components/hooks/simulation/useExperimentSimulation";
@@ -41,6 +42,7 @@ export default function LabWorkspace({ forcedSlug = null }) {
         isRTL,
         handleLogout,
     } = useAppData();
+    const { t, pick, dir } = useTranslation(isRTL);
 
     const {
         experiment,
@@ -100,15 +102,12 @@ export default function LabWorkspace({ forcedSlug = null }) {
     }
 
     if (accessDeniedReason === "premium") {
-        const expTitle = isRTL
-            ? blockedExperiment?.i18n_texts?.he?.title || blockedExperiment?.slug
-            : blockedExperiment?.i18n_texts?.en?.title || blockedExperiment?.slug;
-        const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+        const expTitle = pick(blockedExperiment?.i18n_texts)?.title || blockedExperiment?.slug || "";
 
         return (
             <div
                 className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-16"
-                dir={isRTL ? "rtl" : "ltr"}
+                dir={dir}
             >
                 <Card className="w-full max-w-md shadow-lg border-amber-200">
                     <CardHeader className="text-center">
@@ -116,12 +115,10 @@ export default function LabWorkspace({ forcedSlug = null }) {
                             <Lock className="w-6 h-6 text-amber-600" />
                         </div>
                         <CardTitle className="text-2xl text-slate-900">
-                            {isRTL ? "דרוש מנוי פרימיום" : "Premium Subscription Required"}
+                            {t("workspace.premiumRequiredTitle")}
                         </CardTitle>
                         <CardDescription className="text-base text-slate-600 mt-2">
-                            {isRTL
-                                ? `הניסוי "${expTitle}" זמין למנויי פרימיום בלבד.`
-                                : `The experiment "${expTitle}" requires a premium subscription.`}
+                            {t("workspace.premiumRequiredDescription", { title: expTitle })}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex justify-center pt-2">
@@ -130,8 +127,8 @@ export default function LabWorkspace({ forcedSlug = null }) {
                             onClick={() => navigate(createPageUrl("Lab"))}
                             className="gap-2"
                         >
-                            <BackIcon className="w-4 h-4" />
-                            {isRTL ? "חזרה למעבדה" : "Back to Lab"}
+                            <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
+                            {t("common.backToLab")}
                         </Button>
                     </CardContent>
                 </Card>

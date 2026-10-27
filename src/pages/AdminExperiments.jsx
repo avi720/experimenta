@@ -9,17 +9,18 @@ import AdminExperimentCard from '../components/pagesComponents/admin/AdminExperi
 import AdminExperimentsFilters from '../components/pagesComponents/admin/AdminExperiment/AdminExperimentsFilters';
 import NoAdminExperimentsFound from '../components/pagesComponents/admin/AdminExperiment/NoAdminExperimentsFound';
 import { createPageUrl } from '@/utils';
-import { categoryNames, /*engineNames*/ } from '../components/pagesComponents/lab/labConstants';
+import { categoryNames } from '../components/pagesComponents/lab/labConstants';
+import { useTranslation } from '@/i18n';
 
 export default function AdminExperiments() {
   const navigate = useNavigate();
+  const { t, dir } = useTranslation();
   const {
     filteredExperiments = [],
     isLoading,
-    stats = { total: 0, active: 0, inactive: 0, byCategory: {}, /*byEngine: {}*/ },
+    stats = { total: 0, active: 0, inactive: 0, byCategory: {} },
     searchTerm, setSearchTerm,
     selectedCategory, setSelectedCategory,
-    //selectedEngine, setSelectedEngine,
     showInactive, setShowInactive,
     sortBy, setSortBy,
     sortDirection, setSortDirection,
@@ -38,7 +39,6 @@ export default function AdminExperiments() {
   const clearFilters = () => {
     setSearchTerm("");
     setSelectedCategory("all");
-    //setSelectedEngine("all");
     setShowInactive(false);
     setSortBy("created_date");
     setSortDirection("desc");
@@ -50,16 +50,22 @@ export default function AdminExperiments() {
     (showInactive ? 1 : 0);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8" dir="rtl">
+    <div className="max-w-7xl mx-auto px-4 py-8" dir={dir}>
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">ניהול ניסויים</h1>
-          <p className="text-slate-500 mt-1">יצירה, עריכה וניהול של תבניות הניסויים במערכת.</p>
+          <h1 className="text-3xl font-bold text-slate-900">{t('admin.list.title')}</h1>
+          <p className="text-slate-500 mt-1">{t('admin.list.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={exportExperiments} disabled={!filteredExperiments || filteredExperiments.length === 0}><FileDown className="w-4 h-4 ml-2" />ייצא נתונים</Button>
-          <Button onClick={() => navigate(createPageUrl("AdminExperimentForm"))}><PlusCircle className="w-4 h-4 ml-2" />צור ניסוי חדש</Button>
+          <Button variant="outline" onClick={exportExperiments} disabled={!filteredExperiments || filteredExperiments.length === 0}>
+            <FileDown className="w-4 h-4 me-2" />
+            {t('admin.list.exportData')}
+          </Button>
+          <Button onClick={() => navigate(createPageUrl("AdminExperimentForm"))}>
+            <PlusCircle className="w-4 h-4 me-2" />
+            {t('admin.list.createNew')}
+          </Button>
         </div>
       </div>
       
@@ -67,27 +73,26 @@ export default function AdminExperiments() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Badge variant="outline" className="flex-col items-start h-auto p-4 gap-1">
             <span className="text-2xl font-bold">{stats.total}</span>
-            <span className="text-slate-500">ניסויים בסה"כ</span>
+            <span className="text-slate-500">{t('admin.list.totalStat')}</span>
         </Badge>
         <Badge variant="outline" className="flex-col items-start h-auto p-4 gap-1 border-green-300 bg-green-50">
             <span className="text-2xl font-bold text-green-700">{stats.active}</span>
-            <span className="text-green-600">פעילים</span>
+            <span className="text-green-600">{t('admin.list.activeStat')}</span>
         </Badge>
         <Badge variant="outline" className="flex-col items-start h-auto p-4 gap-1 border-amber-300 bg-amber-50">
             <span className="text-2xl font-bold text-amber-700">{stats.inactive}</span>
-            <span className="text-amber-600">לא פעילים</span>
+            <span className="text-amber-600">{t('admin.list.inactiveStat')}</span>
         </Badge>
       </div>
 
-      {/* Advanced Filters extracted into AdminExperimentsFilters component */}
+      {/* Advanced Filters */}
       <AdminExperimentsFilters
         searchTerm={searchTerm} setSearchTerm={setSearchTerm}
         selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}
-        //selectedEngine={selectedEngine} setSelectedEngine={setSelectedEngine}
         sortBy={sortBy} sortDirection={sortDirection} handleSortChange={handleSortChange}
         showInactive={showInactive} setShowInactive={setShowInactive}
         stats={stats}
-        categoryNames={categoryNames} //engineNames={engineNames}
+        categoryNames={categoryNames}
         activeFiltersCount={activeFiltersCount}
         clearFilters={clearFilters}
       />
@@ -99,7 +104,9 @@ export default function AdminExperiments() {
         </div>
       ) : (filteredExperiments && filteredExperiments.length > 0) ? (
         <div className="space-y-4">
-          <p className="text-sm text-slate-500">נמצאו {filteredExperiments.length} מתוך {stats.total} ניסויים.</p>
+          <p className="text-sm text-slate-500">
+            {t('admin.list.foundCount', { filtered: filteredExperiments.length, total: stats.total })}
+          </p>
           <AnimatePresence>
             <div className="grid gap-6">
               {filteredExperiments.map((exp, index) => (

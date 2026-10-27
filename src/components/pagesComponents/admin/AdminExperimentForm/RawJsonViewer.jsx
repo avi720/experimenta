@@ -1,14 +1,17 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { useTranslation } from '@/i18n';
 
 export default function RawJsonViewer({ experiment }) {
+  const { t } = useTranslation();
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>תצוגת JSON גולמית</CardTitle>
+        <CardTitle>{t('admin.form.advanced.rawJsonTitle')}</CardTitle>
         <CardDescription>
-          תצוגה של הנתונים בפורמט JSON. שימושי לבדיקה ולהעתקה.
+          {t('admin.form.advanced.rawJsonDescription')}
         </CardDescription>
       </CardHeader>
       <CardContent>

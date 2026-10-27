@@ -1,6 +1,7 @@
 /**
  * Single source of truth for runtime experiment parameter validation (T28).
  */
+import { translate } from "@/i18n";
 
 function parseOptionalBound(bound) {
     if (bound === undefined || bound === null || String(bound).trim() === "") {
@@ -19,7 +20,7 @@ export function validateParameterValue(parameter, value, isRTL = true) {
         if (value === undefined || value === null || String(value).trim() === "") {
             return {
                 isValid: false,
-                error: isRTL ? "שדה זה הוא חובה" : "This field is required",
+                error: translate(isRTL, "workspace.validation.required"),
             };
         }
 
@@ -27,14 +28,14 @@ export function validateParameterValue(parameter, value, isRTL = true) {
         if (Number.isNaN(numValue) || !Number.isFinite(numValue)) {
             return {
                 isValid: false,
-                error: isRTL ? "יש להזין מספר חוקי" : "Please enter a valid number",
+                error: translate(isRTL, "workspace.validation.invalidNumber"),
             };
         }
 
         if (parameter.type === "int" && !Number.isInteger(numValue)) {
             return {
                 isValid: false,
-                error: isRTL ? "יש להזין מספר שלם" : "Please enter a whole number",
+                error: translate(isRTL, "workspace.validation.invalidInteger"),
             };
         }
 
@@ -42,9 +43,7 @@ export function validateParameterValue(parameter, value, isRTL = true) {
         if (min !== undefined && numValue < min) {
             return {
                 isValid: false,
-                error: isRTL
-                    ? `הערך חייב להיות לפחות ${min}`
-                    : `Value must be at least ${min}`,
+                error: translate(isRTL, "workspace.validation.minBound", { min }),
             };
         }
 
@@ -52,9 +51,7 @@ export function validateParameterValue(parameter, value, isRTL = true) {
         if (max !== undefined && numValue > max) {
             return {
                 isValid: false,
-                error: isRTL
-                    ? `הערך חייב להיות לכל היותר ${max}`
-                    : `Value must be at most ${max}`,
+                error: translate(isRTL, "workspace.validation.maxBound", { max }),
             };
         }
 
@@ -74,7 +71,7 @@ export function validateParameterValue(parameter, value, isRTL = true) {
         ) {
             return {
                 isValid: false,
-                error: isRTL ? "יש לבחור אפשרות תקפה" : "Please select a valid option",
+                error: translate(isRTL, "workspace.validation.invalidOption"),
             };
         }
     }

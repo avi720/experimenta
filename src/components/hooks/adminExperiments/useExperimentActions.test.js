@@ -9,6 +9,15 @@ const toastMocks = vi.hoisted(() => ({
 vi.mock("react", () => ({
   useState: (init) => [init, vi.fn()],
   useCallback: (fn) => fn,
+  useMemo: (fn) => fn(),
+  useContext: () => ({ user: { locale_preference: "he" } }),
+  createContext: () => ({ Provider: ({ children }) => children }),
+  useEffect: vi.fn(),
+  createElement: vi.fn(),
+}));
+vi.mock("@/lib/AuthContext", () => ({
+  AuthContext: {},
+  useAuth: () => ({ user: { locale_preference: "he" } }),
 }));
 vi.mock("react-router-dom", () => ({
   useNavigate: () => vi.fn(),

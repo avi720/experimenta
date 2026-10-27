@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import { Beaker, Menu, X, Home, BarChart3, Wrench, Globe, LogIn, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createPageUrl } from '@/utils';
+import { useTranslation } from '@/i18n';
 import DesktopNavigation from './app-header/DesktopNavigation';
 import ExperimentsDropdown from './app-header/ExperimentsDropdown';
 
 export default function AppHeader({ isRTL, user, settings, experiments, location, handleLogout, handleLanguageChange }) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const { t, oppositeLocale } = useTranslation(isRTL);
 
     useEffect(() => {
         setMobileMenuOpen(false);
@@ -43,11 +45,7 @@ export default function AppHeader({ isRTL, user, settings, experiments, location
                             type="button"
                             variant="ghost"
                             size="icon"
-                            aria-label={
-                                mobileMenuOpen
-                                    ? isRTL ? "סגור תפריט" : "Close menu"
-                                    : isRTL ? "פתח תפריט" : "Open menu"
-                            }
+                            aria-label={mobileMenuOpen ? t('header.closeMenu') : t('header.openMenu')}
                             aria-expanded={mobileMenuOpen}
                             onClick={() => setMobileMenuOpen((prev) => !prev)}
                         >
@@ -59,7 +57,7 @@ export default function AppHeader({ isRTL, user, settings, experiments, location
                 {/* Mobile navigation drawer (< md) */}
                 {mobileMenuOpen && (
                     <nav
-                        aria-label={isRTL ? "ניווט ראשי" : "Main navigation"}
+                        aria-label={t('header.mainNavigation')}
                         className="md:hidden border-t border-slate-200 py-3 space-y-1"
                     >
                         <Link
@@ -71,7 +69,7 @@ export default function AppHeader({ isRTL, user, settings, experiments, location
                             }`}
                         >
                             <Home className="w-4 h-4" />
-                            <span>{isRTL ? "דף הבית" : "Home"}</span>
+                            <span>{t('common.home')}</span>
                         </Link>
 
                         <Link
@@ -83,7 +81,7 @@ export default function AppHeader({ isRTL, user, settings, experiments, location
                             }`}
                         >
                             <Beaker className="w-4 h-4" />
-                            <span>{isRTL ? "כל הניסויים" : "All Experiments"}</span>
+                            <span>{t('common.allExperiments')}</span>
                         </Link>
 
                         <Link
@@ -95,7 +93,7 @@ export default function AppHeader({ isRTL, user, settings, experiments, location
                             }`}
                         >
                             <BarChart3 className="w-4 h-4" />
-                            <span>{isRTL ? "ניתוח הניסויים שלי" : "My Experiment Analysis"}</span>
+                            <span>{t('common.myExperimentAnalysis')}</span>
                         </Link>
 
                         {user?.role === 'admin' && (
@@ -108,7 +106,7 @@ export default function AppHeader({ isRTL, user, settings, experiments, location
                                 }`}
                             >
                                 <Wrench className="w-4 h-4" />
-                                <span>{isRTL ? "ניהול ניסויים" : "Manage Experiments"}</span>
+                                <span>{t('common.manageExperiments')}</span>
                             </Link>
                         )}
 
@@ -117,11 +115,11 @@ export default function AppHeader({ isRTL, user, settings, experiments, location
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleLanguageChange(isRTL ? 'en' : 'he')}
+                                onClick={() => handleLanguageChange(oppositeLocale)}
                                 className="gap-1.5"
                             >
                                 <Globe className="w-4 h-4" />
-                                <span>{isRTL ? "English" : "עברית"}</span>
+                                <span>{t('common.oppositeLanguageName')}</span>
                             </Button>
 
                             {user ? (
@@ -133,13 +131,13 @@ export default function AppHeader({ isRTL, user, settings, experiments, location
                                     className="text-red-600 gap-1.5"
                                 >
                                     <LogOut className="w-4 h-4" />
-                                    <span>{isRTL ? "התנתק" : "Logout"}</span>
+                                    <span>{t('common.logout')}</span>
                                 </Button>
                             ) : (
                                 <Button asChild size="sm" className="gap-1.5">
                                     <Link to="/Login">
                                         <LogIn className="w-4 h-4" />
-                                        <span>{isRTL ? "התחברות" : "Sign in"}</span>
+                                        <span>{t('common.signIn')}</span>
                                     </Link>
                                 </Button>
                             )}

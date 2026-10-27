@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
-import { useAppData } from "@/components/hooks/useAppData";
+import { useTranslation, translate, resolveLocale } from "@/i18n";
 import { User } from "@/entities/User";
 
 const MIN_PASSWORD_LENGTH = 6;
@@ -27,7 +27,7 @@ const oauthErrorFromUrl = () => {
 /**
  * Translates raw Supabase Auth error messages into localized user-facing strings.
  */
-export function localizeAuthError(errOrMessage, isRTL = true) {
+export function localizeAuthError(errOrMessage, localeOrIsRTL = "he") {
   const raw = typeof errOrMessage === "string"
     ? errOrMessage
     : errOrMessage?.message || "";
@@ -35,41 +35,43 @@ export function localizeAuthError(errOrMessage, isRTL = true) {
   if (!trimmed) return "";
 
   const lower = trimmed.toLowerCase();
-  const t = (he, en) => (isRTL ? he : en);
+  const locale = resolveLocale(localeOrIsRTL);
 
   if (lower.includes("invalid login credentials") || lower.includes("invalid credentials")) {
-    return t("אימייל או סיסמה שגויים", "Invalid email or password");
+    return translate(locale, "auth.errors.invalidCredentials");
   }
   if (lower.includes("email not confirmed")) {
-    return t("האימייל טרם אומת. בדוק את תיבת הדואר הנכנס שלך.", "Email not confirmed. Please check your inbox.");
+    return translate(locale, "auth.errors.emailNotConfirmed");
   }
   if (lower.includes("user already registered") || lower.includes("already registered")) {
-    return t("משתמש עם כתובת אימייל זו כבר רשום במערכת", "A user with this email is already registered");
+    return translate(locale, "auth.errors.userAlreadyRegistered");
   }
   if (lower.includes("password should be at least")) {
-    return t(`הסיסמה חייבת להכיל לפחות ${MIN_PASSWORD_LENGTH} תווים`, `Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+    return translate(locale, "auth.errors.passwordMinLength", { min: MIN_PASSWORD_LENGTH });
   }
   if (lower.includes("new password should be different")) {
-    return t("הסיסמה החדשה חייבת להיות שונה מהסיסמה הנוכחית", "New password must be different from the current password");
+    return translate(locale, "auth.errors.passwordMustDiffer");
   }
   if (
     lower.includes("rate limit") ||
     lower.includes("too many requests") ||
     lower.includes("for security purposes")
   ) {
-    return t("בוצעו יותר מדי ניסיונות. אנא המתן מעט ונסה שוב.", "Too many attempts. Please wait a moment and try again.");
+    return translate(locale, "auth.errors.rateLimited");
   }
   if (lower.includes("unable to validate email") || lower.includes("invalid email")) {
-    return t("כתובת האימייל אינה תקינה", "Please enter a valid email address");
+    return translate(locale, "auth.errors.invalidEmail");
   }
   if (lower.includes("signup is disabled") || lower.includes("signups not allowed")) {
-    return t("ההרשמה למערכת מושבתת כעת", "Sign-ups are currently disabled");
+    return translate(locale, "auth.errors.signupsDisabled");
   }
   if (lower.includes("failed to fetch") || lower.includes("network")) {
-    return t("שגיאת תקשורת עם השרת. בדוק את החיבור לאינטרנט ונסה שוב.", "Network error. Please check your internet connection and try again.");
+    return translate(locale, "auth.errors.networkError");
   }
 
-  return isRTL ? "אירעה שגיאה בתהליך האימות. אנא נסה שוב." : trimmed;
+  return locale === "he"
+    ? translate("he", "auth.errors.genericError")
+    : trimmed;
 }
 
 const GoogleIcon = () => (
@@ -86,7 +88,7 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const redirectTo = safeRedirect(searchParams.get("redirect"));
   const { isAuthenticated, isLoadingAuth, isPasswordRecovery, signIn, signUp, signInWithGoogle, updatePassword } = useAuth();
-  const { isRTL } = useAppData();
+  const { t, dir, locale } = useTranslation();
 
   // Only show the password change form after an actual PASSWORD_RECOVERY event.
   const isRecovery = Boolean(isPasswordRecovery);
@@ -100,11 +102,9 @@ export default function Login() {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [error, setError] = useState(() => {
     const raw = oauthErrorFromUrl();
-    return raw ? localizeAuthError(raw, isRTL) : "";
+    return raw ? localizeAuthError(raw, locale) : "";
   });
   const [message, setMessage] = useState("");
-
-  const t = (he, en) => (isRTL ? he : en);
 
   useEffect(() => {
     if (isAuthenticated && !isRecovery) navigate(redirectTo, { replace: true });
@@ -122,7 +122,7 @@ export default function Login() {
     try {
       await signIn({ email, password });
     } catch (err) {
-      setError(localizeAuthError(err, isRTL));
+      setError(localizeAuthError(err, locale));
     } finally {
       setIsSubmitting(false);
     }
@@ -132,18 +132,18 @@ export default function Login() {
     event.preventDefault();
     resetFeedback();
     if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(t(`הסיסמה חייבת להכיל לפחות ${MIN_PASSWORD_LENGTH} תווים`, `Password must be at least ${MIN_PASSWORD_LENGTH} characters`));
+      setError(t("auth.errors.passwordMinLength", { min: MIN_PASSWORD_LENGTH }));
       return;
     }
     setIsSubmitting(true);
     try {
       const { session } = await signUp({ email, password, fullName });
       if (!session) {
-        setMessage(t("נשלח אליך אימייל לאימות החשבון. לאחר האימות ניתן להתחבר.", "Check your inbox to confirm your account, then sign in."));
+        setMessage(t("auth.confirmEmailNotice"));
         setTab("signin");
       }
     } catch (err) {
-      setError(localizeAuthError(err, isRTL));
+      setError(localizeAuthError(err, locale));
     } finally {
       setIsSubmitting(false);
     }
@@ -156,7 +156,7 @@ export default function Login() {
       // On success the browser leaves the page, so isSubmitting stays true until then.
       await signInWithGoogle(redirectTo);
     } catch (err) {
-      setError(localizeAuthError(err, isRTL));
+      setError(localizeAuthError(err, locale));
       setIsSubmitting(false);
     }
   };
@@ -165,15 +165,15 @@ export default function Login() {
     if (isSubmitting || isResettingPassword) return;
     resetFeedback();
     if (!email) {
-      setError(t("הזן אימייל כדי לאפס סיסמה", "Enter your email to reset your password"));
+      setError(t("auth.enterEmailForReset"));
       return;
     }
     setIsResettingPassword(true);
     try {
       await User.resetPassword(email);
-      setMessage(t("נשלח אימייל לאיפוס סיסמה", "Password reset email sent"));
+      setMessage(t("auth.resetEmailSent"));
     } catch (err) {
-      setError(localizeAuthError(err, isRTL));
+      setError(localizeAuthError(err, locale));
     } finally {
       setIsResettingPassword(false);
     }
@@ -183,7 +183,7 @@ export default function Login() {
     event.preventDefault();
     resetFeedback();
     if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(t(`הסיסמה חייבת להכיל לפחות ${MIN_PASSWORD_LENGTH} תווים`, `Password must be at least ${MIN_PASSWORD_LENGTH} characters`));
+      setError(t("auth.errors.passwordMinLength", { min: MIN_PASSWORD_LENGTH }));
       return;
     }
     setIsSubmitting(true);
@@ -191,7 +191,7 @@ export default function Login() {
       await updatePassword(password);
       navigate("/", { replace: true });
     } catch (err) {
-      setError(localizeAuthError(err, isRTL));
+      setError(localizeAuthError(err, locale));
     } finally {
       setIsSubmitting(false);
     }
@@ -199,10 +199,10 @@ export default function Login() {
 
   if (isRecovery || isExpiredRecoveryLink) {
     return (
-      <div className="flex items-center justify-center px-4 py-16" dir={isRTL ? "rtl" : "ltr"}>
+      <div className="flex items-center justify-center px-4 py-16" dir={dir}>
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">{t("בחירת סיסמה חדשה", "Choose a new password")}</CardTitle>
+            <CardTitle className="text-2xl">{t("auth.chooseNewPasswordTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             {error && (
@@ -214,19 +214,19 @@ export default function Login() {
               <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400" />
             ) : !isRecovery || !isAuthenticated ? (
               <p className="text-sm text-slate-600 text-center">
-                {t("הקישור לאיפוס אינו תקף או שפג תוקפו. בקשו קישור חדש ממסך ההתחברות.", "This reset link is invalid or has expired. Request a new one from the sign-in page.")}
+                {t("auth.expiredRecoveryMessage")}
               </p>
             ) : (
               <form onSubmit={handleNewPassword} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="new-password">{t("סיסמה חדשה", "New password")}</Label>
+                  <Label htmlFor="new-password">{t("auth.newPasswordLabel")}</Label>
                   <Input id="new-password" type="password" dir="ltr" autoComplete="new-password" required
                     minLength={MIN_PASSWORD_LENGTH}
                     value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
                   {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {t("שמור סיסמה", "Save password")}
+                  {t("auth.savePasswordSubmit")}
                 </Button>
               </form>
             )}
@@ -239,19 +239,19 @@ export default function Login() {
   const isBusy = isSubmitting || isResettingPassword;
 
   return (
-    <div className="flex items-center justify-center px-4 py-16" dir={isRTL ? "rtl" : "ltr"}>
+    <div className="flex items-center justify-center px-4 py-16" dir={dir}>
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">{t("ברוכים הבאים ל-Experimenta", "Welcome to Experimenta")}</CardTitle>
+          <CardTitle className="text-2xl">{t("auth.welcomeTitle")}</CardTitle>
           <CardDescription>
-            {t("התחברו כדי לשמור ריצות ולצפות בתוצאות", "Sign in to save runs and view your results")}
+            {t("auth.welcomeSubtitle")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={tab} onValueChange={(value) => { setTab(value); resetFeedback(); }}>
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="signin">{t("התחברות", "Sign in")}</TabsTrigger>
-              <TabsTrigger value="signup">{t("הרשמה", "Sign up")}</TabsTrigger>
+              <TabsTrigger value="signin">{t("auth.signInTab")}</TabsTrigger>
+              <TabsTrigger value="signup">{t("auth.signUpTab")}</TabsTrigger>
             </TabsList>
 
             {error && (
@@ -267,29 +267,29 @@ export default function Login() {
 
             <Button type="button" variant="outline" className="w-full" disabled={isBusy} onClick={handleGoogleSignIn}>
               <GoogleIcon />
-              {tab === "signup" ? t("הרשמה עם Google", "Sign up with Google") : t("התחברות עם Google", "Sign in with Google")}
+              {tab === "signup" ? t("auth.signUpWithGoogle") : t("auth.signInWithGoogle")}
             </Button>
             <div className="flex items-center gap-3 my-5 text-xs text-slate-400">
               <div className="h-px flex-1 bg-slate-200" />
-              {t("או עם אימייל", "or with email")}
+              {t("auth.orWithEmail")}
               <div className="h-px flex-1 bg-slate-200" />
             </div>
 
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">{t("אימייל", "Email")}</Label>
+                  <Label htmlFor="signin-email">{t("auth.emailLabel")}</Label>
                   <Input id="signin-email" type="email" dir="ltr" autoComplete="email" required
                     value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">{t("סיסמה", "Password")}</Label>
+                  <Label htmlFor="signin-password">{t("auth.passwordLabel")}</Label>
                   <Input id="signin-password" type="password" dir="ltr" autoComplete="current-password" required
                     value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
                 <Button type="submit" className="w-full" disabled={isBusy}>
                   {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {t("התחבר", "Sign in")}
+                  {t("auth.signInSubmit")}
                 </Button>
                 <button
                   type="button"
@@ -298,7 +298,7 @@ export default function Login() {
                   className="w-full text-sm text-slate-500 hover:text-slate-800 underline-offset-4 hover:underline disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isResettingPassword && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  {t("שכחתי סיסמה", "Forgot password?")}
+                  {t("auth.forgotPassword")}
                 </button>
               </form>
             </TabsContent>
@@ -306,24 +306,24 @@ export default function Login() {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">{t("שם מלא", "Full name")}</Label>
+                  <Label htmlFor="signup-name">{t("auth.fullNameLabel")}</Label>
                   <Input id="signup-name" autoComplete="name"
                     value={fullName} onChange={(e) => setFullName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">{t("אימייל", "Email")}</Label>
+                  <Label htmlFor="signup-email">{t("auth.emailLabel")}</Label>
                   <Input id="signup-email" type="email" dir="ltr" autoComplete="email" required
                     value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">{t("סיסמה", "Password")}</Label>
+                  <Label htmlFor="signup-password">{t("auth.passwordLabel")}</Label>
                   <Input id="signup-password" type="password" dir="ltr" autoComplete="new-password" required
                     minLength={MIN_PASSWORD_LENGTH}
                     value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
                 <Button type="submit" className="w-full" disabled={isBusy}>
                   {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {t("צור חשבון", "Create account")}
+                  {t("auth.createAccountSubmit")}
                 </Button>
               </form>
             </TabsContent>

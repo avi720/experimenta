@@ -274,15 +274,18 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 - **Acceptance:** Results follows the active language; a failed load shows an error with retry; every visible control either works (date filter narrows the list) or is removed; verified in a browser in both languages and with the network offline.
 - **Done 2026-10-25:** Switched `Results.jsx` to `useAppData().isRTL`, added a localized `loadError` state with a Retry button, implemented `filterRunsByCriteria` for the `today` / `week` / `month` date-range filter, and removed the non-persisted per-row delete column and unused `compareRuns` state. Covered by `Results.test.js`.
 
-#### [ ] T41. Content pages ignore English and several are draft copy ([#44](https://github.com/avi720/experimenta/issues/44))
+#### [x] T41. Content pages ignore English and several are draft copy ([#44](https://github.com/avi720/experimenta/issues/44))
 - **Where:** `src/pages/AboutUs.jsx:7`, `WhatIsNew.jsx`, `Resources.jsx:34`, `PrivacyPolicy.jsx:7,27,156-161`, `TermsOfService.jsx:7`, `AdminExperiments.jsx`, `AdminExperimentForm.jsx`
 - **Issue:** **Deferred 2026-10-25 — needs owner input on Open Questions 7 and 10.** **Confirmed** (grep). Seven pages hard-code `dir="rtl"` and Hebrew text, so they stay Hebrew in English mode. Privacy and Terms show a visible "draft – needs legal review" banner; the privacy policy claims cookie-based usage statistics that do not exist and omits Supabase and Vercel as processors; What's New is a hard-coded list from Nov 2024–Jan 2025; Resources lists non-link items. Depends on Open Questions 7 and 10.
 - **Acceptance:** Each listed page renders in the active language (or the owner records a Hebrew-only decision and the English toggle is hidden on them), and Privacy/Terms describe the actual processors and data use with no draft banner; verified in a browser.
 
-#### [ ] T42. UI strings are localised by 179 inline ternaries with no shared mechanism ([#45](https://github.com/avi720/experimenta/issues/45))
+- **Done 2026-10-26:** Deleted `Resources.jsx`, removed draft banners from `PrivacyPolicy.jsx` and `TermsOfService.jsx`, rewrote both with professional copy describing actual data processors (Supabase and Vercel) and cookie-less usage; fully localized `AboutUs.jsx`, `WhatIsNew.jsx`, `PrivacyPolicy.jsx`, `TermsOfService.jsx`, `AdminExperiments.jsx`, and `AdminExperimentForm.jsx` with dynamic `dir={dir}` and central translations from `src/i18n/`. Verified in Chrome in Hebrew and English.
+
+#### [x] T42. UI strings are localised by 179 inline ternaries with no shared mechanism ([#45](https://github.com/avi720/experimenta/issues/45))
 - **Where:** repo-wide — 179 `isRTL ?` ternaries across 36 files; category label maps in 3 places; physical `mr-2`/`ml-2` spacing on icons
 - **Issue:** **Deferred 2026-10-25 — needs owner input on Open Question 7.** **Confirmed** (grep). There is no dictionary or translation layer; every component branches on `isRTL`, labels drift apart (T7), and RTL mirroring relies on physical margins. Every new string doubles the code path. Depends on Open Question 7.
 - **Acceptance:** UI strings come from one per-language source (grep finds no `isRTL ? '` string ternaries in components), and icon spacing uses logical properties; switching language in a browser updates all chrome strings.
+- **Done 2026-10-26:** Created central bilingual dictionaries (`src/i18n/he.js`, `src/i18n/en.js`) and translation helper hook `useTranslation()` (`src/i18n/index.js`), eliminated 100% of `isRTL ?` string and direction ternaries across all components, converted all physical icon spacing (`ml-*`, `mr-*`) to logical properties (`ms-*`, `me-*`, `gap-*`), and added unit tests in `src/i18n/i18n.test.js` verifying 100% key parity and interpolation. Verified in Chrome in Hebrew and English.
 
 #### [x] T46. Guest language choice is lost on reload ([#49](https://github.com/avi720/experimenta/issues/49))
 - **Where:** `src/lib/AuthContext.jsx:25`; `src/components/hooks/useAppData.jsx:38-51`
@@ -296,15 +299,17 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 - **Acceptance:** `/no-such-page` shows a localized not-found page inside the normal header/footer, and its home link navigates without a full reload; verified in a browser in both languages.
 - **Done 2026-10-25:** Wrapped `<PageNotFound />` in `<LayoutWrapper currentPageName="PageNotFound">` in `src/App.jsx`, localized `PageNotFound.jsx` in Hebrew and English via `useAppData()`, removed the stale Base44 admin note, and replaced `window.location.href` with `<Link to="/">`. Verified in Chrome at `/no-such-page` in both languages.
 
-#### [ ] T48. Dead and placeholder links on content pages and footer ([#51](https://github.com/avi720/experimenta/issues/51))
+#### [x] T48. Dead and placeholder links on content pages and footer ([#51](https://github.com/avi720/experimenta/issues/51))
 - **Where:** `src/pages/AboutUs.jsx:74` (`/contact`); `src/pages/Resources.jsx:84,104` (raw `<a href>`); `src/components/layout/AppFooter.jsx:26-51`
 - **Issue:** **Deferred 2026-10-25 — needs owner input on Open Question 10.** About links to `/contact`, which has no route (→ 404); Resources uses raw anchors that reload the whole SPA; the footer has 6 `#` placeholder links (NSF-style items such as "Research.gov") and 4 social icons that `preventDefault`. Depends on Open Question 10.
 - **Acceptance:** A link checker (or manual click-through) finds no link to a non-existent route or `#`, and internal links navigate without a full page reload.
+- **Done 2026-10-26:** Removed `src/pages/Resources.jsx` and its route from `src/pages.config.js`; removed all `#` placeholder links and dead social icons from `AppFooter.jsx`; changed "Resources" footer heading to "Legal" / "מידע משפטי"; pointed "Contact Us" / "צור קשר" in footer and `AboutUs.jsx` to `mailto:info@experimenta.com`. Verified in Chrome.
 
-#### [ ] T49. Quantum tunneling barrier is effectively invisible ([#52](https://github.com/avi720/experimenta/issues/52))
+#### [x] T49. Quantum tunneling barrier is effectively invisible ([#52](https://github.com/avi720/experimenta/issues/52))
 - **Where:** `src/components/simulation/scenes/QuantumTunnelingScene.jsx:248,233-244,276-290`
 - **Issue:** ~~**Partial 2026-10-25** — Fixed barrier visual width scaling via `computeBarrierVisualWidth` (converting `barrier_width_um` / `parameters.L` from `µm` to `nm` before applying `VISUAL_L_SCALE_FACTOR` and updating on parameter change before playback); the `measurementResult` / `hasCollapsed` branch awaits owner decision on Open Question 13.~~ The scene reads `debug.barrier_width_nm` while the engine emits `barrier_width_um`, so it falls back to `0.005 × 0.25` and sets `scale.x = 0.00125`. The `measurementResult` / `hasCollapsed` branch is dead because no engine produces those fields (Open Question 13).
 - **Acceptance:** After T5/T9, the barrier's rendered width changes visibly with the barrier-width parameter; the collapse branch is either fed by the engine or removed.
+- **Done 2026-10-26:** Barrier visual scaling fixed via `computeBarrierVisualWidth`. Implemented quantum measurement and wave-function collapse in `quantumTunnelingEngine.jsx`: the engine emits `hasCollapsed = position >= DETECTOR_X_POSITION` (`x = 25` on the transmitted side) and `measurementResult = collapseRandom < transmission ? 'transmitted' : 'reflected'`; `QuantumTunnelingScene.jsx` positions the physical detector at `x = 25` and updates visual packet opacity upon collapse. Covered by 16 tests in `quantumTunnelingEngine.test.js` and verified live in Chrome.
 
 ---
 
@@ -498,14 +503,17 @@ Items that surfaced during the audit but need a product, security, or business d
    - **Answered 2026-10-25:** Creating a new experiment in the Admin form is only meant to insert a row in the database, which will trigger an external Claude Code routine to design and implement the experiment code. Fixed the invalid default category (`ClassicalMechanics`) and `access_level` (`public`) in `createEmptyExperiment()` (`T32`).
 6. **URL scheme:** keep the Base44 PascalCase paths (`/Lab`, `/AdminExperimentForm`), or move to kebab-case (`/lab`, `/experiments/free-fall`) with redirects? (T60)
 7. **i18n:** adopt a real translation mechanism and translate the seven Hebrew-only pages, or declare the site Hebrew-first and drop the English toggle from content pages? (T41, T42)
+   - **Answered 2026-10-26:** Adopted a central bilingual dictionary architecture (`src/i18n/he.js`, `src/i18n/en.js`, `src/i18n/index.js`), eliminated all `isRTL ?` string/direction ternaries in components, converted physical margins to logical properties (`ms-*`, `me-*`, `gap-*`), and fully localized all legal, content, and admin pages.
 8. **Mobile:** is phone support in scope for the site and for the experiment workspace (side panel is fixed at 384 px)? If desktop-only, should the site say so on small screens? (T43)
 9. **Planned features behind unused packages:** are Stripe/subscriptions (the schema has `subscription_tier`), PDF/PNG export (the Dashboard advertises data export), maps, rich-text editing or drag-and-drop on the roadmap? If not, all of them go in T29.
 10. **Legal and placeholder content:** who reviews Privacy/Terms, and should the draft banners stay in production until then? Should the footer's placeholder links and social icons be removed until they have real targets? (T41, T48)
+    - **Answered 2026-10-26:** Removed draft banners and updated legal texts with professional, platform-neutral copy for Experimenta. Removed placeholder `#` links and non-functional social icons, removed unused `Resources.jsx`, and preserved "צור קשר" pointing to `mailto:info@experimenta.com`.
 11. **Simulation model:** keep pre-compute-then-playback, or step in real time? Should `t_max` and the sampling interval become admin-defined parameters (no seeded experiment has `t_max` today)? (T5, T24)
    - **Answered 2026-10-22:** keep pre-compute-then-playback. Each engine gets a default `t_max` in the experiment registry; a `t_max` parameter on the template, when present, overrides it.
 12. **Double Slit:** is it meant to be static (no time axis)? If so, its charts need intensity-vs-position axes; should it gain slit-width / single-slit envelope parameters?
    - **Open 2026-10-22 — owner wants a product decision first** on how the experiment should look and behave for the user before any Double Slit fix. Until then, Double Slit-specific work under T1, T9, T11–T14 and T18 is deferred; the generic page must not break the current Double Slit page.
 13. **Quantum tunneling "measurement/collapse":** implement it in the engine, or delete the half-built scene branch? (T49)
+    - **Answered 2026-10-26:** Implemented quantum measurement and wave-function collapse in `quantumTunnelingEngine.jsx` and `QuantumTunnelingScene.jsx`, placing the detector at `x = 25` (transmitted side). The wave-packet collapses into either transmitted or reflected state based on tunneling probability and persistent random seed.
 14. **Type checking:** invest in real checks (JSDoc or TypeScript on `lib`, `entities`, hooks and engines), or delete the script and the TypeScript devDependencies? (T65)
 15. **Tests first:** Vitest unit tests for the engines, a Playwright smoke test of the guest flow (Dashboard → Lab → run an experiment), or both? (T45)
    - **Answered 2026-10-22:** Vitest unit tests now; Playwright is out of scope for this round.

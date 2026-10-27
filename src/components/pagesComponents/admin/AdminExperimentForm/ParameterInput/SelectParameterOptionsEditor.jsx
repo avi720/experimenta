@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Trash2 } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 export default function SelectParameterOptionsEditor({
   param,
@@ -14,27 +15,28 @@ export default function SelectParameterOptionsEditor({
   removeNestedFromArray,
   errors
 }) {
+  const { t, pick } = useTranslation();
   const options = param.options || [];
 
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-base font-medium">אפשרויות בחירה</Label>
+        <Label className="text-base font-medium">{t('admin.form.parameters.selectOptionsLabel')}</Label>
         <div className="space-y-2 mt-2">
           {options.map((option, optIndex) => (
             <div key={optIndex} className="grid grid-cols-1 md:grid-cols-4 gap-2 p-3 bg-slate-50 rounded">
               <Input
-                placeholder="ערך"
+                placeholder={t('admin.form.parameters.optionValuePlaceholder')}
                 value={option.value || ''}
                 onChange={e => handleNestedDynamicChange('parameters', index, 'options', optIndex, 'value', e.target.value)}
               />
               <Input
-                placeholder="תווית בעברית"
+                placeholder={t('admin.form.parameters.optionLabelHePlaceholder')}
                 value={option.label_he || ''}
                 onChange={e => handleNestedDynamicChange('parameters', index, 'options', optIndex, 'label_he', e.target.value)}
               />
               <Input
-                placeholder="Label in English"
+                placeholder={t('admin.form.parameters.optionLabelEnPlaceholder')}
                 value={option.label_en || ''}
                 onChange={e => handleNestedDynamicChange('parameters', index, 'options', optIndex, 'label_en', e.target.value)}
               />
@@ -58,33 +60,30 @@ export default function SelectParameterOptionsEditor({
           className="w-full mt-2"
           onClick={() => addNestedToArray('parameters', index, 'options', { value: '', label_he: '', label_en: '' })}
         >
-          <PlusCircle className="ml-2 h-4 w-4" />
-          הוסף אפשרות
+          <PlusCircle className="me-2 h-4 w-4" />
+          {t('admin.form.parameters.addOption')}
         </Button>
       </div>
 
       <div>
-        <Label>ערך ברירת מחדל</Label>
+        <Label>{t('admin.form.parameters.defaultValueLabel')}</Label>
         <Select
           value={param.default || ''}
           onValueChange={val => handleDynamicArrayChange('parameters', index, 'default', val)}
         >
           <SelectTrigger className={errors[`param_${index}_default`] ? 'border-red-500' : ''}>
-            <SelectValue placeholder="בחר ערך ברירת מחדל" />
+            <SelectValue placeholder={t('admin.form.parameters.selectDefaultPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
             {options
               .filter(option => option.value && option.value.trim() !== '')
               .map((option, optIndex) => (
                 <SelectItem key={optIndex} value={option.value}>
-                  {option.label_he || option.value}
+                  {pick(option, option.value)}
                 </SelectItem>
               ))}
           </SelectContent>
         </Select>
-        {errors[`param_${index}_default`] && (
-          <p className="text-red-500 text-xs mt-1" role="alert">{errors[`param_${index}_default`]}</p>
-        )}
       </div>
     </div>
   );

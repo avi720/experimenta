@@ -3,11 +3,11 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Settings, PlayCircle } from "lucide-react";
+import { useTranslation } from "@/i18n";
 import ParameterControls from "../ParameterControls";
 import SimulationConsole from "../SimulationConsole";
 
 export default function ExperimentSidePanel({
-    isOpen,
     isRTL,
     activeTab,
     onTabChange,
@@ -34,6 +34,9 @@ export default function ExperimentSidePanel({
     showConsole = true,
     maxSimulationTime
 }) {
+    const { t, locale } = useTranslation(isRTL);
+    const slideOffset = locale === "he" ? -400 : 400;
+
     // סינון פרמטרים - הצגת רק פרמטרים פעילים ותקינים
     const activeParameters = (parameters || []).filter(param =>
         param &&
@@ -43,22 +46,22 @@ export default function ExperimentSidePanel({
 
     return (
         <motion.div
-            initial={{ x: isRTL ? -400 : 400, opacity: 0 }}
+            initial={{ x: slideOffset, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: isRTL ? -400 : 400, opacity: 0 }}
+            exit={{ x: slideOffset, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className={`absolute top-0 ${isRTL ? 'left-0 border-r' : 'right-0 border-l'} h-full w-full sm:w-96 bg-white/95 backdrop-blur-sm shadow-2xl border-slate-200 z-30 flex flex-col`}
+            className="absolute top-0 end-0 border-s h-full w-full sm:w-96 bg-white/95 backdrop-blur-sm shadow-2xl border-slate-200 z-30 flex flex-col"
         >
             <Tabs value={activeTab} onValueChange={onTabChange} className="flex-1 flex flex-col overflow-hidden">
                 <div className="border-b border-slate-200 px-4 py-3 flex-shrink-0">
                     <TabsList className="grid w-full grid-cols-2 bg-slate-100">
                         <TabsTrigger value="parameters" className="flex items-center gap-2">
                             <Settings className="w-4 h-4" />
-                            <span>{isRTL ? "פרמטרים" : "Parameters"}</span>
+                            <span>{t("workspace.parametersTab")}</span>
                         </TabsTrigger>
                         <TabsTrigger value="console" className="flex items-center gap-2">
                             <PlayCircle className="w-4 h-4" />
-                            <span>{isRTL ? "קונסולה" : "Console"}</span>
+                            <span>{t("workspace.consoleTab")}</span>
                         </TabsTrigger>
                     </TabsList>
                 </div>
@@ -95,16 +98,12 @@ export default function ExperimentSidePanel({
                                 experiment={experiment}
                                 isRTL={isRTL}
                                 onFloat={onFloatConsole}
-                                maxSimulationTime={maxSimulationTime}
                                 validationState={validationState}
                             />
                         ) : (
                             <Card className="p-6 text-center">
                                 <p className="text-slate-500">
-                                    {isRTL
-                                        ? "הקונסולה מוצגת בחלון צף"
-                                        : "Console is shown in floating window"
-                                    }
+                                    {t("workspace.consoleInFloatingWindow")}
                                 </p>
                             </Card>
                         )}

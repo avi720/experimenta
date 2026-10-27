@@ -34,7 +34,7 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
-import { useAppData } from "@/components/hooks/useAppData";
+import { useTranslation } from "@/i18n";
 import { resolveExperimentRegistryEntry } from "@/components/simulation/experimentRegistry";
 import {
   parseStoredSimulationSamples,
@@ -252,7 +252,7 @@ function reconstructLegacyRunSamples(experimentSlug, parameters) {
 
 export default function Results() {
   const { user } = useAuth();
-  const { isRTL } = useAppData();
+  const { t, pick, dir, isRTL } = useTranslation();
   const [runs, setRuns] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
@@ -306,12 +306,12 @@ export default function Results() {
         setSelectedRun(null);
         setSimulationData([]);
       }
-      toast.success(isRTL ? "הריצה נמחקה בהצלחה" : "Run deleted successfully");
+      toast.success(t("results.runDeletedToast"));
       setRunPendingDelete(null);
       await loadData();
     } catch (error) {
       console.error("Error deleting run:", error);
-      toast.error(isRTL ? "שגיאה במחיקת הריצה." : "Error deleting run.");
+      toast.error(t("results.runDeleteErrorToast"));
     } finally {
       setIsDeletingRun(false);
     }
@@ -416,32 +416,32 @@ export default function Results() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="min-h-screen flex items-center justify-center" dir={dir}>
         <div className="flex items-center space-x-3 rtl:space-x-reverse">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="text-slate-600">{isRTL ? "טוען תוצאות..." : "Loading results..."}</p>
+          <p className="text-slate-600">{t('common.loadingResults')}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-6" dir={dir}>
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
         <div>
           <h1 className="text-4xl font-bold text-slate-900">
-            {isRTL ? "תוצאות ניסויים" : "Experiment Results"}
+            {t('results.title')}
           </h1>
           <p className="text-slate-600 mt-2">
-            {isRTL ? "ניתוח ועיבוד נתוני הניסויים השמורים" : "Analysis and processing of saved experiment data"}
+            {t('results.subtitle')}
           </p>
         </div>
 
         <div className="flex gap-2">
           <Button onClick={loadData} variant="outline" className="gap-2">
             <RefreshCw className="w-4 h-4" />
-            {isRTL ? "רענן" : "Refresh"}
+            {t('common.refresh')}
           </Button>
         </div>
       </div>
@@ -453,18 +453,16 @@ export default function Results() {
             <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0" />
             <div>
               <AlertTitle>
-                {isRTL ? "שגיאה בטעינת התוצאות השמורות" : "Failed to load saved results"}
+                {t('results.loadErrorTitle')}
               </AlertTitle>
               <AlertDescription>
-                {isRTL
-                  ? "לא ניתן היה לטעון את הריצות השמורות מהשרת. בדוק את החיבור לאינטרנט ונסה שוב."
-                  : "Could not load your saved runs from the server. Check your connection and try again."}
+                {t('results.loadErrorDescription')}
               </AlertDescription>
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={loadData} className="self-start sm:self-center gap-2 bg-white text-slate-900 hover:bg-slate-100">
             <RefreshCw className="w-4 h-4" />
-            {isRTL ? "נסה שוב" : "Try Again"}
+            {t('common.tryAgain')}
           </Button>
         </Alert>
       )}
@@ -474,18 +472,18 @@ export default function Results() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="w-5 h-5" />
-            {isRTL ? "מסננים" : "Filters"}
+            {t('results.filtersTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <Label>{isRTL ? "ניסוי" : "Experiment"}</Label>
+            <Label>{t('results.experimentLabel')}</Label>
             <Select value={filters.experiment} onValueChange={(value) => setFilters(prev => ({ ...prev, experiment: value }))}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{isRTL ? "כל הניסויים" : "All Experiments"}</SelectItem>
+                <SelectItem value="all">{t('common.allExperiments')}</SelectItem>
                 {[...new Set(runs.map(run => run.experiment_slug).filter(Boolean))].map(slug => (
                   <SelectItem key={String(slug)} value={String(slug)}>{String(slug)}</SelectItem>
                 ))}
@@ -494,23 +492,23 @@ export default function Results() {
           </div>
 
           <div>
-            <Label>{isRTL ? "תאריך" : "Date Range"}</Label>
+            <Label>{t('results.dateRangeLabel')}</Label>
             <Select value={filters.dateRange} onValueChange={(value) => setFilters(prev => ({ ...prev, dateRange: value }))}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{isRTL ? "כל התאריכים" : "All Dates"}</SelectItem>
-                <SelectItem value="today">{isRTL ? "היום" : "Today"}</SelectItem>
-                <SelectItem value="week">{isRTL ? "השבוע" : "This Week"}</SelectItem>
-                <SelectItem value="month">{isRTL ? "החודש" : "This Month"}</SelectItem>
+                <SelectItem value="all">{t('results.allDates')}</SelectItem>
+                <SelectItem value="today">{t('results.today')}</SelectItem>
+                <SelectItem value="week">{t('results.thisWeek')}</SelectItem>
+                <SelectItem value="month">{t('results.thisMonth')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="flex items-end">
             <Badge variant="outline" className="h-10 flex items-center">
-              {filteredRuns.length} {isRTL ? "תוצאות" : "results"}
+              {filteredRuns.length} {t('results.resultsCountLabel')}
             </Badge>
           </div>
         </CardContent>
@@ -520,22 +518,22 @@ export default function Results() {
         {/* Runs List */}
         <Card>
           <CardHeader>
-            <CardTitle>{isRTL ? "ריצות שמורות" : "Saved Runs"}</CardTitle>
+            <CardTitle>{t('results.savedRunsTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 max-h-96 overflow-y-auto">
             {loadError && runs.length === 0 ? (
               <div className="text-center py-8 space-y-3">
                 <p className="text-red-600 text-sm">
-                  {isRTL ? "טעינת הריצות נכשלה." : "Loading runs failed."}
+                  {t('results.loadingRunsFailedShort')}
                 </p>
                 <Button variant="outline" size="sm" onClick={loadData} className="gap-2">
                   <RefreshCw className="w-4 h-4" />
-                  {isRTL ? "נסה שוב" : "Try Again"}
+                  {t('common.tryAgain')}
                 </Button>
               </div>
             ) : filteredRuns.length === 0 ? (
               <p className="text-slate-500 text-center py-8">
-                {isRTL ? "אין תוצאות שמורות" : "No saved results found"}
+                {t('results.noSavedResults')}
               </p>
             ) : (
               filteredRuns.map((run) => (
@@ -555,14 +553,14 @@ export default function Results() {
                         {formatRunDate(run.created_date, 'dd/MM/yyyy HH:mm')}
                       </p>
                       <p className="text-xs text-slate-600 mt-1">
-                        {run.samples_count} {isRTL ? "נקודות" : "samples"}
+                        {run.samples_count} {t('results.samplesUnit')}
                       </p>
                     </div>
                     <div className="flex items-center">
                       <Button
                         size="sm"
                         variant="ghost"
-                        aria-label={isRTL ? "צפייה בריצה" : "View run"}
+                        aria-label={t('results.viewRunAria')}
                         onClick={(e) => {
                           e.stopPropagation();
                           loadRunData(run);
@@ -573,7 +571,7 @@ export default function Results() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        aria-label={isRTL ? "מחיקת ריצה" : "Delete run"}
+                        aria-label={t('results.deleteRunAria')}
                         className="text-red-500 hover:bg-red-100 hover:text-red-600"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -597,10 +595,10 @@ export default function Results() {
               <div className="text-center">
                 <BarChart3 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-slate-600 mb-2">
-                  {isRTL ? "בחר ניסוי לצפייה" : "Select an Experiment to View"}
+                  {t('results.selectExperimentTitle')}
                 </h3>
                 <p className="text-slate-500">
-                  {isRTL ? "לחץ על אחד הניסויים מהרשימה כדי לראות את התוצאות" : "Click on an experiment from the list to see the results"}
+                  {t('results.selectExperimentDescription')}
                 </p>
               </div>
             </Card>
@@ -610,45 +608,43 @@ export default function Results() {
                 <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle>
-                    {isRTL ? "נתוני פרמטרים פגומים" : "Corrupted Parameter Data"}
+                    {t('results.corruptedParamsTitle')}
                   </AlertTitle>
                   <AlertDescription>
-                    {isRTL
-                      ? "נתוני הפרמטרים של ריצה זו (parameters_json) אינם בפורמט JSON תקין. לא ניתן להציג את הפרמטרים או לחשב עקומה תיאורטית עבור ריצה זו."
-                      : "The parameter JSON stored for this run (parameters_json) is malformed. Parameters and theoretical curves cannot be computed for this run."}
+                    {t('results.corruptedParamsDescription')}
                   </AlertDescription>
                 </Alert>
               )}
 
               <Tabs value={currentTab} onValueChange={setCurrentTab}>
                 <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="overview">{isRTL ? "סקירה" : "Overview"}</TabsTrigger>
-                  <TabsTrigger value="data">{isRTL ? "נתונים" : "Data"}</TabsTrigger>
-                  <TabsTrigger value="charts">{isRTL ? "גרפים" : "Charts"}</TabsTrigger>
-                  <TabsTrigger value="analysis">{isRTL ? "ניתוח" : "Analysis"}</TabsTrigger>
+                  <TabsTrigger value="overview">{t('results.overviewTab')}</TabsTrigger>
+                  <TabsTrigger value="data">{t('results.dataTab')}</TabsTrigger>
+                  <TabsTrigger value="charts">{t('results.chartsTab')}</TabsTrigger>
+                  <TabsTrigger value="analysis">{t('results.analysisTab')}</TabsTrigger>
                 </TabsList>
 
                 {/* Overview Tab */}
                 <TabsContent value="overview" className="space-y-4">
                   <Card>
                     <CardHeader>
-                      <CardTitle>{isRTL ? "פרטי הניסוי" : "Experiment Details"}</CardTitle>
+                      <CardTitle>{t('results.experimentDetailsTitle')}</CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-sm text-slate-500">{isRTL ? "סוג ניסוי" : "Experiment Type"}</Label>
+                        <Label className="text-sm text-slate-500">{t('results.experimentTypeLabel')}</Label>
                         <p className="font-medium">{selectedRun.experiment_slug}</p>
                       </div>
                       <div>
-                        <Label className="text-sm text-slate-500">{isRTL ? "תאריך ושעה" : "Date & Time"}</Label>
+                        <Label className="text-sm text-slate-500">{t('results.dateTimeLabel')}</Label>
                         <p className="font-medium">{formatRunDate(selectedRun.created_date, 'dd/MM/yyyy HH:mm:ss')}</p>
                       </div>
                       <div>
-                        <Label className="text-sm text-slate-500">{isRTL ? "מספר דגימות" : "Samples Count"}</Label>
+                        <Label className="text-sm text-slate-500">{t('results.samplesCountLabel')}</Label>
                         <p className="font-medium">{simulationData.length || selectedRun.samples_count}</p>
                       </div>
                       <div>
-                        <Label className="text-sm text-slate-500">{isRTL ? "משך הניסוי" : "Duration"}</Label>
+                        <Label className="text-sm text-slate-500">{t('results.durationLabel')}</Label>
                         <p className="font-medium">
                           {simulationData.length > 0 && typeof simulationData[simulationData.length - 1]?.time === 'number'
                             ? `${simulationData[simulationData.length - 1].time.toFixed(3)}s`
@@ -660,18 +656,16 @@ export default function Results() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>{isRTL ? "פרמטרי הניסוי" : "Experiment Parameters"}</CardTitle>
+                      <CardTitle>{t('results.experimentParametersTitle')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       {selectedRunParamState.error ? (
                         <p className="text-sm text-red-600">
-                          {isRTL
-                            ? "לא ניתן להציג את פרמטרי הניסוי עקב שגיאת פענוח נתונים."
-                            : "Cannot display experiment parameters due to a JSON parsing error."}
+                          {t('results.corruptedParamsInline')}
                         </p>
                       ) : Object.keys(selectedRunParamState.parameters).length === 0 ? (
                         <p className="text-sm text-slate-500">
-                          {isRTL ? "לא נשמרו פרמטרים לריצה זו." : "No parameters recorded for this run."}
+                          {t('results.noParamsRecorded')}
                         </p>
                       ) : (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -691,7 +685,7 @@ export default function Results() {
                 <TabsContent value="data" className="space-y-4">
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
-                      <CardTitle>{isRTL ? "טבלת נתונים" : "Data Table"}</CardTitle>
+                      <CardTitle>{t('results.dataTableTitle')}</CardTitle>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline" onClick={() => exportRunData('csv')} disabled={!simulationData.length} className="gap-2">
                           <Download className="w-4 h-4" />
@@ -730,11 +724,11 @@ export default function Results() {
                 <TabsContent value="charts" className="space-y-4">
                   <Card>
                     <CardHeader>
-                      <CardTitle>{isRTL ? "הגדרות גרף" : "Chart Configuration"}</CardTitle>
+                      <CardTitle>{t('results.chartConfigTitle')}</CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
-                        <Label>{isRTL ? "ציר X" : "X Axis"}</Label>
+                        <Label>{t('results.xAxisLabel')}</Label>
                         <Select value={chartConfig.xAxis} onValueChange={(value) => setChartConfig(prev => ({ ...prev, xAxis: value }))}>
                           <SelectTrigger>
                             <SelectValue />
@@ -742,7 +736,7 @@ export default function Results() {
                           <SelectContent>
                             {getChartAxisOptions().map(key => (
                               <SelectItem key={String(key)} value={String(key)}>
-                                {isRTL && key.startsWith('theoretical_') ? `תיאורטי ${key.replace('theoretical_', '')}` : key}
+                                {key.startsWith('theoretical_') ? t('results.theoreticalPrefix', { field: key.replace('theoretical_', '') }) : key}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -750,7 +744,7 @@ export default function Results() {
                       </div>
 
                       <div>
-                        <Label>{isRTL ? "ציר Y" : "Y Axis"}</Label>
+                        <Label>{t('results.yAxisLabel')}</Label>
                         <Select value={chartConfig.yAxis} onValueChange={(value) => setChartConfig(prev => ({ ...prev, yAxis: value }))}>
                           <SelectTrigger>
                             <SelectValue />
@@ -758,7 +752,7 @@ export default function Results() {
                           <SelectContent>
                             {getChartAxisOptions().map(key => (
                               <SelectItem key={String(key)} value={String(key)}>
-                                {isRTL && key.startsWith('theoretical_') ? `תיאורטי ${key.replace('theoretical_', '')}` : key}
+                                {key.startsWith('theoretical_') ? t('results.theoreticalPrefix', { field: key.replace('theoretical_', '') }) : key}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -766,7 +760,7 @@ export default function Results() {
                       </div>
 
                       <div>
-                        <Label>{isRTL ? "נוסחה פיזיקלית" : "Physics Formula"}</Label>
+                        <Label>{t('results.physicsFormulaLabel')}</Label>
                         <Select
                           value={chartConfig.selectedFormula?.id || 'none'}
                           onValueChange={(value) => {
@@ -782,13 +776,13 @@ export default function Results() {
                           }}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder={isRTL ? "בחר נוסחה" : "Select Formula"} />
+                            <SelectValue placeholder={t('results.selectFormulaPlaceholder')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">{isRTL ? "ללא" : "None"}</SelectItem>
+                            <SelectItem value="none">{t('common.none')}</SelectItem>
                             {physicsFormulas[selectedRun.experiment_slug]?.map(formula => (
                               <SelectItem key={String(formula.id)} value={String(formula.id)}>
-                                {isRTL ? formula.name_he : formula.name_en}
+                                {pick(formula, formula.name_he)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -803,7 +797,7 @@ export default function Results() {
                             onCheckedChange={(checked) => setChartConfig(prev => ({ ...prev, showTheoretical: Boolean(checked) }))}
                           />
                           <Label htmlFor="theoretical" className="text-sm">
-                            {isRTL ? "הצג תיאורטי" : "Show Theoretical"}
+                            {t('results.showTheoreticalLabel')}
                           </Label>
                         </div>
                       </div>
@@ -812,7 +806,7 @@ export default function Results() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>{isRTL ? "גרף אינטראקטיבי" : "Interactive Chart"}</CardTitle>
+                      <CardTitle>{t('results.interactiveChartTitle')}</CardTitle>
                       {chartConfig.selectedFormula && (
                         <p className="text-sm text-slate-600 font-mono">
                           {chartConfig.selectedFormula.formula}
@@ -843,7 +837,7 @@ export default function Results() {
                               dataKey={chartConfig.yAxis}
                               stroke="#3b82f6"
                               strokeWidth={2}
-                              name={isRTL ? "נתוני ניסוי" : "Experimental Data"}
+                              name={t('results.experimentalDataSeries')}
                               isAnimationActive={false}
                             />
                             {chartConfig.showTheoretical && chartConfig.selectedFormula && chartData.some(d => Object.prototype.hasOwnProperty.call(d, 'theoretical_yAxis')) && (
@@ -853,7 +847,7 @@ export default function Results() {
                                 stroke="#ef4444"
                                 strokeWidth={2}
                                 strokeDasharray="5 5"
-                                name={isRTL ? "תיאורטי" : "Theoretical"}
+                                name={t('results.theoreticalSeries')}
                                 isAnimationActive={false}
                               />
                             )}
@@ -868,7 +862,7 @@ export default function Results() {
                 <TabsContent value="analysis" className="space-y-4">
                   <Card>
                     <CardHeader>
-                      <CardTitle>{isRTL ? "ניתוח סטטיסטי" : "Statistical Analysis"}</CardTitle>
+                      <CardTitle>{t('results.statisticalAnalysisTitle')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -882,10 +876,10 @@ export default function Results() {
                             <div key={key} className="p-4 bg-slate-50 rounded-lg">
                               <h4 className="font-medium text-sm mb-2">{key}</h4>
                               <div className="space-y-1 text-xs">
-                                <p><span className="text-slate-500">{isRTL ? "ממוצע:" : "Average:"}</span> {avg.toFixed(4)}</p>
-                                <p><span className="text-slate-500">{isRTL ? "סטיית תקן:" : "Std Dev:"}</span> {std.toFixed(4)}</p>
-                                <p><span className="text-slate-500">{isRTL ? "מינימום:" : "Min:"}</span> {Math.min(...values).toFixed(4)}</p>
-                                <p><span className="text-slate-500">{isRTL ? "מקסימום:" : "Max:"}</span> {Math.max(...values).toFixed(4)}</p>
+                                <p><span className="text-slate-500">{t('results.averageLabel')}</span> {avg.toFixed(4)}</p>
+                                <p><span className="text-slate-500">{t('results.stdDevLabel')}</span> {std.toFixed(4)}</p>
+                                <p><span className="text-slate-500">{t('results.minLabel')}</span> {Math.min(...values).toFixed(4)}</p>
+                                <p><span className="text-slate-500">{t('results.maxLabel')}</span> {Math.max(...values).toFixed(4)}</p>
                               </div>
                             </div>
                           );
@@ -896,13 +890,13 @@ export default function Results() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>{isRTL ? "השוואת תיאורטי למעשי" : "Theoretical vs Experimental Comparison"}</CardTitle>
+                      <CardTitle>{t('results.comparisonCardTitle')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       {chartConfig.selectedFormula && chartConfig.showTheoretical ? (
                         <div className="space-y-4">
                           <p className="text-sm text-slate-600">
-                            {isRTL ? "השוואה לנוסחה: " : "Comparing to formula: "}
+                            {t('results.comparingToFormulaPrefix')}
                             <span className="font-mono">{chartConfig.selectedFormula.formula}</span>
                           </p>
 
@@ -912,17 +906,17 @@ export default function Results() {
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis
                                   dataKey="theoretical_yAxis"
-                                  label={{ value: isRTL ? 'תיאורטי' : 'Theoretical', position: 'insideBottom', offset: -10 }}
+                                  label={{ value: t('results.theoreticalSeries'), position: 'insideBottom', offset: -10 }}
                                 />
                                 <YAxis
                                   dataKey={chartConfig.yAxis}
-                                  label={{ value: isRTL ? 'מעשי' : 'Experimental', angle: -90, position: 'insideLeft' }}
+                                  label={{ value: t('results.experimentalAxis'), angle: -90, position: 'insideLeft' }}
                                 />
                                 <Tooltip />
                                 <Scatter
                                   dataKey={chartConfig.yAxis}
                                   fill="#3b82f6"
-                                  name={isRTL ? "נתוני השוואה" : "Comparison Data"}
+                                  name={t('results.comparisonDataSeries')}
                                 />
                               </ScatterChart>
                             </ResponsiveContainer>
@@ -930,7 +924,7 @@ export default function Results() {
                         </div>
                       ) : (
                         <p className="text-slate-500 text-center py-8">
-                          {isRTL ? "בחר נוסחה פיזיקלית והפעל 'הצג תיאורטי' בטאב הגרפים כדי לראות השוואה" : "Select a physics formula and enable 'Show Theoretical' in the Charts tab to see comparison"}
+                          {t('results.comparisonInstructions')}
                         </p>
                       )}
                     </CardContent>
@@ -949,27 +943,25 @@ export default function Results() {
           if (!open && !isDeletingRun) setRunPendingDelete(null);
         }}
       >
-        <AlertDialogContent dir={isRTL ? 'rtl' : 'ltr'}>
+        <AlertDialogContent dir={dir}>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {isRTL ? "אישור מחיקת ריצה" : "Confirm Run Deletion"}
+              {t('results.confirmDeleteTitle')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {isRTL
-                ? "האם אתה בטוח שברצונך למחוק ריצה זו? לא ניתן לשחזר פעולה זו."
-                : "Are you sure you want to delete this run? This action cannot be undone."}
+              {t('results.confirmDeleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeletingRun}>
-              {isRTL ? "ביטול" : "Cancel"}
+              {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700"
               disabled={isDeletingRun}
               onClick={confirmDeleteRun}
             >
-              {isRTL ? "מחק" : "Delete"}
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

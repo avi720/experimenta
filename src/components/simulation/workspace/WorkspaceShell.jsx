@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { AnimatePresence } from "framer-motion";
+import { useTranslation } from "@/i18n";
 import ExperimentHeader from "./ExperimentHeader";
 import ExperimentSidePanel from "./ExperimentSidePanel";
 import FloatingWindowsManager from "./FloatingWindowsManager";
@@ -37,6 +38,7 @@ export default function WorkspaceShell({
     handleLogout,
     maxSimulationTime
 }) {
+    const { dir } = useTranslation(isRTL);
     const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
     const [activeTab, setActiveTab] = useState("parameters");
     const [floatingWindows, setFloatingWindows] = useState({
@@ -115,7 +117,7 @@ export default function WorkspaceShell({
     }, [normalizedSimulationData, effectiveTime]);
 
     return (
-        <div className="h-screen flex flex-col bg-slate-50" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="h-screen flex flex-col bg-slate-50" dir={dir}>
             <ExperimentHeader
                 experiment={experiment}
                 user={user}

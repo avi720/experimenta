@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
-// The original emptyParameter import is removed as its content is now inlined in the addToArray call.
 import ParameterInput from './ParameterInput/ParameterInput';
+import { emptyParameter } from './adminFormConstants';
+import { useTranslation } from '@/i18n';
 
 export default function ParametersEditorTab({ 
   experiment, 
@@ -16,23 +16,25 @@ export default function ParametersEditorTab({
   removeFromArray, 
   errors 
 }) {
+  const { t } = useTranslation();
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>פרמטרים</CardTitle>
-        <CardDescription>הגדרת פרמטרי הניסוי שניתן לשנות בזמן ריצה</CardDescription>
+        <CardTitle>{t('admin.form.parameters.cardTitle')}</CardTitle>
+        <CardDescription>{t('admin.form.parameters.cardDescription')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {(experiment.parameters || []).map((param, index) => (
           <ParameterInput
-            key={index} // Key moved directly to ParameterInput
+            key={index}
             param={param}
             index={index}
             handleDynamicArrayChange={handleDynamicArrayChange}
             handleNestedDynamicChange={handleNestedDynamicChange}
             addNestedToArray={addNestedToArray}
             removeNestedFromArray={removeNestedFromArray}
-            removeFromArray={removeFromArray} // New prop passed to ParameterInput
+            removeFromArray={removeFromArray}
             errors={errors}
           />
         ))}
@@ -40,23 +42,11 @@ export default function ParametersEditorTab({
         <Button 
           type="button" 
           variant="outline" 
-          className="w-full" // className simplified
-          onClick={() => addToArray('parameters', {
-            key: '',
-            type: 'float',
-            unit: '',
-            default: '0',
-            min: '0',
-            max: '100',
-            step: '0.1',
-            options: [],
-            i18n_labels: { he: '', en: '' },
-            tooltip: { he: '', en: '' },
-            is_active: true
-          })}
+          className="w-full"
+          onClick={() => addToArray('parameters', { ...emptyParameter })}
         >
-          <PlusCircle className="ml-2 h-5 w-5" /> {/* Corrected className from h-5 h-5 to h-5 w-5 */}
-          הוסף פרמטר חדש
+          <PlusCircle className="me-2 h-5 w-5" />
+          {t('admin.form.parameters.addParameter')}
         </Button>
       </CardContent>
     </Card>

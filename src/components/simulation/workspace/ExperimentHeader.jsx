@@ -18,6 +18,7 @@ import {
   getExperimentPageUrl,
   groupExperimentsByCategory,
 } from "@/components/pagesComponents/lab/labConstants";
+import { useTranslation } from "@/i18n";
 
 export default function ExperimentHeader({
     experiment,
@@ -34,6 +35,7 @@ export default function ExperimentHeader({
     canExport = false
 }) {
     const navigate = useNavigate();
+    const { t, pick, menuAlignEnd } = useTranslation(isRTL);
     const groupedExperiments = groupExperimentsByCategory(
         experimentsByCategory ?? experiments ?? []
     );
@@ -53,7 +55,7 @@ export default function ExperimentHeader({
                         <Button
                             variant="ghost"
                             size="icon"
-                            aria-label={isRTL ? "חזרה למעבדה" : "Back to Lab"}
+                            aria-label={t("common.backToLab")}
                             onClick={() => navigate(createPageUrl("Lab"))}
                         >
                             <ArrowLeft className="w-5 h-5" />
@@ -64,7 +66,7 @@ export default function ExperimentHeader({
                                <Beaker className="w-5 h-5 text-white" />
                            </div>
                            <h1 className="text-lg font-semibold text-slate-800 hidden sm:block truncate">
-                               {isRTL ? experiment?.i18n_texts?.he?.title : experiment?.i18n_texts?.en?.title}
+                               {pick(experiment?.i18n_texts)?.title}
                            </h1>
                         </div>
                     </div>
@@ -76,22 +78,22 @@ export default function ExperimentHeader({
                             size="sm"
                             onClick={onExport}
                             disabled={!canExport}
-                            aria-label={isRTL ? "ייצא" : "Export"}
+                            aria-label={t("common.export")}
                             className="px-2 sm:px-3"
                         >
                            <Download className="w-4 h-4 sm:me-2" />
-                           <span className="hidden sm:inline">{isRTL ? "ייצא" : "Export"}</span>
+                           <span className="hidden sm:inline">{t("common.export")}</span>
                         </Button>
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={onSave}
                             disabled={!canSave}
-                            aria-label={isRTL ? "שמור" : "Save"}
+                            aria-label={t("common.save")}
                             className="px-2 sm:px-3"
                         >
                            <Save className="w-4 h-4 sm:me-2" />
-                           <span className="hidden sm:inline">{isRTL ? "שמור" : "Save"}</span>
+                           <span className="hidden sm:inline">{t("common.save")}</span>
                         </Button>
                     </div>
 
@@ -100,12 +102,12 @@ export default function ExperimentHeader({
                          <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm" className="flex items-center px-2.5 sm:px-3">
-                                    <span>{isRTL ? "ניסויים" : "Experiments"}</span>
+                                    <span>{t("common.experiments")}</span>
                                     <ChevronDown className="w-4 h-4 ms-1.5" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-64 max-w-[calc(100vw-2rem)]" align={isRTL ? "start" : "end"}>
-                                <DropdownMenuLabel>{isRTL ? "קטגוריות" : "Categories"}</DropdownMenuLabel>
+                            <DropdownMenuContent className="w-64 max-w-[calc(100vw-2rem)]" align={menuAlignEnd}>
+                                <DropdownMenuLabel>{t("common.categories")}</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 {Object.keys(groupedExperiments).length > 0 ? (
                                     Object.entries(groupedExperiments).map(([category, exps]) => (
@@ -114,7 +116,7 @@ export default function ExperimentHeader({
                                                 onClick={() => navigate(createPageUrl(`Lab?category=${category}`))}
                                             >
                                                 <div className="flex justify-between w-full font-medium">
-                                                    <span>{isRTL ? categoryNames[category]?.he || category : categoryNames[category]?.en || category}</span>
+                                                    <span>{pick(categoryNames[category], category)}</span>
                                                     <span className="text-xs text-slate-400">({exps.length})</span>
                                                 </div>
                                             </DropdownMenuItem>
@@ -125,14 +127,14 @@ export default function ExperimentHeader({
                                                     className="ps-6 text-xs text-slate-600"
                                                 >
                                                     <Beaker className="w-3 h-3 me-2 text-blue-500 flex-shrink-0" />
-                                                    <span className="truncate">{isRTL ? exp.i18n_texts?.he?.title || exp.slug : exp.i18n_texts?.en?.title || exp.slug}</span>
+                                                    <span className="truncate">{pick(exp.i18n_texts)?.title || exp.slug}</span>
                                                 </DropdownMenuItem>
                                             ))}
                                         </div>
                                     ))
                                 ) : (
                                     <DropdownMenuItem disabled>
-                                        {isRTL ? "אין ניסויים זמינים" : "No experiments available"}
+                                        {t("workspace.noExperimentsAvailable")}
                                     </DropdownMenuItem>
                                 )}
                             </DropdownMenuContent>
@@ -143,20 +145,20 @@ export default function ExperimentHeader({
                         {user && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="rounded-full" aria-label={isRTL ? "תפריט משתמש" : "User menu"}>
+                                    <Button variant="ghost" size="icon" className="rounded-full" aria-label={t("workspace.userMenu")}>
                                         <User className="w-5 h-5" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align={isRTL ? "start" : "end"}>
+                                <DropdownMenuContent align={menuAlignEnd}>
                                     <DropdownMenuLabel>{user.full_name || user.email}</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => navigate(createPageUrl("Dashboard"))}>
                                         <Home className="w-4 h-4 me-2" />
-                                        <span>{isRTL ? "דף הבית" : "Home"}</span>
+                                        <span>{t("common.home")}</span>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={onLogout}>
                                         <LogOut className="w-4 h-4 me-2" />
-                                        <span>{isRTL ? "התנתק" : "Logout"}</span>
+                                        <span>{t("common.logout")}</span>
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -165,7 +167,7 @@ export default function ExperimentHeader({
                         <Button
                             variant={isRightPanelOpen ? "secondary" : "outline"}
                             size="icon"
-                            aria-label={isRTL ? "הצג/הסתר פאנל צד" : "Toggle side panel"}
+                            aria-label={t("workspace.toggleSidePanel")}
                             onClick={handleToggleClick}
                         >
                             <Settings className="w-5 h-5" />
