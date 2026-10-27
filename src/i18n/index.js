@@ -28,13 +28,9 @@ export function resolveLocale(localeOrIsRTL) {
   const stored = readStoredGuestLocale();
   if (stored === 'en' || stored === 'he') return stored;
 
-  try {
-    const cachedSettings = queryClientInstance?.getQueryData(appQueryKeys.settings);
-    if (cachedSettings?.locale_default === 'en' || cachedSettings?.locale_default === 'he') {
-      return cachedSettings.locale_default;
-    }
-  } catch {
-    // queryClient might not be initialized in isolated environments
+  const cachedSettings = queryClientInstance?.getQueryData(appQueryKeys.settings);
+  if (cachedSettings?.locale_default === 'en' || cachedSettings?.locale_default === 'he') {
+    return cachedSettings.locale_default;
   }
 
   if (typeof document !== 'undefined') {
@@ -110,7 +106,8 @@ export function pickLocalized(source, localeOrIsRTL, fallback = '') {
 
 /**
  * App-wide i18n provider syncing locale with user preference, guest storage,
- * and app_settings.locale_default, as well as keeping <html lang/dir> in sync.
+ * and app_settings.locale_default. It is the single owner of <html lang/dir>, which
+ * portaled UI (dropdowns, dialogs, toasts) inherits its direction from.
  */
 export function I18nProvider({ children }) {
   const auth = useContext(AuthContext);

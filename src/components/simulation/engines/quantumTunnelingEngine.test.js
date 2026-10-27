@@ -114,11 +114,11 @@ describe('calculateQuantumTunnelingStep', () => {
         expect(point.debug.ratio_E_V0).toBeCloseTo(E / EV, 9);
     });
 
-    it('collapses the wave-function at DETECTOR_X_POSITION = 25 based on _collapseRandom (T49)', () => {
+    it('collapses the wave-function at DETECTOR_X_POSITION = 25 based on randomSeed (T49)', () => {
         expect(DETECTOR_X_POSITION).toBe(25);
         // Choose parameters where 0 < transmission < 1 (v = 0.002c, V0 = 1 eV, L = 0.001 µm)
         const baseParams = { v: 0.002, m: 5.11, V0: 1, L: 0.001 };
-        const initial = calculateQuantumTunnelingStep(0, { ...baseParams, _collapseRandom: 0.0 });
+        const initial = calculateQuantumTunnelingStep(0, { ...baseParams, randomSeed: 0.0 });
         expect(initial.position).toBeLessThan(DETECTOR_X_POSITION);
         expect(initial.hasCollapsed).toBe(false);
         expect(initial.measurementResult).toBeNull();
@@ -128,7 +128,7 @@ describe('calculateQuantumTunnelingStep', () => {
         // At t = 25 s, position reaches the cap (50 >= 25)
         const collapsedTransmitted = calculateQuantumTunnelingStep(25, {
             ...baseParams,
-            _collapseRandom: initial.transmission * 0.5,
+            randomSeed: initial.transmission * 0.5,
         });
         expect(collapsedTransmitted.position).toBeGreaterThanOrEqual(DETECTOR_X_POSITION);
         expect(collapsedTransmitted.hasCollapsed).toBe(true);
@@ -136,14 +136,14 @@ describe('calculateQuantumTunnelingStep', () => {
 
         const collapsedReflected = calculateQuantumTunnelingStep(25, {
             ...baseParams,
-            _collapseRandom: initial.transmission + (1 - initial.transmission) * 0.5,
+            randomSeed: initial.transmission + (1 - initial.transmission) * 0.5,
         });
         expect(collapsedReflected.position).toBeGreaterThanOrEqual(DETECTOR_X_POSITION);
         expect(collapsedReflected.hasCollapsed).toBe(true);
         expect(collapsedReflected.measurementResult).toBe('reflected');
     });
 
-    it('does not collapse if neither randomSeed nor _collapseRandom is provided (legacy runs) (T49)', () => {
+    it('does not collapse if randomSeed is not provided (legacy runs) (T49)', () => {
         const baseParams = { v: 0.002, m: 5.11, V0: 1, L: 0.001 };
         const legacy = calculateQuantumTunnelingStep(25, baseParams);
         expect(legacy.position).toBeGreaterThanOrEqual(DETECTOR_X_POSITION);

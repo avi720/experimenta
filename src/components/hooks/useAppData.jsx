@@ -1,13 +1,14 @@
-import { useEffect, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppSettings, ExperimentTemplate } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { appQueryKeys } from "@/lib/query-client";
+import { useTranslation } from "@/i18n";
 
 const DEFAULT_SETTINGS = { virtual_lab_enabled: true, locale_default: 'he' };
 
 export function useAppData() {
-    const { user, isLoadingAuth, logout, updateProfile, guestLocale, setGuestLocale } = useAuth();
+    const { user, isLoadingAuth, logout, updateProfile, setGuestLocale } = useAuth();
 
     const settingsQuery = useQuery({
         queryKey: appQueryKeys.settings,
@@ -47,14 +48,8 @@ export function useAppData() {
         }
     }, [user, updateProfile, setGuestLocale]);
 
-    const locale = user?.locale_preference || guestLocale || settings?.locale_default || 'he';
-    const isRTL = locale === 'he';
-
-    // Portaled UI (dropdowns, dialogs, toasts) inherits direction from <html>.
-    useEffect(() => {
-        document.documentElement.lang = locale;
-        document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
-    }, [locale, isRTL]);
+    // Locale and <html lang/dir> are owned by I18nProvider.
+    const { locale, isRTL } = useTranslation();
 
     return {
         settings,

@@ -102,16 +102,14 @@ export function useSimulationEngineLogic({ calculateStepFn, onSimulationComplete
         const seed =
             typeof parameters?.randomSeed === 'number' && !Number.isNaN(parameters.randomSeed)
                 ? parameters.randomSeed
-                : (typeof parameters?._collapseRandom === 'number' && !Number.isNaN(parameters._collapseRandom)
-                    ? parameters._collapseRandom
-                    : Math.random());
+                : Math.random();
         runSeedRef.current = seed;
 
         setIsSimulating(true);
         setSimulationData([]);
 
         runEngine(
-            { ...parameters, randomSeed: seed, _collapseRandom: seed },
+            { ...parameters, randomSeed: seed },
             maxSimulationTime,
             []
         );
@@ -123,15 +121,13 @@ export function useSimulationEngineLogic({ calculateStepFn, onSimulationComplete
         const seed =
             typeof parameters?.randomSeed === 'number' && !Number.isNaN(parameters.randomSeed)
                 ? parameters.randomSeed
-                : (typeof parameters?._collapseRandom === 'number' && !Number.isNaN(parameters._collapseRandom)
-                    ? parameters._collapseRandom
-                    : runSeedRef.current ?? Math.random());
+                : runSeedRef.current ?? Math.random();
         runSeedRef.current = seed;
 
         setIsSimulating(true);
 
         runEngine(
-            { ...parameters, randomSeed: seed, _collapseRandom: seed },
+            { ...parameters, randomSeed: seed },
             toTime,
             simulationData
         );

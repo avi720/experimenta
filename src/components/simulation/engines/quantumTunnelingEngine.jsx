@@ -88,7 +88,6 @@ export function calculateQuantumTunnelingStep(t, parameters = {}) {
         V0 = 1.0,   // Barrier height in eV
         L = 0.005,  // Barrier width in µm (micrometers)
         randomSeed,
-        _collapseRandom,
     } = parameters || {};
 
     // Convert to numbers to handle string inputs from UI
@@ -144,12 +143,10 @@ export function calculateQuantumTunnelingStep(t, parameters = {}) {
     // Once the transmitted wave reaches the detector at DETECTOR_X_POSITION (x = 25),
     // a measurement occurs: the state collapses into 'transmitted' with probability T
     // or 'reflected' with probability R = 1 - T.
-    // When randomSeed / _collapseRandom is not provided (e.g. legacy reconstructed runs),
+    // When randomSeed is not provided (e.g. legacy reconstructed runs),
     // do not trigger a collapse.
     const rawRandom =
-        typeof randomSeed === 'number' && !Number.isNaN(randomSeed)
-            ? randomSeed
-            : (typeof _collapseRandom === 'number' && !Number.isNaN(_collapseRandom) ? _collapseRandom : null);
+        typeof randomSeed === 'number' && !Number.isNaN(randomSeed) ? randomSeed : null;
     const collapseRandom = rawRandom;
     const hasRandom = rawRandom !== null;
     const hasCollapsed = hasRandom && position >= DETECTOR_X_POSITION;
