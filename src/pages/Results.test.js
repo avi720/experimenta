@@ -8,7 +8,7 @@ import {
   parseRunParameters,
   formatDisplayValue,
   filterRunsByCriteria,
-} from "./Results.jsx";
+} from "@/components/pagesComponents/results/resultsDomain";
 
 describe("Results helpers (T40, T58)", () => {
   describe("parseRunParameters (T58)", () => {

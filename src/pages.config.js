@@ -1,14 +1,17 @@
+import { lazy } from 'react';
 import Dashboard from './pages/Dashboard';
-import Lab from './pages/Lab';
-import LabWorkspace from './pages/LabWorkspace';
-import AdminExperiments from './pages/AdminExperiments';
-import AdminExperimentForm from './pages/AdminExperimentForm';
-import Results from './pages/Results';
-import AboutUs from './pages/AboutUs';
-import WhatIsNew from './pages/WhatIsNew';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import TermsOfService from './pages/TermsOfService';
-import Login from './pages/Login';
+
+// Every page except the landing page is split into its own chunk (T30); App wraps routes in Suspense.
+const Lab = lazy(() => import('./pages/Lab'));
+const LabWorkspace = lazy(() => import('./pages/LabWorkspace'));
+const AdminExperiments = lazy(() => import('./pages/AdminExperiments'));
+const AdminExperimentForm = lazy(() => import('./pages/AdminExperimentForm'));
+const Results = lazy(() => import('./pages/Results'));
+const AboutUs = lazy(() => import('./pages/AboutUs'));
+const WhatIsNew = lazy(() => import('./pages/WhatIsNew'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const Login = lazy(() => import('./pages/Login'));
 import __Layout from './Layout.jsx';
 import { LEGACY_EXPERIMENT_PAGE_SLUGS } from './components/simulation/experimentRegistry';
 

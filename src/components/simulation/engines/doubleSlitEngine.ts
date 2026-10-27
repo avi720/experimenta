@@ -1,10 +1,12 @@
 /**
  * Calculates the interference pattern for a double-slit experiment.
  */
-export function calculateInterference(parameters) {
-    const lambda = (parseFloat(parameters.wavelength) || 500) * 1e-9; // wavelength in m
-    const d = (parseFloat(parameters.slit_separation) || 2000) * 1e-9; // slit separation in m
-    const D = parseFloat(parameters.screen_distance) || 1.0; // screen distance in m
+import type { EngineParameters } from './types';
+
+export function calculateInterference(parameters: EngineParameters) {
+    const lambda = (parseFloat(String(parameters.wavelength)) || 500) * 1e-9; // wavelength in m
+    const d = (parseFloat(String(parameters.slit_separation)) || 2000) * 1e-9; // slit separation in m
+    const D = parseFloat(String(parameters.screen_distance)) || 1.0; // screen distance in m
 
     const pattern = [];
     const screen_width = 0.05; // 5 cm screen width

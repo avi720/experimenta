@@ -1,30 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { ExperimentTemplate } from '@/entities/all';
+import { useExperimentTemplatesQuery } from '@/hooks/useDataQueries';
 
 export function useExperimentListFetching() {
-    const [experiments, setExperiments] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-
-    const loadExperiments = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const list = await ExperimentTemplate.list();
-            setExperiments(Array.isArray(list) ? list : []);
-        } catch (error) {
-            console.error('Error loading experiments:', error);
-            setExperiments([]);
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        loadExperiments();
-    }, [loadExperiments]);
+    const { data, isPending } = useExperimentTemplatesQuery();
 
     return {
-        experiments,
-        isLoading,
-        loadExperiments
+        experiments: Array.isArray(data) ? data : [],
+        isLoading: isPending
     };
 }

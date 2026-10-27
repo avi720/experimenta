@@ -359,80 +359,95 @@ ID convention: `T##` numbered globally across phases. Where a finding was confir
 
 ### Phase 4 — Performance & Tooling (performance, data layer, lint & tests)
 
-#### [ ] T21. Standardise data fetching on TanStack Query ([#24](https://github.com/avi720/experimenta/issues/24))
+#### [x] T21. Standardise data fetching on TanStack Query ([#24](https://github.com/avi720/experimenta/issues/24))
 - **Where:** `src/components/hooks/useAppData.jsx:18` (TanStack); manual `useEffect` fetchers in `src/components/hooks/useLabData.jsx:8-24`, `adminExperiments/useExperimentListFetching.jsx:8-19`, `experimentForm/useExperimentDataLoading.jsx:45`, `src/pages/Results.jsx:121-122`
 - **Issue:** `experiment_templates` is fetched five different ways and `app_settings` twice; `useQuery` appears in exactly 1 file and `useMutation` in 0. `/Lab` fires two requests for the same table (`useAppData` + `useLabData`), and the manual fetchers miss the `onChange` cache invalidation, so lists can be stale after admin edits. Page-level `isLoading` spinners in Dashboard and Lab are unreachable because Layout already blocks on the query.
 - **Acceptance:** Each table is read through one shared query hook and written through mutations that invalidate it; visiting `/Lab` issues one `experiment_templates` request (verified in the browser network panel); grep finds no `useEffect`-based fetch of Supabase data.
+- **Done 2026-10-27:** New `src/hooks/useDataQueries.js` holds one query hook per table (settings, templates, single template, user runs) and mutation hooks that invalidate the matching key; entity-level `onChange` invalidation was removed. `useAppData`, `I18nProvider`, `useLabData`, the admin list, the admin form (load + save), workspace save and Results all use them. Verified in the browser: `/Lab` issues one `experiment_templates` request; signed in as admin, toggling a template active/inactive from the list and saving from the edit form both refresh the list immediately; grep finds no `useEffect`-based Supabase fetch.
 
-#### [ ] T22. Split Results.jsx into data, domain and view pieces ([#25](https://github.com/avi720/experimenta/issues/25))
+#### [x] T22. Split Results.jsx into data, domain and view pieces ([#25](https://github.com/avi720/experimenta/issues/25))
 - **Where:** `src/pages/Results.jsx` (734 lines)
 - **Issue:** One component mixes manual fetching (refetching 3 tables after every delete), a physics formula table (`:30-83`), a sample generator duplicating the engines (`:169-203`), a CSV exporter duplicating `useExperimentPersistence.exportData` (`:243-259`), statistics (`:664-681`) and 4 tab views; `getChartData()` is recomputed 3+ times per render, and the CSV function's `format` parameter shadows the date-fns import.
 - **Acceptance:** No file under the Results feature exceeds ~250 lines; CSV export uses one shared utility; derived chart data is computed once per selected run (verified with React DevTools profiler or a render counter); Results behaves identically in a browser.
+- **Done 2026-10-27:** Results is split into `src/components/pagesComponents/results/` (largest file 141 lines, page 97), CSV export uses the shared `src/lib/csv.js` (also used by the workspace export), and chart data/stats are memoised once per selected run in `useRunAnalysis`. Verified signed in with the QA user: saved an SHO run, the overview/data/charts (with theory overlay)/analysis tabs render, CSV export yields header + 500 rows, and deleting the run refreshes the list without a manual reload.
 
-#### [ ] T24. Simulation datasets are unbounded and looked up linearly ([#27](https://github.com/avi720/experimenta/issues/27))
+#### [x] T24. Simulation datasets are unbounded and looked up linearly ([#27](https://github.com/avi720/experimenta/issues/27))
 - **Where:** `src/components/hooks/simulation/useSimulationEngineLogic.jsx:5,27-46,111-133`
 - **Issue:** **Confirmed** (Node run). Every 1 ms step is stored — an SHO run at t_max 60 yields 60,002 points and overshoots t_max by one step — and the whole array flows into React state, recharts and CSV without downsampling; `getDataPointAtTime` is an O(n) scan every frame although `index = round(t/dt)` would do. The old `parameters.dt` sampling was lost.
 - **Acceptance:** A 60 s SHO run stores at most a bounded number of samples (e.g. ≤ 5,000), never exceeds t_max, and frame lookup is O(1); playback stays smooth (no long tasks > 50 ms in the Performance panel) on a mid-range laptop.
+- **Done 2026-10-27:** Engines are analytic in t, so `useSimulationEngineLogic` samples on a uniform grid of at most 5,000 points (1-2-5 interval, never below 1 ms; a 60 s run uses 0.02 s → 3,001 points), ends exactly on t_max, and looks frames up with `index = round(t / dt)`. Unit-tested; SHO playback in the browser showed 0 long tasks.
 
-#### [ ] T26. Other scenes and orbit controls do not dispose resources ([#29](https://github.com/avi720/experimenta/issues/29))
+#### [x] T26. Other scenes and orbit controls do not dispose resources ([#29](https://github.com/avi720/experimenta/issues/29))
 - **Where:** `src/components/simulation/scenes/QuantumTunnelingScene.jsx:210-223`; `ShoScene.jsx:136-142,169-186`; `sceneUtils.jsx:42-51`; `src/components/simulation/controls/orbitControls.jsx:72-78`
 - **Issue:** The QT scene disposes none of its geometries or materials, SHO disposes only the spring and rebuilds a `TubeGeometry` inside the rAF loop on every frame while oscillating, and `orbitControls.dispose()` leaves document `pointermove`/`pointerup` listeners attached if called mid-drag.
 - **Acceptance:** Same check as T25 for SHO and QT: no growth in `renderer.info.memory` across repeated visits or a 60 s SHO playback, and no document listeners left after unmount (verified with `getEventListeners(document)` in DevTools).
+- **Done 2026-10-27:** Shared `disposeObject3D`/`disposeRenderer` in `sceneUtils`; QT and SHO dispose their whole scene on unmount; SHO updates the spring geometry in place instead of rebuilding a `TubeGeometry` per frame; `orbitControls.dispose()` removes document listeners mid-drag. Browser check: across 6 mount/unmount cycles of SHO/QT/Free Fall all 120 WebGL buffers created were deleted, and SHO playback created 0 new buffers. Unit tests added.
 
-#### [ ] T27. Remove debug logging from simulation hot paths ([#30](https://github.com/avi720/experimenta/issues/30))
+#### [x] T27. Remove debug logging from simulation hot paths ([#30](https://github.com/avi720/experimenta/issues/30))
 - **Where:** `src/components/simulation/engines/freeFallEngine.jsx:13,79`; `src/components/hooks/simulation/useSimulationEngineLogic.jsx:32`; `useSimulationManager.jsx:10`; `src/components/simulation/ParameterControls.jsx:17,24`; the experiment pages
 - **Issue:** **Confirmed** (Node run). A 3.2 s free fall makes 9,586 `console.log` calls for 3,194 points, each retaining its object in DevTools; 36 active logs sit in the simulation layer alone.
 - **Acceptance:** A full Free Fall run prints nothing to the console in a production build (verified in the browser console), and lint fails on new `console.log` outside an explicit allow-list.
+- **Done 2026-10-27:** No `console.log`/`debug`/`info` remain in `src/`; ESLint `no-console` (allowing only `warn`/`error`) now fails on new debug logging. A full SHO run printed nothing to the browser console.
 
-#### [ ] T29. Remove 14 unused npm dependencies, including vulnerable ones ([#32](https://github.com/avi720/experimenta/issues/32))
+#### [x] T29. Remove 14 unused npm dependencies, including vulnerable ones ([#32](https://github.com/avi720/experimenta/issues/32))
 - **Where:** `package.json` dependencies
 - **Issue:** **Confirmed** (grep + `npm audit`). `@hello-pangea/dnd`, `@hookform/resolvers`, `@radix-ui/react-toast`, `@stripe/react-stripe-js`, `@stripe/stripe-js`, `canvas-confetti`, `html2canvas`, `jspdf`, `lodash`, `react-hot-toast`, `react-leaflet`, `react-markdown`, `react-quill`, `zod` have zero imports. `npm audit --omit=dev` reports 25 vulnerabilities (1 critical, 16 high); the critical (jspdf) and several highs/moderates (lodash, quill, mdast) come from these unused packages. Depends on Open Question 9 for anything planned.
 - **Acceptance:** The unused packages are removed (or each one kept is justified in Open Question 9's answer); `npm audit --omit=dev` shows no critical and no high advisory in a runtime dependency; build passes.
+- **Done 2026-10-27:** Removed all 14 zero-import packages (Open Question 9 answered by default: re-add when a feature lands). Together with `npm audit fix`, `npm audit --omit=dev` reports 0 vulnerabilities; build passes.
 
-#### [ ] T30. Ship experiment code only to visitors who open an experiment ([#33](https://github.com/avi720/experimenta/issues/33))
+#### [x] T30. Ship experiment code only to visitors who open an experiment ([#33](https://github.com/avi720/experimenta/issues/33))
 - **Where:** `src/pages.config.js:1-15`; `src/App.jsx:52-64`
 - **Issue:** **Confirmed** (`vite build --logLevel info`). All 15 pages are imported eagerly into a single 1,953.58 kB chunk (543.92 kB gzip); three (484 kB), recharts (260 kB) and framer-motion (109 kB) are downloaded by every Dashboard visitor although three/recharts are used only on experiment pages and Results.
 - **Acceptance:** The entry chunk loaded on `/` is ≤ 250 kB gzip and does not contain three or recharts (verified with the build output / a bundle visualiser), and experiment pages still load in a browser.
+- **Done 2026-10-27:** Every page except Dashboard is `React.lazy` (Suspense in `LayoutWrapper`), registry scenes are lazy (Suspense in `LabWorkspace`), and react/supabase/query are split into vendor chunks. The `/` entry chunk is 125 kB gzip (was 544 kB) with no three or recharts; initial JS including vendor chunks is ~257 kB gzip. Experiment pages load in the browser.
 
-#### [ ] T31. Build hides bundle-size warnings ([#34](https://github.com/avi720/experimenta/issues/34))
+#### [x] T31. Build hides bundle-size warnings ([#34](https://github.com/avi720/experimenta/issues/34))
 - **Where:** `vite.config.js:9` (`logLevel: 'error'`)
 - **Issue:** **Confirmed.** `npm run build` prints no chunk sizes and suppresses Vite's ">500 kB chunk" warning, so CI and Vercel logs never surface bundle regressions such as T30.
 - **Acceptance:** `npm run build` output in CI lists chunk sizes and would show Vite's chunk-size warning when a chunk exceeds the limit.
+- **Done 2026-10-27:** Removed `logLevel: 'error'` from `vite.config.js`; `npm run build` now lists every chunk and printed Vite's >500 kB warning before T30's split.
 
-#### [ ] T44. ESLint skips the app shell and does not check hook dependencies ([#47](https://github.com/avi720/experimenta/issues/47))
+#### [x] T44. ESLint skips the app shell and does not check hook dependencies ([#47](https://github.com/avi720/experimenta/issues/47))
 - **Where:** `eslint.config.js:9-14`; `package.json:11` (`eslint . --quiet`)
 - **Issue:** **Confirmed.** The config only matches `src/components`, `src/pages` and `src/Layout.jsx`; `App.jsx`, `main.jsx` and `src/lib/*.jsx` report "File ignored because no matching configuration", and `.js` files in `lib`, `entities`, `api` get no rules. `react-hooks/exhaustive-deps` is off (enabling it adds 4 warnings — relevant to T23), and `--quiet` hides the 26 existing warnings in CI.
 - **Acceptance:** `npx eslint src` lints every `.js`/`.jsx` file under `src/` with hooks rules enabled and exits 0 with zero warnings; CI fails on warnings.
+- **Done 2026-10-27:** ESLint now matches `src/**/*.{js,jsx}` (only shadcn `ui/` ignored), enables `react-hooks/exhaustive-deps` and `no-console`; `npm run lint` is `eslint src --max-warnings 0`, so CI fails on warnings. The 11 warnings it surfaced were fixed; lint exits 0.
 
-#### [ ] T45. No automated tests; CI only lints and builds ([#48](https://github.com/avi720/experimenta/issues/48))
+#### [x] T45. No automated tests; CI only lints and builds ([#48](https://github.com/avi720/experimenta/issues/48))
 - **Where:** `.github/workflows/ci.yml`; repo (0 test files, no runner)
 - **Issue:** **Confirmed.** Physics engines, access-control routing and the data layer have no coverage, which is how T5, T6 and T15 shipped. Depends on Open Question 15 for priority.
 - **Acceptance:** CI runs a test step that covers at least every engine (analytic checks as in T6/T15) and `canAccessExperiment`; a deliberately broken engine formula fails CI.
+- **Done 2026-10-27:** Vitest suite (22 files, 93 tests) already ran in CI; added analytic tests for the SHO engine (closed form, initial conditions, ODE residual via finite differences, energy decay) and the Double Slit engine (central maximum, first minimum at d·sinθ = λ/2). Changing SHO's `gamma = c/(2m)` to `c/m` fails the suite. `canAccessExperiment` is covered by `src/lib/access.test.js`.
 
-#### [ ] T59. Bound user-supplied run data ([#62](https://github.com/avi720/experimenta/issues/62))
+#### [x] T59. Bound user-supplied run data ([#62](https://github.com/avi720/experimenta/issues/62))
 - **Where:** `supabase/migrations/20261022073402_baseline_schema.sql:166-178`
 - **Issue:** `experiment_runs.notes` and `parameters_json` are unbounded `text`, so a user can store arbitrarily large rows; `parameters_json` is text rather than `jsonb` (a Base44 carry-over), forcing `JSON.parse` everywhere (T58). Depends on Open Question 16.
 - **Acceptance:** A new migration enforces size limits (insert of a > 64 kB notes value is rejected — verified with `supabase db push --dry-run` then a test insert on a branch/local DB) and the parameter column type is decided per Open Question 16.
+- **Done 2026-10-27:** Open Question 16 answered: `jsonb`. Migration `20261027085256_run_parameters_jsonb_and_limits.sql` converts `parameters_json` to `jsonb` (unparseable legacy text is kept as a jsonb string, which Results reports as malformed) and adds size checks: notes ≤ 64 kB, parameters ≤ 64 kB, stored samples (`results_url`) ≤ 2 MB. Dry-run, then `supabase db push` to production (approved by the owner); `src/types/database.ts` regenerated. Verified as the QA user: a normal insert round-trips `parameters_json` as an object, a 64 kB notes value is accepted, a 70 kB notes value and 70 kB parameters are rejected with check violations (`23514`); the test rows were deleted.
 
-#### [ ] T62. Unify three.js scene setup and camera controls ([#65](https://github.com/avi720/experimenta/issues/65))
+#### [x] T62. Unify three.js scene setup and camera controls ([#65](https://github.com/avi720/experimenta/issues/65))
 - **Where:** `src/components/simulation/scenes/FreeFallScene.jsx`, `QuantumTunnelingScene.jsx`, `ShoScene.jsx`, `sceneUtils.jsx`; `src/components/simulation/controls/orbitControls.jsx`
 - **Issue:** `setupBasicScene` is used only by ShoScene; FreeFall and QT each inline ~60 lines of scene/camera/renderer/lights setup; FreeFallScene has its own ~90-line mouse controller and `orbitControls` hand-rolls what three's bundled OrbitControls provides; resize is window-only in FF/QT vs `ResizeObserver` in SHO. Depends on Open Question 17.
 - **Acceptance:** All scenes share one setup/teardown path and one camera-control implementation, and resize correctly when the side panel opens/closes; verified in a browser for each experiment.
+- **Done 2026-10-27:** `sceneUtils.setupScene` is the single setup/teardown path (scene, camera, renderer, lights, controls, `ResizeObserver` on the mount, rAF loop, one `dispose()`); FreeFall, QT and SHO keep only their own objects. Camera control is three's `OrbitControls` via `controls/cameraControls.js` with the owner's mapping (Open Question 17): left = pan, right = rotate around the clicked point (raycast pivot, camera does not jump), wheel = zoom, damping and touch as standard. The hand-rolled `orbitControls.jsx` and FreeFall's own mouse controller are gone. Verified in the browser for all three scenes: pan, pivot-rotate and zoom work, the canvas follows viewport resizes, and 5 mount/unmount cycles leave no live WebGL buffers.
 
-#### [ ] T65. Make `npm run typecheck` meaningful or remove it ([#68](https://github.com/avi720/experimenta/issues/68))
+#### [x] T65. Make `npm run typecheck` meaningful or remove it ([#68](https://github.com/avi720/experimenta/issues/68))
 - **Where:** `jsconfig.json:16-17`; `package.json:12`
 - **Issue:** **Confirmed.** It exits 2 with 1,253 errors — 578 from `node_modules/three` and most of the rest JS/shadcn `forwardRef` artefacts — while `include` globs only `src/components/**/*.js` although the components are `.jsx`. CI does not run it. Depends on Open Question 14.
 - **Acceptance:** Either `npm run typecheck` exits 0 on a defined scope and runs in CI, or the script and the unused `typescript`/`@types/*` devDependencies are removed.
+- **Done 2026-10-27:** Open Question 14 answered: adopt TypeScript. `tsconfig.json` (strict, `allowJs`, `checkJs: false`) replaces `jsconfig.json`; `npm run typecheck` (`tsc -p tsconfig.json`) exits 0 and runs in CI before the tests. First converted scope, fully typed: `src/lib` (non-component files), `src/entities`, `src/api`, `src/i18n`, `src/hooks/useDataQueries`, the four engines, plus generated `src/types/database.ts` and app models in `src/types/models.ts`. ESLint parses `.ts`/`.tsx` with `typescript-eslint`. Typing surfaced the `m.toString()` null crash in `shoEngine` (T63), fixed with a regression test. The rest of the codebase is tracked by T71.
 
-#### [ ] T68. Load the fonts the CSS asks for, without per-render style injection ([#71](https://github.com/avi720/experimenta/issues/71))
+#### [x] T68. Load the fonts the CSS asks for, without per-render style injection ([#71](https://github.com/avi720/experimenta/issues/71))
 - **Where:** `src/Layout.jsx:39-42`; `index.html`
 - **Issue:** Layout injects a `<style>` tag on every render to set fonts; `'Inter'` is referenced but never loaded, so LTR text falls back to system fonts; `index.html` hard-codes `lang="he" dir="rtl"` before `useAppData` corrects it.
 - **Acceptance:** Inter (and the Hebrew font) load once from a stylesheet (verified in the Network panel), and no `<style>` element is added on navigation.
+- **Done 2026-10-27:** Inter and Heebo load once from a Google Fonts stylesheet in `index.html`; font rules moved to `index.css` keyed on `html[dir]`; the per-render `<style>` in Layout is gone. Verified: one fonts request, `<style>` count unchanged across navigation. `index.html` keeps `lang="he" dir="rtl"` as the Hebrew-first default that `I18nProvider` then owns.
 
-#### [ ] T69. Refresh stale tooling data and in-range dependency updates ([#72](https://github.com/avi720/experimenta/issues/72))
+#### [x] T69. Refresh stale tooling data and in-range dependency updates ([#72](https://github.com/avi720/experimenta/issues/72))
 - **Where:** `package.json` devDependencies; lockfile
 - **Issue:** **Confirmed.** Every build warns that `baseline-browser-mapping` data is over two months old and caniuse-lite is 13 months old; `@tanstack/react-query` 5.89 → 5.104 and others are behind within range. Majors (Vite 8, Tailwind 4, React 19, Router 7, recharts 3) are available but not urgent.
 - **Acceptance:** `npm run build` prints no stale-data warnings and `npm outdated` shows no "wanted" drift.
+- **Done 2026-10-27:** `npm update`, `npm audit fix`, `baseline-browser-mapping@latest` and `update-browserslist-db`; `npm run build` prints no stale-data warnings and `npm outdated` shows no "wanted" drift (only majors remain).
 
 ---
 
@@ -506,6 +521,7 @@ Items that surfaced during the audit but need a product, security, or business d
    - **Answered 2026-10-26:** Adopted a central bilingual dictionary architecture (`src/i18n/he.js`, `src/i18n/en.js`, `src/i18n/index.js`), eliminated all `isRTL ?` string/direction ternaries in components, converted physical margins to logical properties (`ms-*`, `me-*`, `gap-*`), and fully localized all legal, content, and admin pages.
 8. **Mobile:** is phone support in scope for the site and for the experiment workspace (side panel is fixed at 384 px)? If desktop-only, should the site say so on small screens? (T43)
 9. **Planned features behind unused packages:** are Stripe/subscriptions (the schema has `subscription_tier`), PDF/PNG export (the Dashboard advertises data export), maps, rich-text editing or drag-and-drop on the roadmap? If not, all of them go in T29.
+   - **Assumed 2026-10-27 (T29):** none are in active development, so all 14 zero-import packages were removed; re-add with `npm i` when a feature lands. Re-open if any of them was planned.
 10. **Legal and placeholder content:** who reviews Privacy/Terms, and should the draft banners stay in production until then? Should the footer's placeholder links and social icons be removed until they have real targets? (T41, T48)
     - **Answered 2026-10-26:** Removed draft banners and updated legal texts with professional, platform-neutral copy for Experimenta. Removed placeholder `#` links and non-functional social icons, removed unused `Resources.jsx`, and preserved "צור קשר" pointing to `mailto:info@experimenta.com`.
 11. **Simulation model:** keep pre-compute-then-playback, or step in real time? Should `t_max` and the sampling interval become admin-defined parameters (no seeded experiment has `t_max` today)? (T5, T24)
@@ -515,13 +531,21 @@ Items that surfaced during the audit but need a product, security, or business d
 13. **Quantum tunneling "measurement/collapse":** implement it in the engine, or delete the half-built scene branch? (T49)
     - **Answered 2026-10-26:** Implemented quantum measurement and wave-function collapse in `quantumTunnelingEngine.jsx` and `QuantumTunnelingScene.jsx`, placing the detector at `x = 25` (transmitted side). The wave-packet collapses into either transmitted or reflected state based on tunneling probability and persistent random seed.
 14. **Type checking:** invest in real checks (JSDoc or TypeScript on `lib`, `entities`, hooks and engines), or delete the script and the TypeScript devDependencies? (T65)
+   - **Answered 2026-10-27:** adopt TypeScript for the whole project; files that need rewriting will be rewritten. T65 sets up the toolchain and converts a first scope; the rest is tracked as its own finding.
 15. **Tests first:** Vitest unit tests for the engines, a Playwright smoke test of the guest flow (Dashboard → Lab → run an experiment), or both? (T45)
    - **Answered 2026-10-22:** Vitest unit tests now; Playwright is out of scope for this round.
 16. **Base44 conventions:** migrate away from the entity shim's Base44-style API (`list('-created_date')`, `filter()`), the `created_date`/`updated_date` columns and text `parameters_json`, or keep them for stability? (T21, T59)
+   - **Answered 2026-10-27:** move `parameters_json` to `jsonb` (T59). The entity shim API and the `created_date`/`updated_date` column names stay as they are.
 17. **Camera controls:** is the custom mouse mapping (left = pan, right = rotate) intentional, or can scenes use three's standard OrbitControls behaviour? (T62)
+   - **Answered 2026-10-27:** keep left = pan and right = rotate around the clicked point; everything else (wheel zoom, damping, touch) follows three's standard OrbitControls.
 
 ---
 
 ## Discovered During Remediation
 
 > Add new findings here as they surface while working through the plan. Same format: `[ ] {PREFIX}##. Title` + Where / Issue / Acceptance.
+
+#### [ ] T71. Convert the remaining JavaScript to TypeScript ([#84](https://github.com/avi720/experimenta/issues/84))
+- **Where:** every `.js`/`.jsx` file under `src/` outside T65's first scope — pages, `components/**` (incl. `ui/`), hooks under `components/hooks/`, scenes and controls (need `@types/three`), `Layout.jsx`, `App.jsx`, `main.jsx`, `lib/AuthContext.jsx`, `lib/PageNotFound.jsx`, tests.
+- **Issue:** Open Question 14 chose TypeScript for the whole project; T65 set up the toolchain and typed the data layer, i18n and engines, but most files are still unchecked JavaScript (`checkJs: false`). Overlaps T61 (file extensions), which this supersedes for extensions.
+- **Acceptance:** No `.js`/`.jsx` source file remains under `src/`; `tsconfig.json` drops `allowJs`; `npm run typecheck`, lint, tests and build pass in CI; the app behaves unchanged in a browser.

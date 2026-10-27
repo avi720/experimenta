@@ -13,6 +13,12 @@ Vite + React app on Supabase (Postgres + Auth), deployed on Vercel. Both CLIs ar
 - Every UI change is verified in a browser on the local dev server (`npm run dev` → `http://localhost:5173`) before opening a PR to `main`. Production is not a test environment.
 - Note: `Closes #N` in a commit or PR closes the issue when merged into `main`.
 
+## QA test user
+
+- A dedicated QA account (admin role) exists for browser checks of signed-in and admin pages.
+- Its credentials live only in the gitignored `.env.local` as `QA_USER_EMAIL` / `QA_USER_PASSWORD` — never commit them (the repo is public).
+- Local dev (`npm run dev`) and production share the same Supabase project, so this is a real production account: use it for read/verify flows and clean up any runs or templates you create.
+
 ## Database changes — migration files only
 
 The schema's source of truth is `supabase/migrations/`. Never edit the production schema through the SQL editor or MCP `apply_migration`/`execute_sql` DDL.

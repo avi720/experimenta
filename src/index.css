@@ -86,3 +86,12 @@
     @apply bg-background text-foreground;
   }
 }
+/* Fonts are loaded once from index.html; <html dir> is set by I18nProvider (T68). */
+@layer base {
+  html[dir="rtl"] body {
+    font-family: 'Heebo', 'Segoe UI', Tahoma, Arial, sans-serif;
+  }
+  html[dir="ltr"] body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+}

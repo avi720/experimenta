@@ -1,12 +1,13 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ExperimentTemplate } from '@/entities/all';
+import { useExperimentTemplateMutations } from '@/hooks/useDataQueries';
 import { createPageUrl } from '@/utils';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
 
-export function useExperimentActions(loadExperiments, filteredExperiments = []) {
+export function useExperimentActions(filteredExperiments = []) {
     const navigate = useNavigate();
+    const { createTemplate, updateTemplate, deleteTemplate } = useExperimentTemplateMutations();
     const { t } = useTranslation();
     const [isDeleting, setIsDeleting] = useState(false);
     const [isToggling, setIsToggling] = useState(false);
@@ -41,36 +42,34 @@ export function useExperimentActions(loadExperiments, filteredExperiments = []) 
     const handleDelete = useCallback(async (experimentId) => {
         setIsDeleting(true);
         try {
-            await ExperimentTemplate.delete(experimentId);
+            await deleteTemplate(experimentId);
             toast.success(t('admin.list.toasts.deleteSuccess'));
-            await loadExperiments();
         } catch (error) {
             console.error('Error deleting experiment:', error);
             toast.error(t('admin.list.toasts.deleteError'));
         } finally {
             setIsDeleting(false);
         }
-    }, [loadExperiments, t]);
+    }, [deleteTemplate, t]);
 
     const toggleActive = useCallback(async (experiment) => {
         setIsToggling(true);
         try {
-            await ExperimentTemplate.update(experiment.id, {
+            await updateTemplate(experiment.id, {
                 is_active: !experiment.is_active
             });
             toast.success(experiment.is_active ? t('admin.list.toasts.deactivatedSuccess') : t('admin.list.toasts.activatedSuccess'));
-            await loadExperiments();
         } catch (error) {
             console.error('Error toggling experiment:', error);
             toast.error(t('admin.list.toasts.toggleError'));
         } finally {
             setIsToggling(false);
         }
-    }, [loadExperiments, t]);
+    }, [updateTemplate, t]);
 
     const handleDuplicate = useCallback(async (experiment) => {
         try {
-            const { id, created_date, updated_date, created_by, ...expData } = experiment;
+            const { id: _id, created_date: _createdDate, updated_date: _updatedDate, created_by: _createdBy, ...expData } = experiment;
             const newExp = {
                 ...expData,
                 slug: `${expData.slug}-copy-${Date.now()}`,
@@ -86,14 +85,13 @@ export function useExperimentActions(loadExperiments, filteredExperiments = []) 
                     }
                 }
             };
-            await ExperimentTemplate.create(newExp);
+            await createTemplate(newExp);
             toast.success(t('admin.list.toasts.duplicateSuccess'));
-            await loadExperiments();
         } catch (error) {
             console.error('Error duplicating experiment:', error);
             toast.error(t('admin.list.toasts.duplicateError'));
         }
-    }, [loadExperiments, t]);
+    }, [createTemplate, t]);
 
     const handleEdit = useCallback((experiment) => {
         navigate(createPageUrl('AdminExperimentForm') + `?id=${experiment.id}`, { state: { experiment } });

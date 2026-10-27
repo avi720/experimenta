@@ -11,6 +11,7 @@ export const queryClientInstance = new QueryClient({
 });
 // Shared query keys so every page reads the same cached settings/catalogue instead of refetching.
 export const appQueryKeys = {
-	settings: ['app-settings'],
-	experiments: ['experiment-templates'],
+	settings: ['app-settings'] as const,
+	experiments: ['experiment-templates'] as const,
+	runs: ['experiment-runs'] as const,
 };

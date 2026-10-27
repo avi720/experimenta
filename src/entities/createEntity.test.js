@@ -16,7 +16,7 @@ vi.mock("@/api/supabaseClient", async (importOriginal) => {
   };
 });
 
-import { createEntity } from "./createEntity.js";
+import { createEntity } from "./createEntity";
 import { resolveSupabaseConfig } from "@/api/supabaseClient";
 import {
   readStoredGuestLocale,
@@ -36,25 +36,21 @@ describe("Data layer & guest locale persistence (T46, T56)", () => {
       const deleteMock = vi.fn().mockReturnValue({ eq: eqMock });
       supabaseFromMock.mockReturnValue({ delete: deleteMock });
 
-      const onChange = vi.fn();
-      const entity = createEntity("experiment_runs", { onChange });
+      const entity = createEntity("experiment_runs");
 
       await expect(entity.delete("run-123")).rejects.toThrow(/not found or access was denied/i);
-      expect(onChange).not.toHaveBeenCalled();
     });
 
-    it("returns the deleted row and calls onChange when 1 row is deleted", async () => {
+    it("returns the deleted row when 1 row is deleted", async () => {
       const selectMock = vi.fn().mockResolvedValue({ data: [{ id: "run-123" }], error: null });
       const eqMock = vi.fn().mockReturnValue({ select: selectMock });
       const deleteMock = vi.fn().mockReturnValue({ eq: eqMock });
       supabaseFromMock.mockReturnValue({ delete: deleteMock });
 
-      const onChange = vi.fn();
-      const entity = createEntity("experiment_runs", { onChange });
+      const entity = createEntity("experiment_runs");
 
       const result = await entity.delete("run-123");
       expect(result).toEqual({ id: "run-123" });
-      expect(onChange).toHaveBeenCalledTimes(1);
     });
   });
 

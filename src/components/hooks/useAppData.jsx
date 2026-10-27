@@ -1,26 +1,13 @@
 import { useCallback, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { AppSettings, ExperimentTemplate } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
-import { appQueryKeys } from "@/lib/query-client";
 import { useTranslation } from "@/i18n";
-
-const DEFAULT_SETTINGS = { virtual_lab_enabled: true, locale_default: 'he' };
+import { DEFAULT_SETTINGS, useAppSettingsQuery, useExperimentTemplatesQuery } from "@/hooks/useDataQueries";
 
 export function useAppData() {
     const { user, isLoadingAuth, logout, updateProfile, setGuestLocale } = useAuth();
 
-    const settingsQuery = useQuery({
-        queryKey: appQueryKeys.settings,
-        queryFn: async () => (await AppSettings.list())[0] || DEFAULT_SETTINGS,
-        staleTime: 5 * 60 * 1000,
-    });
-
-    const experimentsQuery = useQuery({
-        queryKey: appQueryKeys.experiments,
-        queryFn: () => ExperimentTemplate.list(),
-        staleTime: 60 * 1000,
-    });
+    const settingsQuery = useAppSettingsQuery();
+    const experimentsQuery = useExperimentTemplatesQuery();
 
     const settings = settingsQuery.isError ? DEFAULT_SETTINGS : settingsQuery.data ?? null;
     const experiments = useMemo(

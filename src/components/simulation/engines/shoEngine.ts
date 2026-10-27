@@ -6,7 +6,9 @@
 /**
  * חישוב צעד בודד בסימולציה
  */
-export function calculateStep(t, parameters) {
+import type { EngineParameters } from './types';
+
+export function calculateStep(t: number, parameters?: EngineParameters | null) {
     const { 
         m = 1, 
         k = 10, 
@@ -17,10 +19,10 @@ export function calculateStep(t, parameters) {
     } = parameters || {};
 
     // המרה למספרים
-    const m_num = parseFloat(m.toString()) || 1;
-    const k_num = parseFloat(k.toString()) || 10;
-    const x0_num = parseFloat(x0.toString()) || 1;
-    const v0_num = parseFloat(v0.toString()) || 0;
+    const m_num = parseFloat(String(m)) || 1;
+    const k_num = parseFloat(String(k)) || 10;
+    const x0_num = parseFloat(String(x0)) || 1;
+    const v0_num = parseFloat(String(v0)) || 0;
     
     // תמיכה בשני שמות לפרמטר הדעיכה: c או damping
     const damping_num = parseFloat((c || damping)?.toString() || '0') || 0;

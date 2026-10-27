@@ -59,12 +59,7 @@ export default function Layout({ children, currentPageName }) {
 
   // The standard site chrome: header, main content, footer.
   const withSiteChrome = (content) => (
-    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50 ${dir}`} dir={dir}>
-      <style>{`
-        .rtl { direction: rtl; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
-        .ltr { direction: ltr; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-      `}</style>
-      
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50" dir={dir}>
       <AppHeader
         isRTL={isRTL}
         user={user}

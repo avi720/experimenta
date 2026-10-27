@@ -1,28 +1,14 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { ExperimentTemplate } from "@/entities/all";
+import { useMemo } from "react";
 import { pickLocalized } from "@/i18n";
+import { useExperimentTemplatesQuery } from "@/hooks/useDataQueries";
 
 export function useLabData(searchTerm = "", selectedCategory = "all", isRTL) {
-    const [experiments, setExperiments] = useState([]);
-    const [isExperimentsLoading, setIsExperimentsLoading] = useState(true);
-
-    const loadData = useCallback(async () => {
-        setIsExperimentsLoading(true);
-        try {
-            const experimentsList = await ExperimentTemplate.list();
-            
-            setExperiments(experimentsList.filter(exp => exp.is_active !== false));
-        } catch (error) {
-            console.error("Error loading lab data:", error);
-            setExperiments([]);
-        } finally {
-            setIsExperimentsLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        loadData();
-    }, [loadData]);
+    const experimentsQuery = useExperimentTemplatesQuery();
+    const experiments = useMemo(
+        () => (experimentsQuery.data ?? []).filter(exp => exp.is_active !== false),
+        [experimentsQuery.data]
+    );
+    const isExperimentsLoading = experimentsQuery.isPending;
 
     // Group experiments by category
     const experimentsByCategory = useMemo(() => {

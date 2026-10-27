@@ -1,6 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClientOptions } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 
-export function resolveSupabaseConfig(env = import.meta.env) {
+type RealtimeTransport = NonNullable<SupabaseClientOptions<'public'>['realtime']>['transport'];
+
+export function resolveSupabaseConfig(env: Partial<ImportMetaEnv> = import.meta.env) {
   const supabaseUrl = env?.VITE_SUPABASE_URL;
   const supabaseAnonKey = env?.VITE_SUPABASE_ANON_KEY;
 
@@ -17,19 +20,19 @@ const { supabaseUrl, supabaseAnonKey } = resolveSupabaseConfig();
 
 // In environments where native WebSocket is not available (e.g. headless unit tests or Node < 22),
 // provide a dummy transport so client instantiation doesn't throw.
+class DummyWebSocket {
+  addEventListener() {}
+  removeEventListener() {}
+  send() {}
+  close() {}
+}
+
 const realtimeOptions =
   typeof globalThis.WebSocket === 'undefined'
-    ? {
-        transport: class DummyWebSocket {
-          addEventListener() {}
-          removeEventListener() {}
-          send() {}
-          close() {}
-        },
-      }
+    ? { transport: DummyWebSocket as unknown as RealtimeTransport }
     : undefined;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,

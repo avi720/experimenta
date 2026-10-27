@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ExperimentTemplate } from '@/entities/all';
+import { useExperimentTemplateQuery } from '@/hooks/useDataQueries';
 
 // Helper function to create an empty experiment object with valid defaults (T32)
 export const createEmptyExperiment = () => ({
@@ -24,56 +24,25 @@ export const createEmptyExperiment = () => ({
 export function useExperimentDataLoading() {
     const [searchParams] = useSearchParams();
     const experimentId = searchParams.get('id');
+    const isEditMode = Boolean(experimentId);
 
+    const templateQuery = useExperimentTemplateQuery(experimentId);
+    const loaded = templateQuery.data?.id ? templateQuery.data : null;
+
+    // The form edits a local copy; it is (re)seeded whenever the target id or loaded row changes.
+    const seedKey = isEditMode ? (loaded ? `edit:${loaded.id}` : null) : 'create';
+    const [seededFor, setSeededFor] = useState(null);
     const [experiment, setExperiment] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isEditMode, setIsEditMode] = useState(Boolean(experimentId));
-    const [notFound, setNotFound] = useState(false);
+    if (seedKey && seedKey !== seededFor) {
+        setSeededFor(seedKey);
+        setExperiment(isEditMode ? loaded : createEmptyExperiment());
+    }
 
-    useEffect(() => {
-        let cancelled = false;
-
-        const loadExperiment = async () => {
-            setIsLoading(true);
-            setNotFound(false);
-
-            if (experimentId) {
-                setIsEditMode(true);
-                try {
-                    const foundExperiment = await ExperimentTemplate.get(experimentId);
-                    if (cancelled) return;
-
-                    if (foundExperiment && foundExperiment.id) {
-                        setExperiment(foundExperiment);
-                    } else {
-                        setExperiment(null);
-                        setNotFound(true);
-                    }
-                } catch (error) {
-                    if (cancelled) return;
-                    console.error('useExperimentDataLoading - Experiment not found or failed to load:', error);
-                    setExperiment(null);
-                    setNotFound(true);
-                }
-            } else {
-                setIsEditMode(false);
-                setExperiment(createEmptyExperiment());
-            }
-
-            if (!cancelled) {
-                setIsLoading(false);
-            }
-        };
-
-        loadExperiment();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [experimentId]);
+    const notFound = isEditMode && (templateQuery.isError || (templateQuery.isSuccess && !loaded));
+    const isLoading = isEditMode ? templateQuery.isPending : seededFor !== 'create';
 
     return {
-        experiment,
+        experiment: notFound ? null : experiment,
         setExperiment,
         isLoading,
         isEditMode,

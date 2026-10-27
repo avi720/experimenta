@@ -14,7 +14,7 @@ import { useTranslation } from '@/i18n';
 
 export default function AdminExperimentCard({ experiment, index, handleDelete, handleDuplicate, toggleActive }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const { t, pick, dir, locale } = useTranslation();
+  const { t, pick, dir } = useTranslation();
 
   const localizedTexts = pick(experiment.i18n_texts, null);
   const title = localizedTexts?.title || experiment.slug;

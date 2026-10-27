@@ -3,7 +3,7 @@ import {
     DETECTOR_X_POSITION,
     calculateQuantumTunnelingStep,
     calculateTransmissionReflection,
-} from './quantumTunnelingEngine.jsx';
+} from './quantumTunnelingEngine';
 
 // Constants defined independently of the engine (CODATA 2018).
 const HBAR = 1.054571817e-34; // J·s

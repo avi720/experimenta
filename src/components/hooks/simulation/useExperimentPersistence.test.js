@@ -24,8 +24,9 @@ vi.mock("react", () => ({
 vi.mock("sonner", () => ({
     toast: toastMocks,
 }));
-vi.mock("@/entities/ExperimentRun", () => ({
-    ExperimentRun: { create: vi.fn() },
+const createRunMock = vi.hoisted(() => vi.fn());
+vi.mock("@/hooks/useDataQueries", () => ({
+    useExperimentRunMutations: () => ({ createRun: createRunMock }),
 }));
 vi.mock("@/lib/AuthContext", () => ({
     useAuth: () => authMock,
@@ -37,8 +38,7 @@ import {
     parseStoredSimulationSamples,
     useExperimentPersistence,
 } from "./useExperimentPersistence.jsx";
-import { ExperimentRun } from "@/entities/ExperimentRun";
-import { calculateFreeFallStep } from "@/components/simulation/engines/freeFallEngine.jsx";
+import { calculateFreeFallStep } from "@/components/simulation/engines/freeFallEngine";
 
 describe("useExperimentPersistence sample serialization (T16, T52)", () => {
     it("flattens nested position.y, strips internal keys, and preserves exact final impact point", () => {
@@ -95,10 +95,12 @@ describe("useExperimentPersistence sample serialization (T16, T52)", () => {
         });
 
         it("shows a success toast after saving a run", async () => {
-            ExperimentRun.create.mockResolvedValueOnce({ id: "run-1" });
+            createRunMock.mockResolvedValueOnce({ id: "run-1" });
             const { saveRun } = useExperimentPersistence({ slug: "free-fall" }, null, { h0: 10 }, [{ time: 0, position: 10 }]);
             await saveRun();
-            expect(ExperimentRun.create).toHaveBeenCalledTimes(1);
+            expect(createRunMock).toHaveBeenCalledTimes(1);
+            // parameters_json is a jsonb column (T59): the object is sent as-is, not stringified.
+            expect(createRunMock.mock.calls[0][0].parameters_json).toEqual({ h0: 10 });
             expect(toastMocks.success).toHaveBeenCalledWith("Run saved successfully!");
         });
     });
