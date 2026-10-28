@@ -4,6 +4,18 @@
 
 @layer base {
   :root {
+    /* Brand tokens as RGB triplets (docs/BRAND.md): an accretion disk seen from outside. */
+    --hole: 0 0 0;
+    --space: 11 9 18;
+    --space-raised: 19 16 29;
+    --line: 42 36 57;
+    --star: 241 236 247;
+    --dust: 163 155 181;
+    --plasma: 255 178 94;
+    --plasma-hi: 255 226 184;
+    --blueshift: 157 187 255;
+    --horizon: 180 140 255;
+
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -86,12 +98,90 @@
     @apply bg-background text-foreground;
   }
 }
-/* Fonts are loaded once from index.html; <html dir> is set by I18nProvider (T68). */
+/* Fonts are loaded once from index.html (IBM Plex Sans Hebrew covers both locales);
+   <html dir> is set by I18nProvider (T68). */
 @layer base {
-  html[dir="rtl"] body {
-    font-family: 'Heebo', 'Segoe UI', Tahoma, Arial, sans-serif;
+  body {
+    font-feature-settings: "kern";
+    -webkit-font-smoothing: antialiased;
   }
-  html[dir="ltr"] body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+@layer components {
+  /* Dark brand chrome: remaps the shadcn tokens so primitives inside (and portaled menus
+     that carry the class) render on space. */
+  .theme-space {
+    color-scheme: dark;
+    --background: 257 33% 5%;
+    --foreground: 276 41% 95%;
+    --card: 256 29% 9%;
+    --card-foreground: 276 41% 95%;
+    --popover: 256 29% 9%;
+    --popover-foreground: 276 41% 95%;
+    --primary: 31 100% 68%;
+    --primary-foreground: 28 75% 6%;
+    --secondary: 256 29% 9%;
+    --secondary-foreground: 276 41% 95%;
+    --muted: 258 23% 18%;
+    --muted-foreground: 260 15% 66%;
+    --accent: 258 23% 18%;
+    --accent-foreground: 276 41% 95%;
+    --border: 258 23% 18%;
+    --input: 258 23% 18%;
+    --ring: 221 100% 81%;
   }
+}
+
+/* Home page scroll motion. useScrollMotion sets each progress variable (0..1) from scroll
+   position; without it, or under reduced motion, every variable falls back to its finished state. */
+@layer components {
+  .motion-hero-copy {
+    transform: translateY(calc(var(--hp, 0) * -90px));
+    opacity: calc(1 - var(--hp, 0) * 1.15);
+  }
+  .motion-hero-field { transform: translateY(calc(var(--hp, 0) * 30%)); }
+  [data-reveal] {
+    opacity: calc(0.12 + 0.88 * var(--p, 1));
+    transform: translateY(calc((1 - var(--p, 1)) * 32px));
+  }
+  .motion-step-node { opacity: calc(0.25 + 0.75 * var(--lit, 1)); }
+  .motion-cta-title {
+    opacity: clamp(0, calc(var(--cp, 1) * 2.2 - 0.3), 1);
+    transform: translateY(calc((1 - var(--cp, 1)) * 48px));
+  }
+  .motion-cta-body {
+    opacity: clamp(0, calc(var(--cp, 1) * 2.2 - 0.6), 1);
+    transform: translateY(calc((1 - var(--cp, 1)) * 36px));
+  }
+  .motion-cta-actions { opacity: clamp(0, calc(var(--cp, 1) * 2.2 - 0.9), 1); }
+
+  /* The CTA's event horizon: a black disk far larger than the screen, its photon ring glowing,
+     bluer on the approaching side. It rises over the second part of the approach and settles
+     exactly as the footer, which sits inside it, arrives. */
+  .event-horizon {
+    position: absolute;
+    left: 50%;
+    top: calc(100% - 260px);
+    width: max(1500px, 160vw);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: rgb(var(--hole));
+    pointer-events: none;
+    box-shadow:
+      0 0 0 1.5px rgb(var(--plasma-hi) / 0.95),
+      0 -2px 26px 4px rgb(var(--plasma) / 0.55),
+      0 -10px 120px 34px rgb(255 120 60 / 0.2),
+      -260px -30px 160px -40px rgb(var(--blueshift) / 0.22);
+    transform: translateX(-50%) translateY(calc((1 - clamp(0, calc((var(--cp, 1) - 0.3) / 0.7), 1)) * 460px));
+  }
+  @media (max-width: 767px) {
+    .event-horizon { top: calc(100% - 140px); }
+  }
+}
+
+/* Brand focus ring. The doubled class outranks the `focus-visible:outline-none` utility
+   that shadcn primitives carry, which Tailwind emits after this rule. */
+.focus-ring.focus-ring:focus-visible {
+  outline: 2px solid rgb(var(--blueshift));
+  outline-offset: 2px;
 }

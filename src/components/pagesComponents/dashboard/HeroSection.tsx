@@ -1,46 +1,81 @@
+import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Beaker } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useTranslation } from '@/i18n';
+import { getExperimentPageUrl } from '@/components/pagesComponents/lab/labConstants';
+import BlackHoleField from './BlackHoleField';
+import { primaryActionClass, secondaryActionClass } from './actionStyles';
 import type { AppSettings } from '@/types/models';
 import type { IsRTLProps } from '@/types/props';
 
-type HeroSectionProps = IsRTLProps & { settings: AppSettings | null };
+type HeroSectionProps = IsRTLProps & { settings: AppSettings | null; hasDoubleSlit: boolean };
 
-export default function HeroSection({ settings, isRTL }: HeroSectionProps) {
-    const { t } = useTranslation(isRTL);
+export default function HeroSection({ settings, isRTL, hasDoubleSlit }: HeroSectionProps) {
+    const { t, dir } = useTranslation(isRTL);
+    const [meters, setMeters] = useState({ inDisk: 0, crossed: 0 });
+    const onMeters = useCallback((inDisk: number, crossed: number) => setMeters({ inDisk, crossed }), []);
+    const format = new Intl.NumberFormat(isRTL ? 'he-IL' : 'en-US');
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-16"
+        <section
+            aria-labelledby="hero-title"
+            data-scroll="hero"
+            className="relative isolate overflow-hidden flex flex-col min-h-[calc(100svh-4rem)] touch-pan-y"
         >
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-green-600 rounded-2xl mx-auto mb-8 flex items-center justify-center shadow-2xl">
-                <Beaker className="w-12 h-12 text-white" />
+            <BlackHoleField dir={dir} label={t('dashboard.disk.canvasLabel')} onMeters={onMeters} className="-z-20 motion-hero-field" />
+            {/* Scrim on the headline side keeps the text legible over the disk. */}
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-space from-0% via-space/90 via-[38%] to-space/0 to-60%
+                    md:bg-gradient-to-r md:rtl:bg-gradient-to-l md:via-[40%] md:to-[62%]"
+            />
+
+            {/* The copy hugs the reading-start edge of the screen, leaving the rest to the hole. */}
+            <div className="flex-1 flex flex-col justify-start md:justify-center px-6 md:px-[clamp(24px,6vw,112px)] pt-10 pb-[300px] md:py-16 pointer-events-none">
+                <div className="motion-hero-copy max-w-[36rem]">
+                    <h1
+                        id="hero-title"
+                        className="text-[clamp(2.6rem,6vw,5.3rem)] font-light leading-[1.04] tracking-[-0.02em] text-star text-balance"
+                    >
+                        {t('dashboard.heroTitle')}
+                    </h1>
+                    <p className="mt-6 max-w-[32rem] text-[19px] leading-[1.7] text-dust">
+                        {t('dashboard.heroSubtitle')}
+                    </p>
+
+                    {settings?.virtual_lab_enabled ? (
+                        <div className="mt-10 flex flex-wrap gap-3 pointer-events-auto">
+                            <Link to={createPageUrl("Lab")} className={primaryActionClass}>
+                                {t('dashboard.openLab')}
+                            </Link>
+                            {hasDoubleSlit && (
+                                <Link to={getExperimentPageUrl('double-slit')} className={secondaryActionClass}>
+                                    {t('dashboard.tryDoubleSlit')}
+                                </Link>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="mt-10 max-w-[30rem] border-s-2 border-blueshift ps-4">
+                            <p className="text-[17px] text-star">{t('dashboard.labComingSoonTitle')}</p>
+                            <p className="mt-1 text-[15px] leading-relaxed text-dust">{t('dashboard.labComingSoonDescription')}</p>
+                        </div>
+                    )}
+                </div>
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold text-slate-900 mb-6">
-                {t('dashboard.heroTitle')}
-            </h1>
-            <p className="text-2xl text-slate-600 max-w-3xl mx-auto mb-8 leading-relaxed">
-                {t('dashboard.heroSubtitle')}
-            </p>
-            
-            {settings?.virtual_lab_enabled ? (
-                <Link to={createPageUrl("Lab")}>
-                    <Button size="lg" className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 px-8 py-4 text-lg gap-3">
-                        <Beaker className="w-6 h-6" />
-                        {t('dashboard.startExploring')}
-                    </Button>
-                </Link>
-            ) : (
-                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 px-6 py-2 text-lg">
-                    {t('dashboard.labComingSoon')}
-                </Badge>
-            )}
-        </motion.div>
+
+            {/* Readout of the live field above. */}
+            <div className="border-t border-line/70 bg-space/70 backdrop-blur-sm">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-end gap-8 text-[13px] text-dust" aria-hidden="true">
+                    <span className="flex items-baseline gap-2.5">
+                        {t('dashboard.disk.inDisk')}
+                        <b className="font-mono font-normal tabular-nums text-[20px] leading-none text-star">{format.format(meters.inDisk)}</b>
+                    </span>
+                    <span className="flex items-baseline gap-2.5">
+                        {t('dashboard.disk.crossed')}
+                        <b className="font-mono font-normal tabular-nums text-[20px] leading-none text-plasma">{format.format(meters.crossed)}</b>
+                    </span>
+                </div>
+            </div>
+        </section>
     );
 }

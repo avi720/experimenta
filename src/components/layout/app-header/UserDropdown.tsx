@@ -18,11 +18,11 @@ export default function UserDropdown({ user, isRTL, handleLogout, handleLanguage
     if (!user) {
         return (
             <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => handleLanguageChange(oppositeLocale)}>
+                <Button variant="ghost" size="sm" className="focus-ring text-dust hover:text-star hover:bg-transparent" onClick={() => handleLanguageChange(oppositeLocale)}>
                     <Globe className="w-4 h-4" />
                     {t('common.oppositeLanguageShort')}
                 </Button>
-                <Button asChild size="sm">
+                <Button asChild size="sm" className="focus-ring shadow-none text-[14px] h-9 px-4">
                     <Link to="/Login">
                         <LogIn className="w-4 h-4" />
                         {t('common.signIn')}
@@ -35,21 +35,21 @@ export default function UserDropdown({ user, isRTL, handleLogout, handleLanguage
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 px-3 py-2">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <span className="font-medium">{user.full_name || user.email}</span>
-                    <ChevronDown className="w-4 h-4" />
+                <Button variant="ghost" className="focus-ring flex items-center gap-2 px-2 text-dust hover:text-star hover:bg-transparent font-normal">
+                    <span className="w-8 h-8 border border-line rounded-full flex items-center justify-center">
+                        <User className="w-4 h-4 text-plasma" />
+                    </span>
+                    <span className="max-w-[12rem] truncate">{user.full_name || user.email}</span>
+                    <ChevronDown className="w-4 h-4 opacity-70" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align={menuAlignStart} className="w-56">
+            <DropdownMenuContent align={menuAlignStart} className="theme-space w-56 border-line">
                 <DropdownMenuItem onClick={() => handleLanguageChange(oppositeLocale)} className="gap-2">
                     <Globe className="w-4 h-4" />
                     {t('common.switchToOppositeLanguage')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600 gap-2">
+                <DropdownMenuItem onClick={handleLogout} className="gap-2">
                     <LogOut className="w-4 h-4" />
                     {t('common.logout')}
                 </DropdownMenuItem>

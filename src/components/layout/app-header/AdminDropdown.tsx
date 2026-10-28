@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Settings, ChevronDown, Wrench } from 'lucide-react';
+import { ChevronDown, Wrench } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
+import { headerItemClass } from './headerItemClass';
 import type { IsRTLProps } from '@/types/props';
 import type { HeaderLocationProps, HeaderUserProps } from '@/types/layout';
 
@@ -22,13 +23,12 @@ export default function AdminDropdown({ user, location, isRTL }: HeaderUserProps
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className={`flex items-center gap-2 px-4 py-2 font-medium transition-all duration-200 ${(location.pathname.startsWith(createPageUrl("AdminExperiments"))) ? 'bg-purple-100 text-purple-700 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
-                    <Settings className="w-5 h-5" />
+                <Button variant="ghost" className={headerItemClass(location.pathname.startsWith(createPageUrl("AdminExperiments")))}>
                     <span>{t('common.admin')}</span>
-                    <ChevronDown className="w-4 h-4" />
+                    <ChevronDown className="w-4 h-4 opacity-70" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="theme-space border-line">
                 <DropdownMenuItem asChild>
                     <Link to={createPageUrl("AdminExperiments")} className="flex items-center gap-2 w-full">
                         <Wrench className="h-4 w-4" />

@@ -4,12 +4,31 @@ module.exports = {
   content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['"IBM Plex Sans Hebrew"', '"Segoe UI"', 'Arial', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)'
       },
       colors: {
+        // Brand tokens (docs/BRAND.md): an accretion disk seen from outside.
+        hole: 'rgb(var(--hole) / <alpha-value>)',
+        space: {
+          DEFAULT: 'rgb(var(--space) / <alpha-value>)',
+          raised: 'rgb(var(--space-raised) / <alpha-value>)',
+        },
+        line: 'rgb(var(--line) / <alpha-value>)',
+        star: 'rgb(var(--star) / <alpha-value>)',
+        dust: 'rgb(var(--dust) / <alpha-value>)',
+        plasma: {
+          DEFAULT: 'rgb(var(--plasma) / <alpha-value>)',
+          hi: 'rgb(var(--plasma-hi) / <alpha-value>)',
+        },
+        blueshift: 'rgb(var(--blueshift) / <alpha-value>)',
+        horizon: 'rgb(var(--horizon) / <alpha-value>)',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

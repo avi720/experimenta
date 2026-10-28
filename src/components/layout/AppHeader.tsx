@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Beaker, Menu, X, Home, BarChart3, Wrench, Globe, LogIn, LogOut } from 'lucide-react';
+import { Menu, X, Globe, LogIn, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import BlackHoleMark from '@/components/brand/BlackHoleMark';
 import { createPageUrl } from '@/utils';
 import { useTranslation } from '@/i18n';
 import DesktopNavigation from './app-header/DesktopNavigation';
@@ -16,15 +17,22 @@ export default function AppHeader({ isRTL, user, settings, experiments, location
         setMobileMenuOpen(false);
     }, [location?.pathname, location?.search]);
 
+    const mobileLinkClass = (isActive: boolean) =>
+        `focus-ring flex items-center px-3 py-3 rounded-md text-[17px] border-s-2 ${
+            isActive ? 'border-plasma text-star bg-space-raised' : 'border-transparent text-dust hover:text-star hover:bg-space-raised'
+        }`;
+
     return (
-        <header className="bg-white/80 backdrop-blur-lg border-b border-slate-200/60 sticky top-0 z-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between items-center py-3 sm:py-4 gap-2">
-                    <Link to={createPageUrl("Dashboard")} className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 via-blue-700 to-green-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                            <Beaker className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                        </div>
-                        <span className="text-lg sm:text-xl font-bold text-slate-900 truncate">
+        <header className="theme-space sticky top-0 z-50 bg-space/[0.85] backdrop-blur-md border-b border-line/70 text-star">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6">
+                <div className="flex justify-between items-center h-16 gap-2">
+                    <Link
+                        to={createPageUrl("Dashboard")}
+                        className="focus-ring flex items-center gap-2.5 min-w-0 rounded-md"
+                        aria-label="Experimenta"
+                    >
+                        <BlackHoleMark className="h-8 w-8 flex-shrink-0" />
+                        <span className="text-[19px] font-medium tracking-tight text-star" lang="en" dir="ltr">
                             Experimenta
                         </span>
                     </Link>
@@ -46,6 +54,7 @@ export default function AppHeader({ isRTL, user, settings, experiments, location
                             type="button"
                             variant="ghost"
                             size="icon"
+                            className="focus-ring text-star"
                             aria-label={mobileMenuOpen ? t('header.closeMenu') : t('header.openMenu')}
                             aria-expanded={mobileMenuOpen}
                             onClick={() => setMobileMenuOpen((prev) => !prev)}
@@ -59,65 +68,45 @@ export default function AppHeader({ isRTL, user, settings, experiments, location
                 {mobileMenuOpen && (
                     <nav
                         aria-label={t('header.mainNavigation')}
-                        className="md:hidden border-t border-slate-200 py-3 space-y-1"
+                        className="md:hidden border-t border-line py-3 space-y-1"
                     >
                         <Link
                             to={createPageUrl("Dashboard")}
-                            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-medium ${
-                                location.pathname === createPageUrl("Dashboard")
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'text-slate-700 hover:bg-slate-100'
-                            }`}
+                            className={mobileLinkClass(location.pathname === createPageUrl("Dashboard"))}
                         >
-                            <Home className="w-4 h-4" />
-                            <span>{t('common.home')}</span>
+                            {t('common.home')}
                         </Link>
 
                         <Link
                             to={createPageUrl("Lab")}
-                            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-medium ${
-                                location.pathname === createPageUrl("Lab")
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'text-slate-700 hover:bg-slate-100'
-                            }`}
+                            className={mobileLinkClass(location.pathname === createPageUrl("Lab"))}
                         >
-                            <Beaker className="w-4 h-4" />
-                            <span>{t('common.allExperiments')}</span>
+                            {t('common.allExperiments')}
                         </Link>
 
                         <Link
                             to={createPageUrl("Results")}
-                            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-medium ${
-                                location.pathname === createPageUrl("Results")
-                                    ? 'bg-green-100 text-green-700'
-                                    : 'text-slate-700 hover:bg-slate-100'
-                            }`}
+                            className={mobileLinkClass(location.pathname === createPageUrl("Results"))}
                         >
-                            <BarChart3 className="w-4 h-4" />
-                            <span>{t('common.myExperimentAnalysis')}</span>
+                            {t('common.myExperimentAnalysis')}
                         </Link>
 
                         {user?.role === 'admin' && (
                             <Link
                                 to={createPageUrl("AdminExperiments")}
-                                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-medium ${
-                                    location.pathname.startsWith(createPageUrl("AdminExperiments"))
-                                        ? 'bg-purple-100 text-purple-700'
-                                        : 'text-slate-700 hover:bg-slate-100'
-                                }`}
+                                className={mobileLinkClass(location.pathname.startsWith(createPageUrl("AdminExperiments")))}
                             >
-                                <Wrench className="w-4 h-4" />
-                                <span>{t('common.manageExperiments')}</span>
+                                {t('common.manageExperiments')}
                             </Link>
                         )}
 
-                        <div className="border-t border-slate-200 pt-2 mt-2 flex items-center justify-between gap-2 px-1">
+                        <div className="border-t border-line pt-3 mt-2 flex items-center justify-between gap-2 px-1">
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleLanguageChange(oppositeLocale)}
-                                className="gap-1.5"
+                                className="focus-ring gap-1.5 text-dust hover:text-star"
                             >
                                 <Globe className="w-4 h-4" />
                                 <span>{t('common.oppositeLanguageName')}</span>
@@ -129,13 +118,13 @@ export default function AppHeader({ isRTL, user, settings, experiments, location
                                     variant="ghost"
                                     size="sm"
                                     onClick={handleLogout}
-                                    className="text-red-600 gap-1.5"
+                                    className="focus-ring gap-1.5 text-dust hover:text-star"
                                 >
                                     <LogOut className="w-4 h-4" />
                                     <span>{t('common.logout')}</span>
                                 </Button>
                             ) : (
-                                <Button asChild size="sm" className="gap-1.5">
+                                <Button asChild size="sm" className="focus-ring gap-1.5 shadow-none">
                                     <Link to="/Login">
                                         <LogIn className="w-4 h-4" />
                                         <span>{t('common.signIn')}</span>

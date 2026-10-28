@@ -60,7 +60,12 @@ export default function Layout({ children, currentPageName }: { children: ReactN
 
   // The standard site chrome: header, main content, footer.
   const withSiteChrome = (content: ReactNode) => (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50" dir={dir}>
+    <div
+      className={`min-h-screen flex flex-col ${
+        currentPageName === 'Dashboard' ? 'bg-space' : 'bg-gradient-to-br from-slate-50 via-blue-50 to-green-50'
+      }`}
+      dir={dir}
+    >
       <AppHeader
         isRTL={isRTL}
         user={user}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Beaker, ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -16,6 +16,7 @@ import {
     getExperimentPageUrl,
     groupExperimentsByCategory,
 } from '@/components/pagesComponents/lab/labConstants';
+import { headerItemClass } from './headerItemClass';
 import { useTranslation } from '@/i18n';
 import type { IsRTLProps } from '@/types/props';
 import type { HeaderExperimentsProps } from '@/types/layout';
@@ -23,6 +24,7 @@ import type { LocalizedTexts } from '@/types/experiment';
 
 export default function ExperimentsDropdown({ experiments, isRTL }: HeaderExperimentsProps & IsRTLProps) {
     const navigate = useNavigate();
+    const location = useLocation();
     const { t, pick, dir, menuAlignStart } = useTranslation(isRTL);
     const experimentsByCategory = groupExperimentsByCategory(experiments);
     const categories = Object.entries(experimentsByCategory);
@@ -42,15 +44,14 @@ export default function ExperimentsDropdown({ experiments, isRTL }: HeaderExperi
     return (
         <DropdownMenu onOpenChange={(open) => { if (!open) setExpandedCategory(null); }}>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 px-3 sm:px-4 py-2 font-medium">
-                    <Beaker className="w-5 h-5" />
+                <Button variant="ghost" className={headerItemClass(location.pathname === createPageUrl("Lab"))}>
                     <span>{t('common.experiments')}</span>
-                    <ChevronDown className="w-4 h-4" />
+                    <ChevronDown className="w-4 h-4 opacity-70" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
                 align={menuAlignStart}
-                className="w-72 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto"
+                className="theme-space w-72 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto border-line rounded-md"
                 dir={dir}
             >
                 <DropdownMenuItem asChild>
@@ -61,7 +62,7 @@ export default function ExperimentsDropdown({ experiments, isRTL }: HeaderExperi
                 {categories.length > 0 && (
                     <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuLabel className="text-xs text-slate-500 uppercase tracking-wider">
+                        <DropdownMenuLabel className="text-xs font-normal text-dust">
                             {t('common.categories')}
                         </DropdownMenuLabel>
                         {categories.map(([category, categoryExperiments]) => {
@@ -85,10 +86,10 @@ export default function ExperimentsDropdown({ experiments, isRTL }: HeaderExperi
                                                 toggleCategory(category);
                                             }
                                         }}
-                                        className="flex items-center justify-between w-full cursor-pointer font-medium"
+                                        className="flex items-center justify-between w-full cursor-pointer"
                                     >
                                         <span>{categoryLabel}</span>
-                                        <span className="flex items-center gap-1 text-xs text-slate-400">
+                                        <span className="flex items-center gap-1 text-xs text-dust">
                                             <span>({categoryExperiments.length})</span>
                                             <ChevronRight
                                                 className={`w-4 h-4 transition-transform rtl:rotate-180 ${
@@ -102,11 +103,11 @@ export default function ExperimentsDropdown({ experiments, isRTL }: HeaderExperi
                                         <div
                                             role="group"
                                             aria-label={categoryLabel}
-                                            className="ps-3 pe-1 py-1 space-y-0.5 bg-slate-50 rounded-md border border-slate-100"
+                                            className="ms-2 ps-2 pe-1 py-1 space-y-0.5 border-s border-line"
                                         >
                                             <DropdownMenuItem
                                                 onSelect={() => navigate(createPageUrl(`Lab?category=${encodeURIComponent(category)}`))}
-                                                className="text-xs text-blue-600 font-medium cursor-pointer"
+                                                className="text-xs text-blueshift cursor-pointer"
                                             >
                                                 {t('header.allInCategory', { category: categoryLabel })}
                                             </DropdownMenuItem>
@@ -118,9 +119,8 @@ export default function ExperimentsDropdown({ experiments, isRTL }: HeaderExperi
                                                     <Link
                                                         to={getExperimentPageUrl(experiment.slug)}
                                                         state={{ experiment }}
-                                                        className="flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-100 rounded cursor-pointer w-full"
+                                                        className="flex items-center gap-2 px-2 py-1.5 text-sm text-star/90 rounded cursor-pointer w-full"
                                                     >
-                                                        <Beaker className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
                                                         <span className="flex-1 truncate">
                                                             {pick<LocalizedTexts>(experiment.i18n_texts)?.title || experiment.slug}
                                                         </span>
