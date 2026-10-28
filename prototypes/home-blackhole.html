@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Experimenta prototype</title>
+<meta name="theme-color" content="#0B0912" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* Brand tokens: an accretion disk seen from outside.
+     The hole is the only true black; space is a shade lighter so the shadow reads.
+     plasma = hot disk gas (primary action), blueshift = the approaching side (links, data, focus),
+     horizon = thought experiments, the things beyond what a bench can hold. */
+  :root {
+    --hole: #000000;
+    --space: #0B0912;
+    --space-2: #13101D;
+    --line: #2A2439;
+    --star: #F1ECF7;
+    --dust: #A39BB5;
+    --plasma: #FFB25E;
+    --plasma-hi: #FFE2B8;
+    --blueshift: #9DBBFF;
+    --horizon: #B48CFF;
+    --wrap: 1180px;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--space); color: var(--star); font-family: "IBM Plex Sans Hebrew", "Segoe UI", Arial, sans-serif; font-size: 17px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+  body { margin: 0; }
+  a { color: inherit; text-decoration: none; }
+  :focus-visible { outline: 2px solid var(--blueshift); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 24px; }
+  .mono { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  h1, h2, h3 { margin: 0; font-weight: 300; text-wrap: balance; }
+  p { margin: 0; }
+
+  /* Header */
+  .site-header { position: sticky; top: 0; z-index: 20; background: rgb(11 9 18 / .82); backdrop-filter: blur(12px); border-bottom: 1px solid rgb(42 36 57 / .7); }
+  .site-header .wrap { height: 64px; display: flex; align-items: center; gap: 36px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 500; letter-spacing: -.01em; }
+  .brand svg { width: 34px; height: 34px; }
+  .nav { display: flex; gap: 28px; font-size: 15px; color: var(--dust); }
+  .nav a:hover, .nav a[aria-current] { color: var(--star); }
+  .nav a[aria-current] { box-shadow: inset 0 -2px 0 var(--plasma); padding-bottom: 4px; }
+  .header-end { margin-inline-start: auto; display: flex; align-items: center; gap: 18px; font-size: 15px; color: var(--dust); }
+  .header-end a:hover { color: var(--star); }
+  .btn-sm { border: 1px solid var(--line); border-radius: 6px; padding: 6px 14px; color: var(--star); }
+  .btn-sm:hover { border-color: var(--blueshift); }
+
+  /* Hero */
+  .hero { position: relative; isolation: isolate; overflow: hidden; min-height: calc(100svh - 64px); display: flex; flex-direction: column; touch-action: pan-y; }
+  .hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -2; }
+  .hero .scrim { position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: linear-gradient(to left, var(--space) 0%, rgb(11 9 18 / .9) 40%, rgb(11 9 18 / 0) 62%); }
+  .hero-body { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-top: 56px; padding-bottom: 64px; pointer-events: none; }
+  .hero-copy { max-width: 36rem; }
+  .hero-copy a { pointer-events: auto; }
+  .hero h1 { font-size: clamp(2.6rem, 6vw, 5.3rem); line-height: 1.04; letter-spacing: -.02em; }
+  .hero-sub { margin-top: 26px; max-width: 32rem; font-size: 19px; line-height: 1.7; color: var(--dust); }
+  .actions { margin-top: 40px; display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn { display: inline-flex; align-items: center; height: 48px; padding: 0 24px; border-radius: 6px; font-size: 16px; font-weight: 500; transition: background-color .15s, border-color .15s; }
+  .btn-primary { background: var(--plasma); color: #1C0F04; }
+  .btn-primary:hover { background: var(--plasma-hi); }
+  .btn-secondary { border: 1px solid var(--line); color: var(--star); background: rgb(11 9 18 / .5); }
+  .btn-secondary:hover { border-color: var(--blueshift); }
+  .readout { border-top: 1px solid rgb(42 36 57 / .7); background: rgb(11 9 18 / .72); backdrop-filter: blur(6px); }
+  .readout .wrap { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-top: 16px; padding-bottom: 16px; font-size: 13px; color: var(--dust); }
+  .meters { display: flex; gap: 32px; }
+  .meter { display: flex; align-items: baseline; gap: 10px; }
+  .meter b { font-weight: 400; font-size: 20px; line-height: 1; color: var(--star); }
+  .meter b.hot { color: var(--plasma); }
+
+  /* Sections */
+  section.block { border-top: 1px solid rgb(42 36 57 / .7); }
+  section.block > .wrap { padding-top: 112px; padding-bottom: 112px; }
+  .h2 { font-size: clamp(2rem, 4vw, 3.3rem); line-height: 1.1; letter-spacing: -.01em; max-width: 22ch; }
+
+  .features { margin-top: 64px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 64px; }
+  .feature { display: grid; grid-template-columns: 56px 1fr; gap: 24px; padding: 36px 0; border-top: 1px solid var(--line); }
+  .feature svg { width: 56px; height: 56px; }
+  .feature h3 { font-size: 22px; font-weight: 400; line-height: 1.35; }
+  .feature p { margin-top: 10px; color: var(--dust); max-width: 30rem; }
+
+  /* Steps: three bodies on one infall path; the path ends in a small horizon. */
+  .steps { position: relative; margin: 72px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+  .steps::before { content: ""; position: absolute; top: 9px; inset-inline: 0; height: 1px;
+    background: linear-gradient(to left, rgb(157 187 255 / .15), rgb(255 178 94 / .9)); }
+  .step { position: relative; }
+  .node { position: relative; display: block; width: 19px; height: 19px; border-radius: 50%; background: var(--space); border: 1.5px solid var(--blueshift); }
+  .step:nth-child(2) .node { border-color: var(--plasma); }
+  .step:last-child .node { background: var(--hole); border-color: var(--plasma-hi); box-shadow: 0 0 14px 2px rgb(255 178 94 / .55); }
+  .step h3 { margin-top: 32px; display: flex; align-items: baseline; gap: 14px; font-size: 22px; font-weight: 400; }
+  .step h3 .num { font-size: 44px; font-weight: 300; line-height: 1; color: var(--plasma); }
+  .step p { margin-top: 14px; color: var(--dust); max-width: 21rem; }
+
+  .faq { margin-top: 56px; max-width: 52rem; border-bottom: 1px solid var(--line); }
+  .faq details { border-top: 1px solid var(--line); }
+  .faq summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px 0; font-size: 19px; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; font-size: 26px; font-weight: 300; color: var(--blueshift); transition: transform .2s; }
+  .faq details[open] summary::after { transform: rotate(45deg); }
+  .faq details p { padding: 0 0 26px; color: var(--dust); max-width: 44rem; }
+  .faq details.thought summary { padding-inline-start: 18px; box-shadow: inset -2px 0 0 var(--horizon); }
+  .faq .tag { font-size: 13px; color: var(--horizon); border: 1px solid rgb(180 140 255 / .45); border-radius: 999px; padding: 1px 10px; margin-inline-start: 12px; white-space: nowrap; }
+
+  /* Final CTA: the page falls toward a horizon; the footer sits inside it. */
+  .cta { position: relative; overflow: hidden; text-align: center; padding: 136px 24px 360px; border-top: 1px solid rgb(42 36 57 / .7); }
+  .cta h2 { font-size: clamp(2rem, 4.4vw, 3.6rem); line-height: 1.12; max-width: 20ch; margin: 0 auto; }
+  .cta p { margin: 22px auto 0; max-width: 34rem; color: var(--dust); font-size: 19px; }
+  .cta .actions { justify-content: center; }
+  .horizon { position: absolute; left: 50%; top: calc(100% - 260px); width: max(1500px, 160vw); aspect-ratio: 1; transform: translateX(-50%); border-radius: 50%; background: var(--hole); pointer-events: none;
+    box-shadow: 0 0 0 1.5px rgb(255 226 184 / .95), 0 -2px 26px 4px rgb(255 178 94 / .55), 0 -10px 120px 34px rgb(255 120 60 / .2), -260px -30px 160px -40px rgb(157 187 255 / .22); }
+
+  footer { background: var(--hole); color: var(--dust); font-size: 15px; }
+  footer .wrap { padding-top: 8px; padding-bottom: 40px; }
+  .foot-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; padding-bottom: 48px; }
+  .foot-grid h2 { font-size: 15px; font-weight: 500; color: var(--star); margin-bottom: 14px; }
+  .foot-grid ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .foot-grid a:hover { color: var(--star); }
+  .foot-tag { margin-top: 14px; max-width: 22rem; }
+  .foot-bottom { border-top: 1px solid #1C1827; padding-top: 22px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font-size: 13px; }
+
+  @media (max-width: 767px) {
+    .nav, .header-end .lang { display: none; }
+    .hero .scrim { background: linear-gradient(to bottom, var(--space) 0%, rgb(11 9 18 / .9) 38%, rgb(11 9 18 / 0) 60%); }
+    .hero-body { justify-content: flex-start; padding-top: 40px; padding-bottom: 300px; }
+    .readout .wrap { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .features { grid-template-columns: 1fr; }
+    .steps { grid-template-columns: 1fr; gap: 48px; padding-inline-start: 40px; }
+    .steps::before { top: 0; bottom: 0; inset-inline-start: 9px; inset-inline-end: auto; width: 1px; height: auto;
+      background: linear-gradient(to bottom, rgb(157 187 255 / .15), rgb(255 178 94 / .9)); }
+    .node { position: absolute; inset-inline-start: -40px; top: 6px; }
+    .step h3 { margin-top: 0; }
+    section.block > .wrap { padding-top: 80px; padding-bottom: 80px; }
+    .cta { padding-bottom: 240px; }
+    .horizon { top: calc(100% - 140px); }
+    .foot-grid { grid-template-columns: 1fr 1fr; }
+    .foot-grid > :first-child { grid-column: 1 / -1; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="#" class="brand" aria-label="Experimenta">
+      <!-- Mark: a shadow inside its photon ring, the disk crossing in front; the disk is bluer on the approaching side. -->
+      <svg viewBox="0 0 34 34" aria-hidden="true">
+        <defs>
+          <linearGradient id="doppler" x1="0" x2="1">
+            <stop offset="0" stop-color="#C9DAFF" />
+            <stop offset=".45" stop-color="#FFB25E" />
+            <stop offset="1" stop-color="#B9431C" />
+          </linearGradient>
+        </defs>
+        <g transform="rotate(-14 17 17)">
+          <path d="M3 17 A14 4.2 0 0 1 31 17" stroke="url(#doppler)" stroke-width="1.6" fill="none" opacity=".6" />
+          <circle cx="17" cy="17" r="7.2" fill="#000" stroke="#FFE2B8" stroke-width="1.3" />
+          <path d="M3 17 A14 4.2 0 0 0 31 17" stroke="url(#doppler)" stroke-width="2.4" fill="none" />
+        </g>
+      </svg>
+      <span lang="en" dir="ltr">Experimenta</span>
+    </a>
+    <nav class="nav" aria-label="ניווט ראשי">
+      <a href="#">כל הניסויים</a>
+      <a href="#">הניתוח שלי</a>
+    </nav>
+    <div class="header-end">
+      <a href="#" class="lang" lang="en">English</a>
+      <a href="#" class="btn-sm">התחברות</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="hero-title">
+    <canvas id="stars" aria-hidden="true"></canvas>
+    <canvas id="disk" role="img" aria-label="הדמיה חיה של חור שחור שבולע גז מדיסק הצבירה שסביבו"></canvas>
+    <div class="scrim" aria-hidden="true"></div>
+    <div class="hero-body wrap">
+      <div class="hero-copy">
+        <h1 id="hero-title">מעבדה לכל ניסוי שאפשר לחשוב עליו</h1>
+        <p class="hero-sub">סימולציות פיזיקה אינטראקטיביות, מנפילה חופשית ועד מנהור קוונטי. משנים פרמטר, מריצים, ורואים את התוצאה בגרף חי.</p>
+        <div class="actions">
+          <a href="#" class="btn btn-primary">פתחו את המעבדה</a>
+          <a href="#" class="btn btn-secondary">נסו את הסדק הכפול</a>
+        </div>
+      </div>
+    </div>
+    <div class="readout">
+      <div class="wrap">
+        <p id="hint">הזיזו את העכבר ליד החור השחור כדי לשחרר גז לתוך הדיסק.</p>
+        <div class="meters" aria-hidden="true">
+          <span class="meter">בדיסק <b class="mono" id="m-disk">0</b></span>
+          <span class="meter">חצו את האופק <b class="mono hot" id="m-gone">0</b></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="features-title">
+    <div class="wrap">
+      <h2 class="h2" id="features-title">מה מחכה במעבדה</h2>
+      <div class="features">
+        <article class="feature">
+          <svg viewBox="0 0 56 56" aria-hidden="true">
+            <circle cx="28" cy="28" r="18" fill="none" stroke="#2A2439" stroke-width="1.5" />
+            <path d="M28 10 A18 18 0 0 1 44.6 35" fill="none" stroke="#9DBBFF" stroke-width="2" />
+            <line x1="28" y1="28" x2="40.7" y2="15.3" stroke="#FFB25E" stroke-width="2" stroke-linecap="round" />
+            <circle cx="28" cy="28" r="3" fill="#FFB25E" />
+          </svg>
+          <div>
+            <h3>מכוונים ומריצים שוב, תוך שניות</h3>
+            <p>מסה, גובה, זווית, אורך גל: כל פרמטר פתוח לשינוי, עם הגדרות מוכנות כנקודת פתיחה. כך רואים איך כל משתנה מזיז את התוצאה.</p>
+          </div>
+        </article>
+        <article class="feature">
+          <svg viewBox="0 0 56 56" aria-hidden="true">
+            <path d="M6 48 H50 M6 48 V8" stroke="#2A2439" stroke-width="1.5" fill="none" />
+            <path id="damped" fill="none" stroke="#9DBBFF" stroke-width="2" />
+          </svg>
+          <div>
+            <h3>גרפים חיים ונתונים לייצוא</h3>
+            <p>כל ריצה משרטטת את הגדלים הפיזיקליים בזמן אמת. את הנתונים אפשר להוריד כקובץ CSV ולנתח בגיליון או בקוד.</p>
+          </div>
+        </article>
+        <article class="feature">
+          <svg viewBox="0 0 56 56" aria-hidden="true">
+            <path d="M6 48 H50 M6 48 V8" stroke="#2A2439" stroke-width="1.5" fill="none" />
+            <path d="M8 46 Q28 -14 48 46" fill="none" stroke="#9DBBFF" stroke-width="1.5" stroke-dasharray="3 3" />
+            <circle cx="14" cy="30" r="2.6" fill="#FFB25E" /><circle cx="21" cy="20" r="2.6" fill="#FFB25E" />
+            <circle cx="28" cy="16.5" r="2.6" fill="#FFB25E" /><circle cx="35" cy="20" r="2.6" fill="#FFB25E" />
+            <circle cx="42" cy="30" r="2.6" fill="#FFB25E" />
+          </svg>
+          <div>
+            <h3>פיזיקה שנבדקת מול הנוסחה</h3>
+            <p>כל מנוע סימולציה עובר בדיקות אוטומטיות מול הפתרון האנליטי. המספרים על המסך מחושבים, לא מצוירים.</p>
+          </div>
+        </article>
+        <article class="feature">
+          <svg viewBox="0 0 56 56" aria-hidden="true">
+            <rect x="25" y="8" width="7" height="40" fill="#13101D" stroke="#B48CFF" stroke-width="1.5" />
+            <path id="tunnel" fill="none" stroke="#9DBBFF" stroke-width="2" />
+          </svg>
+          <div>
+            <h3>ניסויים שאין בכיתה</h3>
+            <p>מנהור קוונטי, התאבכות של חלקיקים בודדים, ובהמשך גם ניסויים מחשבתיים: כל מה שאי אפשר לבנות על שולחן המעבדה.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="steps-title">
+    <div class="wrap">
+      <h2 class="h2" id="steps-title">משאלה לגרף בשלושה צעדים</h2>
+      <ol class="steps">
+        <li class="step">
+          <span class="node" aria-hidden="true"></span>
+          <h3><span class="num">1</span>בוחרים ניסוי</h3>
+          <p>הקטלוג ממוין לפי תחומי הפיזיקה. כל ניסוי נפתח ישר בדפדפן, בלי התקנה.</p>
+        </li>
+        <li class="step">
+          <span class="node" aria-hidden="true"></span>
+          <h3><span class="num">2</span>מכוונים ומריצים</h3>
+          <p>קובעים ערכים או בוחרים הגדרה מוכנה, ולוחצים על הרצה. הסצנה התלת־ממדית והגרפים מתקדמים יחד.</p>
+        </li>
+        <li class="step">
+          <span class="node" aria-hidden="true"></span>
+          <h3><span class="num">3</span>שומרים ומנתחים</h3>
+          <p>שומרים את הריצה בחשבון, חוזרים אליה בעמוד הניתוח, או מייצאים את הנתונים.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="faq-title">
+    <div class="wrap">
+      <h2 class="h2" id="faq-title">שאלות נפוצות</h2>
+      <div class="faq">
+        <details><summary>צריך חשבון כדי להתחיל?</summary>
+          <p>לא. אפשר לעיין בקטלוג ולהריץ את הניסויים הפתוחים בלי להירשם. חשבון נדרש כדי לשמור ריצות ולחזור אליהן, וחלק מהניסויים פתוחים למשתמשים רשומים בלבד.</p></details>
+        <details><summary>כמה מדויקות הסימולציות?</summary>
+          <p>כל ניסוי מבוסס על המשוואות של התופעה, ומנועי החישוב נבדקים אוטומטית מול פתרונות אנליטיים. כמו בכל מודל יש הנחות מפשטות, למשל נפילה חופשית בלי התנגדות אוויר.</p></details>
+        <details><summary>אילו ניסויים יש היום?</summary>
+          <p>מכניקה קלאסית (נפילה חופשית ומתנד הרמוני), אופטיקה וגלים (הסדק הכפול) ומכניקת הקוונטים (מנהור קוונטי). הקטלוג ממשיך לגדול.</p></details>
+        <details class="thought"><summary><span>מה עם ניסויים מחשבתיים?<span class="tag">ניסוי מחשבתי</span></span></summary>
+          <p>הם בדרך. ניסויים כמו המעלית של איינשטיין, השד של מקסוול או החתול של שרדינגר יקבלו הדמיה משלהם, כדי שאפשר יהיה לשחק בהנחות שלהם ולא רק לקרוא עליהן.</p></details>
+        <details><summary>על אילו מכשירים זה עובד?</summary>
+          <p>בכל דפדפן עדכני שתומך ב־WebGL, במחשב ובטאבלט. מסך גדול נוח יותר לעבודה עם הגרפים והסצנה התלת־ממדית.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta" aria-labelledby="cta-title">
+    <h2 id="cta-title">מה יקרה לזמן הנפילה אם תכפילו את הגובה?</h2>
+    <p>יש דרך אחת לדעת בוודאות: לפתוח את ניסוי הנפילה החופשית ולמדוד.</p>
+    <div class="actions">
+      <a href="#" class="btn btn-primary">מדדו בנפילה חופשית</a>
+      <a href="#" class="btn btn-secondary">לכל הניסויים</a>
+    </div>
+    <div class="horizon" aria-hidden="true"></div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a href="#" class="brand" style="color:var(--star)"><span lang="en" dir="ltr">Experimenta</span></a>
+        <p class="foot-tag">מעבדת פיזיקה וירטואלית לכל ניסוי, אמיתי או מחשבתי.</p>
+      </div>
+      <div><h2>אודותינו</h2><ul><li><a href="#">אודות Experimenta</a></li><li><a href="#">צור קשר</a></li></ul></div>
+      <div><h2>מה חדש</h2><ul><li><a href="#">עדכונים</a></li></ul></div>
+      <div><h2>מידע משפטי</h2><ul><li><a href="#">מדיניות פרטיות</a></li><li><a href="#">תנאי שירות</a></li></ul></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Experimenta. כל הזכויות שמורות.</span>
+      <span>החור השחור בראש העמוד מחושב בזמן אמת: כבידה, צמיגות הדיסק ואפקט דופלר.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Small feature figures, plotted rather than hand-drawn.
+(() => {
+  const plot = (f, x0, x1, n) => Array.from({ length: n + 1 }, (_, i) => {
+    const x = x0 + (x1 - x0) * i / n; return `${i ? 'L' : 'M'}${x.toFixed(1)} ${f(x).toFixed(1)}`;
+  }).join(' ');
+  document.getElementById('damped').setAttribute('d', plot((x) => 28 - 18 * Math.exp(-(x - 8) / 16) * Math.cos((x - 8) / 3.2), 8, 50, 60));
+  document.getElementById('tunnel').setAttribute('d', plot((x) => x < 25 ? 28 - 14 * Math.sin(x / 2.4) : x < 32 ? 28 - 14 * Math.sin(25 / 2.4) * Math.exp(-(x - 25) / 4) : 28 - 4.6 * Math.sin(x / 2.4 + 1.1), 4, 52, 96));
+})();
+
+// Hero: a black hole fed by the pointer.
+// Gas moves under Newtonian gravity in the disk plane; viscosity bleeds angular momentum so it
+// spirals in, and inside the innermost stable orbit (3 horizon radii) it plunges. Tidal shear
+// stretches every clump into a strand on its own. The disk plane is drawn inclined, so gas behind
+// the hole is hidden by its shadow and gas moving toward the viewer is brighter and bluer.
+(() => {
+  const hero = document.querySelector('.hero');
+  const starCanvas = document.getElementById('stars');
+  const canvas = document.getElementById('disk');
+  const sctx = starCanvas.getContext('2d');
+  const ctx = canvas.getContext('2d');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  const isRTL = document.documentElement.dir === 'rtl';
+
+  const COS_I = 0.36;                       // cos of the disk inclination (about 69° from face-on)
+  const SIN_I = Math.sqrt(1 - COS_I * COS_I);
+  const MAX = 3600;
+  const X = new Float32Array(MAX), Z = new Float32Array(MAX);
+  const VX = new Float32Array(MAX), VZ = new Float32Array(MAX), VISC = new Float32Array(MAX);
+  let n = 0, swallowed = 0, flare = 0, feedDebt = 0;
+  let W = 0, H = 0, dpr = 1, cx = 0, cy = 0, R = 0, GM = 0;
+
+  // Blackbody-ish ramp: cool outer gas is deep red, the inner disk white, blueshifted gas pale blue.
+  const RAMP = [[110, 18, 10], [214, 70, 28], [255, 150, 64], [255, 205, 140], [255, 240, 220], [196, 216, 255]];
+  const BUCKETS = 16;
+  const colors = Array.from({ length: BUCKETS }, (_, b) => {
+    const t = b / (BUCKETS - 1) * (RAMP.length - 1);
+    const i = Math.min(RAMP.length - 2, Math.floor(t)), f = t - i;
+    const c = RAMP[i].map((v, k) => Math.round(v + (RAMP[i + 1][k] - v) * f));
+    const a = 0.22 + 0.7 * (b / (BUCKETS - 1));
+    return { thin: `rgba(${c},${a.toFixed(2)})`, wide: `rgba(${c},${(a * 0.22).toFixed(3)})` };
+  });
+
+  function layout() {
+    const rect = hero.getBoundingClientRect();
+    W = rect.width; H = rect.height;
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    for (const c of [starCanvas, canvas]) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+    const wide = W >= 768;
+    cx = wide ? W * (isRTL ? 0.26 : 0.74) : W * 0.5;
+    cy = wide ? H * 0.46 : H * 0.72;
+    R = wide ? Math.min(W * 0.5, H) * 0.066 : Math.min(W, H) * 0.08;
+    // Orbital period of 4 s (240 frames) at six horizon radii; everything else follows Kepler.
+    const v6 = 2 * Math.PI * 6 * R / 240;
+    GM = v6 * v6 * 6 * R;
+    drawStars();
+  }
+
+  function drawStars() {
+    sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    sctx.clearRect(0, 0, W, H);
+    const haze = sctx.createRadialGradient(cx, cy, R, cx, cy, R * 16);
+    haze.addColorStop(0, 'rgba(255,140,70,0.10)');
+    haze.addColorStop(1, 'rgba(255,140,70,0)');
+    sctx.fillStyle = haze;
+    sctx.fillRect(0, 0, W, H);
+    let seed = 20261028;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const thetaE = R * 3.4; // Einstein radius: each star is drawn at its lensed image position
+    const count = Math.round(W * H / 2400);
+    for (let i = 0; i < count; i++) {
+      let x = rnd() * W, y = rnd() * H;
+      const a = 0.12 + rnd() * 0.6, size = rnd() < 0.07 ? 1.4 : 0.8;
+      const dx = x - cx, dy = y - cy, beta = Math.hypot(dx, dy);
+      if (beta > 0) {
+        const theta = (beta + Math.sqrt(beta * beta + 4 * thetaE * thetaE)) / 2;
+        x = cx + dx / beta * theta; y = cy + dy / beta * theta;
+      }
+      sctx.fillStyle = `rgba(228,224,255,${a.toFixed(2)})`;
+      sctx.fillRect(x, y, size, size);
+    }
+  }
+
+  function add(x, z, vx, vz, visc) {
+    const i = n < MAX ? n++ : (Math.random() * MAX) | 0;
+    X[i] = x; Z[i] = z; VX[i] = vx; VZ[i] = vz; VISC[i] = visc;
+  }
+
+  function remove(i) {
+    n--; X[i] = X[n]; Z[i] = Z[n]; VX[i] = VX[n]; VZ[i] = VZ[n]; VISC[i] = VISC[n];
+  }
+
+  // Steady supply on near-circular orbits keeps a disk visible with no input.
+  function feed(count) {
+    for (let k = 0; k < count; k++) {
+      const r = R * (4.5 + Math.random() * 7), a = Math.random() * Math.PI * 2;
+      const v = Math.sqrt(GM / r) * (0.94 + Math.random() * 0.06);
+      add(Math.cos(a) * r, Math.sin(a) * r, -Math.sin(a) * v, Math.cos(a) * v, 0.3 + Math.random() * 1.2);
+    }
+  }
+
+  // Gas released along the pointer's stroke: partly orbital, partly infalling, carrying a bit of the stroke's velocity.
+  function release(sx, sy, dx, dy, count) {
+    // One stroke shares an orbital spin, so it reads as a single stream that shears into strands.
+    const strokeSpin = 0.3 + Math.random() * 0.7;
+    for (let k = 0; k < count; k++) {
+      const t = k / count;
+      const x = sx - dx * t - cx + (Math.random() - 0.5) * 6;
+      const z = (sy - dy * t - cy + (Math.random() - 0.5) * 6) / COS_I;
+      const r = Math.max(R * 1.5, Math.hypot(x, z));
+      const vc = Math.sqrt(GM / r), spin = strokeSpin + (Math.random() - 0.5) * 0.12;
+      add(x, z,
+        (-z / r) * vc * spin - (x / r) * vc * 0.3 + dx * 0.06,
+        (x / r) * vc * spin - (z / r) * vc * 0.3 + (dy / COS_I) * 0.06,
+        0.4 + Math.random() * 1.8);
+    }
+  }
+
+  function step(dt) {
+    const SUB = 3, h = dt / SUB, isco = 3 * R, far = 48 * R;
+    for (let s = 0; s < SUB; s++) {
+      for (let i = n - 1; i >= 0; i--) {
+        const x = X[i], z = Z[i];
+        const r2 = x * x + z * z, r = Math.sqrt(r2);
+        if (r < R * 1.02) { remove(i); swallowed++; flare = Math.min(0.6, flare + 0.012); continue; }
+        if (r > far) { remove(i); continue; }
+        const g = GM / (r2 * r);
+        let vx = VX[i] - g * x * h, vz = VZ[i] - g * z * h;
+        const ux = x / r, uz = z / r;
+        let vr = vx * ux + vz * uz, vt = -vx * uz + vz * ux;
+        vr *= 1 - 0.012 * h;
+        vt *= 1 - VISC[i] * (r < isco ? 0.03 : 0.0015) * h;
+        vx = vr * ux - vt * uz; vz = vr * uz + vt * ux;
+        VX[i] = vx; VZ[i] = vz; X[i] = x + vx * h; Z[i] = z + vz * h;
+      }
+    }
+  }
+
+  function render() {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = 'rgba(0,0,0,0.14)';
+    ctx.fillRect(0, 0, W, H);
+
+    const back = Array.from({ length: BUCKETS }, () => new Path2D());
+    const front = Array.from({ length: BUCKETS }, () => new Path2D());
+    let inner = 0;
+    for (let i = 0; i < n; i++) {
+      const x = X[i], z = Z[i], r = Math.hypot(x, z);
+      if (r < 5 * R) inner++;
+      const vc = Math.sqrt(GM / r);
+      const approach = Math.max(-1, Math.min(1, VZ[i] * SIN_I / vc));
+      const temp = Math.min(1, Math.pow(2.6 * R / r, 0.85));
+      const b = Math.max(0, Math.min(BUCKETS - 1, Math.round((temp * 0.8 + approach * 0.2 + 0.05) * (BUCKETS - 1))));
+      const sx = cx + x, sy = cy + z * COS_I;
+      const stretch = 2.4 * (1 + 3 * (R / r) * (R / r));
+      const path = z < 0 ? back[b] : front[b];
+      path.moveTo(sx, sy);
+      path.lineTo(sx - VX[i] * stretch, sy - VZ[i] * COS_I * stretch);
+    }
+
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineCap = 'round';
+    const strokeAll = (paths) => {
+      for (let b = 0; b < BUCKETS; b++) {
+        ctx.strokeStyle = colors[b].wide; ctx.lineWidth = 4; ctx.stroke(paths[b]);
+        ctx.strokeStyle = colors[b].thin; ctx.lineWidth = 1.2; ctx.stroke(paths[b]);
+      }
+    };
+    strokeAll(back);
+
+    // The shadow hides gas behind it; the photon ring flares as matter crosses the horizon.
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+    ctx.globalCompositeOperation = 'lighter';
+    const glow = Math.min(1, 0.3 + inner / 500 + flare);
+    const halo = ctx.createRadialGradient(cx, cy, R, cx, cy, R * 1.9);
+    halo.addColorStop(0, `rgba(255,170,90,${(glow * 0.4).toFixed(3)})`);
+    halo.addColorStop(1, 'rgba(255,170,90,0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(cx, cy, R * 1.9, 0, Math.PI * 2); ctx.arc(cx, cy, R, 0, Math.PI * 2, true); ctx.fill();
+    ctx.strokeStyle = `rgba(255,226,184,${glow.toFixed(3)})`;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(cx, cy, R * 1.05, 0, Math.PI * 2); ctx.stroke();
+
+    strokeAll(front);
+    flare *= 0.96;
+  }
+
+  const diskOut = document.getElementById('m-disk');
+  const goneOut = document.getElementById('m-gone');
+  const fmt = new Intl.NumberFormat('he-IL');
+  function updateMeters() { diskOut.textContent = fmt.format(n); goneOut.textContent = fmt.format(swallowed); }
+
+  function prewarm(frames) {
+    for (let f = 0; f < frames; f++) { feed(2); step(1); }
+    swallowed = 0;
+  }
+
+  layout();
+  prewarm(500);
+
+  if (reduceMotion) {
+    // One still frame: a few rendered steps build the streaks, then nothing moves.
+    for (let f = 0; f < 24; f++) { feed(2); step(1); render(); }
+    updateMeters();
+    document.getElementById('hint').textContent = 'התנועה מושהית לפי הגדרות המערכת שלכם.';
+    return;
+  }
+  if (coarse) document.getElementById('hint').textContent = 'גררו את האצבע ליד החור השחור כדי לשחרר גז לתוך הדיסק.';
+
+  let last = null;
+  hero.addEventListener('pointermove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+    if (last) {
+      const dx = sx - last.x, dy = sy - last.y;
+      release(sx, sy, dx, dy, Math.min(30, Math.floor(Math.hypot(dx, dy) / 2)));
+    }
+    last = { x: sx, y: sy };
+  });
+  hero.addEventListener('pointerleave', () => { last = null; });
+  hero.addEventListener('pointerdown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    release(e.clientX - rect.left, e.clientY - rect.top, 0, 0, 60);
+  });
+
+  let raf = 0, lastT = 0, lastMeters = 0, onScreen = true;
+  function frame(t) {
+    const dt = lastT ? Math.min(2.5, (t - lastT) / 16.67) : 1;
+    lastT = t;
+    feedDebt += 1.6 * dt;
+    const whole = Math.floor(feedDebt); feedDebt -= whole; feed(whole);
+    step(dt);
+    render();
+    if (t - lastMeters > 250) { updateMeters(); lastMeters = t; }
+    raf = requestAnimationFrame(frame);
+  }
+  const start = () => { if (!raf && onScreen && !document.hidden) { lastT = 0; raf = requestAnimationFrame(frame); } };
+  const stop = () => { cancelAnimationFrame(raf); raf = 0; };
+  new IntersectionObserver(([entry]) => { onScreen = entry.isIntersecting; onScreen ? start() : stop(); }).observe(hero);
+  document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+  let resizeTimer = 0;
+  new ResizeObserver(() => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { n = 0; layout(); prewarm(500); }, 150);
+  }).observe(hero);
+  start();
+})();
+</script>
+</body>
+</html>
