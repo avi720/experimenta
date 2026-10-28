@@ -67,7 +67,7 @@
   .btn-secondary:hover { border-color: var(--blueshift); }
   .readout { border-top: 1px solid rgb(42 36 57 / .7); background: rgb(11 9 18 / .72); backdrop-filter: blur(6px); }
   .readout .wrap { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-top: 16px; padding-bottom: 16px; font-size: 13px; color: var(--dust); }
-  .meters { display: flex; gap: 32px; }
+  .meters { display: flex; gap: 32px; margin-inline-start: auto; }
   .meter { display: flex; align-items: baseline; gap: 10px; }
   .meter b { font-weight: 400; font-size: 20px; line-height: 1; color: var(--star); }
   .meter b.hot { color: var(--plasma); }
@@ -192,7 +192,6 @@
     </div>
     <div class="readout">
       <div class="wrap">
-        <p id="hint">הזיזו את העכבר ליד החור השחור כדי לשחרר גז לתוך הדיסק.</p>
         <div class="meters" aria-hidden="true">
           <span class="meter">בדיסק <b class="mono" id="m-disk">0</b></span>
           <span class="meter">חצו את האופק <b class="mono hot" id="m-gone">0</b></span>
@@ -336,9 +335,12 @@
 
 // Hero: a black hole fed by the pointer.
 // Gas moves under Newtonian gravity in the disk plane; viscosity bleeds angular momentum so it
-// spirals in, and inside the innermost stable orbit (3 horizon radii) it plunges. Tidal shear
-// stretches every clump into a strand on its own. The disk plane is drawn inclined, so gas behind
-// the hole is hidden by its shadow and gas moving toward the viewer is brighter and bluer.
+// spirals in, and inside the innermost stable orbit (3 horizon radii) it plunges. Each particle is a
+// soft parcel of gas, not a point: parcels are drawn as large, faint gaussian puffs into
+// half-resolution buffers, where they overlap into a continuous cloud. Puffs are sheared along their
+// motion and stretched harder near the hole, which is where tidal forces pull gas into strands.
+// The disk plane is inclined, so gas behind the hole is hidden by its shadow and gas moving toward
+// the viewer is brighter and bluer.
 (() => {
   const hero = document.querySelector('.hero');
   const starCanvas = document.getElementById('stars');
@@ -346,26 +348,40 @@
   const sctx = starCanvas.getContext('2d');
   const ctx = canvas.getContext('2d');
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const coarse = matchMedia('(pointer: coarse)').matches;
   const isRTL = document.documentElement.dir === 'rtl';
 
   const COS_I = 0.36;                       // cos of the disk inclination (about 69° from face-on)
   const SIN_I = Math.sqrt(1 - COS_I * COS_I);
-  const MAX = 3600;
+  const BUFFER_SCALE = 0.5;                 // gas is drawn at half resolution, then smoothed up
+  const MAX = 4000;
   const X = new Float32Array(MAX), Z = new Float32Array(MAX);
-  const VX = new Float32Array(MAX), VZ = new Float32Array(MAX), VISC = new Float32Array(MAX);
+  const VX = new Float32Array(MAX), VZ = new Float32Array(MAX);
+  const VISC = new Float32Array(MAX), SIZE = new Float32Array(MAX), AGE = new Float32Array(MAX);
   let n = 0, swallowed = 0, flare = 0, feedDebt = 0;
   let W = 0, H = 0, dpr = 1, cx = 0, cy = 0, R = 0, GM = 0;
 
+  const back = document.createElement('canvas'), front = document.createElement('canvas');
+  const bctx = back.getContext('2d'), fctx = front.getContext('2d');
+
   // Blackbody-ish ramp: cool outer gas is deep red, the inner disk white, blueshifted gas pale blue.
-  const RAMP = [[110, 18, 10], [214, 70, 28], [255, 150, 64], [255, 205, 140], [255, 240, 220], [196, 216, 255]];
-  const BUCKETS = 16;
-  const colors = Array.from({ length: BUCKETS }, (_, b) => {
+  const RAMP = [[120, 22, 12], [214, 74, 30], [255, 146, 62], [255, 200, 132], [255, 236, 214], [200, 218, 255]];
+  const BUCKETS = 16, SPRITE = 64;
+  const sprites = Array.from({ length: BUCKETS }, (_, b) => {
     const t = b / (BUCKETS - 1) * (RAMP.length - 1);
     const i = Math.min(RAMP.length - 2, Math.floor(t)), f = t - i;
-    const c = RAMP[i].map((v, k) => Math.round(v + (RAMP[i + 1][k] - v) * f));
-    const a = 0.22 + 0.7 * (b / (BUCKETS - 1));
-    return { thin: `rgba(${c},${a.toFixed(2)})`, wide: `rgba(${c},${(a * 0.22).toFixed(3)})` };
+    const c = RAMP[i].map((v, k) => Math.round(v + (RAMP[i + 1][k] - v) * f)).join(',');
+    const s = document.createElement('canvas');
+    s.width = s.height = SPRITE;
+    const g = s.getContext('2d');
+    const grad = g.createRadialGradient(SPRITE / 2, SPRITE / 2, 0, SPRITE / 2, SPRITE / 2, SPRITE / 2);
+    // Gaussian-like falloff so overlapping puffs blend with no visible edge.
+    for (let k = 0; k <= 6; k++) {
+      const x = k / 6;
+      grad.addColorStop(x, `rgba(${c},${Math.exp(-x * x * 4.5).toFixed(3)})`);
+    }
+    g.fillStyle = grad;
+    g.fillRect(0, 0, SPRITE, SPRITE);
+    return s;
   });
 
   function layout() {
@@ -373,12 +389,13 @@
     W = rect.width; H = rect.height;
     dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     for (const c of [starCanvas, canvas]) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+    for (const c of [back, front]) { c.width = Math.ceil(W * BUFFER_SCALE); c.height = Math.ceil(H * BUFFER_SCALE); }
     const wide = W >= 768;
     cx = wide ? W * (isRTL ? 0.26 : 0.74) : W * 0.5;
     cy = wide ? H * 0.46 : H * 0.72;
     R = wide ? Math.min(W * 0.5, H) * 0.066 : Math.min(W, H) * 0.08;
-    // Orbital period of 4 s (240 frames) at six horizon radii; everything else follows Kepler.
-    const v6 = 2 * Math.PI * 6 * R / 240;
+    // Orbital period of 9 s at six horizon radii; everything else follows Kepler.
+    const v6 = 2 * Math.PI * 6 * R / 540;
     GM = v6 * v6 * 6 * R;
     drawStars();
   }
@@ -408,111 +425,130 @@
     }
   }
 
-  function add(x, z, vx, vz, visc) {
+  function add(x, z, vx, vz, visc, size) {
     const i = n < MAX ? n++ : (Math.random() * MAX) | 0;
-    X[i] = x; Z[i] = z; VX[i] = vx; VZ[i] = vz; VISC[i] = visc;
+    X[i] = x; Z[i] = z; VX[i] = vx; VZ[i] = vz; VISC[i] = visc; SIZE[i] = size; AGE[i] = 0;
   }
 
   function remove(i) {
-    n--; X[i] = X[n]; Z[i] = Z[n]; VX[i] = VX[n]; VZ[i] = VZ[n]; VISC[i] = VISC[n];
+    n--;
+    X[i] = X[n]; Z[i] = Z[n]; VX[i] = VX[n]; VZ[i] = VZ[n];
+    VISC[i] = VISC[n]; SIZE[i] = SIZE[n]; AGE[i] = AGE[n];
   }
 
   // Steady supply on near-circular orbits keeps a disk visible with no input.
   function feed(count) {
     for (let k = 0; k < count; k++) {
-      const r = R * (4.5 + Math.random() * 7), a = Math.random() * Math.PI * 2;
-      const v = Math.sqrt(GM / r) * (0.94 + Math.random() * 0.06);
-      add(Math.cos(a) * r, Math.sin(a) * r, -Math.sin(a) * v, Math.cos(a) * v, 0.3 + Math.random() * 1.2);
+      const r = R * (3.4 + Math.pow(Math.random(), 1.4) * 9), a = Math.random() * Math.PI * 2;
+      const v = Math.sqrt(GM / r) * (0.95 + Math.random() * 0.05);
+      add(Math.cos(a) * r, Math.sin(a) * r, -Math.sin(a) * v, Math.cos(a) * v,
+        0.3 + Math.random() * 1.1, 0.7 + Math.random() * 0.6);
     }
   }
 
-  // Gas released along the pointer's stroke: partly orbital, partly infalling, carrying a bit of the stroke's velocity.
+  // A puff of gas where the pointer passes: it shares the stroke's orbital spin, so it
+  // shears into one stream, and starts large and diffuse before the disk compresses it.
   function release(sx, sy, dx, dy, count) {
-    // One stroke shares an orbital spin, so it reads as a single stream that shears into strands.
-    const strokeSpin = 0.3 + Math.random() * 0.7;
+    const strokeSpin = 0.35 + Math.random() * 0.65;
     for (let k = 0; k < count; k++) {
       const t = k / count;
-      const x = sx - dx * t - cx + (Math.random() - 0.5) * 6;
-      const z = (sy - dy * t - cy + (Math.random() - 0.5) * 6) / COS_I;
+      const x = sx - dx * t - cx + (Math.random() - 0.5) * R * 0.8;
+      const z = (sy - dy * t - cy + (Math.random() - 0.5) * R * 0.8) / COS_I;
       const r = Math.max(R * 1.5, Math.hypot(x, z));
-      const vc = Math.sqrt(GM / r), spin = strokeSpin + (Math.random() - 0.5) * 0.12;
+      const vc = Math.sqrt(GM / r), spin = strokeSpin + (Math.random() - 0.5) * 0.15;
       add(x, z,
-        (-z / r) * vc * spin - (x / r) * vc * 0.3 + dx * 0.06,
-        (x / r) * vc * spin - (z / r) * vc * 0.3 + (dy / COS_I) * 0.06,
-        0.4 + Math.random() * 1.8);
+        (-z / r) * vc * spin - (x / r) * vc * 0.2 + dx * 0.03,
+        (x / r) * vc * spin - (z / r) * vc * 0.2 + (dy / COS_I) * 0.03,
+        0.4 + Math.random() * 1.5, 1.2 + Math.random() * 0.8);
     }
   }
 
   function step(dt) {
-    const SUB = 3, h = dt / SUB, isco = 3 * R, far = 48 * R;
+    const SUB = 2, h = dt / SUB, isco = 3 * R, far = 48 * R;
     for (let s = 0; s < SUB; s++) {
       for (let i = n - 1; i >= 0; i--) {
         const x = X[i], z = Z[i];
         const r2 = x * x + z * z, r = Math.sqrt(r2);
-        if (r < R * 1.02) { remove(i); swallowed++; flare = Math.min(0.6, flare + 0.012); continue; }
+        if (r < R * 1.02) { remove(i); swallowed++; flare = Math.min(0.5, flare + 0.008); continue; }
         if (r > far) { remove(i); continue; }
         const g = GM / (r2 * r);
         let vx = VX[i] - g * x * h, vz = VZ[i] - g * z * h;
         const ux = x / r, uz = z / r;
         let vr = vx * ux + vz * uz, vt = -vx * uz + vz * ux;
-        vr *= 1 - 0.012 * h;
-        vt *= 1 - VISC[i] * (r < isco ? 0.03 : 0.0015) * h;
+        vr *= 1 - 0.01 * h;
+        vt *= 1 - VISC[i] * (r < isco ? 0.02 : 0.0008) * h;
         vx = vr * ux - vt * uz; vz = vr * uz + vt * ux;
         VX[i] = vx; VZ[i] = vz; X[i] = x + vx * h; Z[i] = z + vz * h;
+        AGE[i] += h;
       }
     }
   }
 
-  function render() {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.fillStyle = 'rgba(0,0,0,0.14)';
-    ctx.fillRect(0, 0, W, H);
-
-    const back = Array.from({ length: BUCKETS }, () => new Path2D());
-    const front = Array.from({ length: BUCKETS }, () => new Path2D());
+  function drawGas() {
+    for (const c of [bctx, fctx]) {
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.globalCompositeOperation = 'source-over';
+      c.clearRect(0, 0, back.width, back.height);
+      c.globalCompositeOperation = 'lighter';
+    }
     let inner = 0;
+    const k = BUFFER_SCALE;
     for (let i = 0; i < n; i++) {
       const x = X[i], z = Z[i], r = Math.hypot(x, z);
       if (r < 5 * R) inner++;
+      const vx = VX[i], vz = VZ[i], speed = Math.hypot(vx, vz) || 1;
       const vc = Math.sqrt(GM / r);
-      const approach = Math.max(-1, Math.min(1, VZ[i] * SIN_I / vc));
-      const temp = Math.min(1, Math.pow(2.6 * R / r, 0.85));
-      const b = Math.max(0, Math.min(BUCKETS - 1, Math.round((temp * 0.8 + approach * 0.2 + 0.05) * (BUCKETS - 1))));
-      const sx = cx + x, sy = cy + z * COS_I;
-      const stretch = 2.4 * (1 + 3 * (R / r) * (R / r));
-      const path = z < 0 ? back[b] : front[b];
-      path.moveTo(sx, sy);
-      path.lineTo(sx - VX[i] * stretch, sy - VZ[i] * COS_I * stretch);
-    }
+      const approach = Math.max(-1, Math.min(1, vz * SIN_I / vc));
+      const temp = Math.min(1, Math.pow(2.4 * R / r, 0.8));
+      const b = Math.max(0, Math.min(BUCKETS - 1, Math.round((temp * 0.82 + approach * 0.18 + 0.04) * (BUCKETS - 1))));
 
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.lineCap = 'round';
-    const strokeAll = (paths) => {
-      for (let b = 0; b < BUCKETS; b++) {
-        ctx.strokeStyle = colors[b].wide; ctx.lineWidth = 4; ctx.stroke(paths[b]);
-        ctx.strokeStyle = colors[b].thin; ctx.lineWidth = 1.2; ctx.stroke(paths[b]);
-      }
-    };
-    strokeAll(back);
+      // Puffs grow outward (the outer disk is thicker and more diffuse) and stretch along their
+      // motion; near the hole the stretch grows with the tidal term (R/r)^3.
+      const base = R * SIZE[i] * (0.55 + 0.11 * r / R);
+      const along = base * (1.8 + 3 * Math.min(1, Math.pow(1.5 * R / r, 3)));
+      const across = base * (0.9 - 0.3 * Math.min(1, Math.pow(1.6 * R / r, 2)));
+      // Direction of motion on screen (the disk plane is foreshortened vertically).
+      const mx = vx / speed, my = (vz * COS_I) / speed, ml = Math.hypot(mx, my) || 1;
+      const ex = mx / ml, ey = my / ml;
+      // A fresh puff fades in, gas dims as it crosses into the shadow, and brightness follows Doppler beaming.
+      const alpha = Math.min(1, AGE[i] / 40) * Math.min(1, (r - R) / (0.7 * R)) * (0.045 + 0.055 * temp) * (1 + 0.35 * approach);
+      if (alpha <= 0.004) continue;
+      const c = z < 0 ? bctx : fctx;
+      c.globalAlpha = alpha;
+      // Ellipse axes: `along` on the motion direction, `across` perpendicular, squashed by the inclination.
+      c.setTransform(ex * along * k, ey * along * k, -ey * across * k, ex * across * k,
+        (cx + x) * k, (cy + z * COS_I) * k);
+      c.drawImage(sprites[b], -0.5, -0.5, 1, 1);
+    }
+    bctx.globalAlpha = fctx.globalAlpha = 1;
+    return inner;
+  }
+
+  function render() {
+    const inner = drawGas();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(back, 0, 0, W, H);
 
     // The shadow hides gas behind it; the photon ring flares as matter crosses the horizon.
-    ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = '#000';
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
     ctx.globalCompositeOperation = 'lighter';
-    const glow = Math.min(1, 0.3 + inner / 500 + flare);
-    const halo = ctx.createRadialGradient(cx, cy, R, cx, cy, R * 1.9);
-    halo.addColorStop(0, `rgba(255,170,90,${(glow * 0.4).toFixed(3)})`);
+    const glow = Math.min(1, 0.3 + inner / 700 + flare);
+    const halo = ctx.createRadialGradient(cx, cy, R, cx, cy, R * 1.8);
+    halo.addColorStop(0, `rgba(255,170,90,${(glow * 0.35).toFixed(3)})`);
     halo.addColorStop(1, 'rgba(255,170,90,0)');
     ctx.fillStyle = halo;
-    ctx.beginPath(); ctx.arc(cx, cy, R * 1.9, 0, Math.PI * 2); ctx.arc(cx, cy, R, 0, Math.PI * 2, true); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, R * 1.8, 0, Math.PI * 2); ctx.arc(cx, cy, R, 0, Math.PI * 2, true); ctx.fill();
     ctx.strokeStyle = `rgba(255,226,184,${glow.toFixed(3)})`;
-    ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.arc(cx, cy, R * 1.05, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(cx, cy, R * 1.04, 0, Math.PI * 2); ctx.stroke();
 
-    strokeAll(front);
-    flare *= 0.96;
+    ctx.drawImage(front, 0, 0, W, H);
+    ctx.globalCompositeOperation = 'source-over';
+    flare *= 0.97;
   }
 
   const diskOut = document.getElementById('m-disk');
@@ -522,20 +558,18 @@
 
   function prewarm(frames) {
     for (let f = 0; f < frames; f++) { feed(2); step(1); }
+    for (let i = 0; i < n; i++) AGE[i] = 100;
     swallowed = 0;
   }
 
   layout();
-  prewarm(500);
+  prewarm(1400);
 
   if (reduceMotion) {
-    // One still frame: a few rendered steps build the streaks, then nothing moves.
-    for (let f = 0; f < 24; f++) { feed(2); step(1); render(); }
+    render();
     updateMeters();
-    document.getElementById('hint').textContent = 'התנועה מושהית לפי הגדרות המערכת שלכם.';
     return;
   }
-  if (coarse) document.getElementById('hint').textContent = 'גררו את האצבע ליד החור השחור כדי לשחרר גז לתוך הדיסק.';
 
   let last = null;
   hero.addEventListener('pointermove', (e) => {
@@ -543,21 +577,21 @@
     const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
     if (last) {
       const dx = sx - last.x, dy = sy - last.y;
-      release(sx, sy, dx, dy, Math.min(30, Math.floor(Math.hypot(dx, dy) / 2)));
+      release(sx, sy, dx, dy, Math.min(10, Math.floor(Math.hypot(dx, dy) / 6)));
     }
     last = { x: sx, y: sy };
   });
   hero.addEventListener('pointerleave', () => { last = null; });
   hero.addEventListener('pointerdown', (e) => {
     const rect = canvas.getBoundingClientRect();
-    release(e.clientX - rect.left, e.clientY - rect.top, 0, 0, 60);
+    release(e.clientX - rect.left, e.clientY - rect.top, 0, 0, 40);
   });
 
   let raf = 0, lastT = 0, lastMeters = 0, onScreen = true;
   function frame(t) {
     const dt = lastT ? Math.min(2.5, (t - lastT) / 16.67) : 1;
     lastT = t;
-    feedDebt += 1.6 * dt;
+    feedDebt += 2.0 * dt;
     const whole = Math.floor(feedDebt); feedDebt -= whole; feed(whole);
     step(dt);
     render();
@@ -571,7 +605,7 @@
   let resizeTimer = 0;
   new ResizeObserver(() => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => { n = 0; layout(); prewarm(500); }, 150);
+    resizeTimer = setTimeout(() => { n = 0; layout(); prewarm(1400); }, 150);
   }).observe(hero);
   start();
 })();
