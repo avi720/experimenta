@@ -5,6 +5,7 @@ import ExperimentHeader, { type ExperimentMenuItem } from "./ExperimentHeader";
 import ExperimentSidePanel from "./ExperimentSidePanel";
 import FloatingWindowsManager from "./FloatingWindowsManager";
 import SimulationCharts from "../charts/SimulationCharts";
+import BlackHoleBackdrop from "@/components/brand/BlackHoleBackdrop";
 import type { ExperimentTemplateData, Parameter, ParameterValues } from "@/types/experiment";
 import type { AppSettings, AppUser } from "@/types/models";
 import type { ChildrenProps, IsRTLProps } from "@/types/props";
@@ -144,7 +145,7 @@ export default function WorkspaceShell({
     }, [normalizedSimulationData, effectiveTime]);
 
     return (
-        <div className="h-screen flex flex-col bg-slate-50" dir={dir}>
+        <div className="h-screen flex flex-col bg-space text-star" dir={dir}>
             <ExperimentHeader
                 experiment={experiment}
                 user={user}
@@ -163,8 +164,13 @@ export default function WorkspaceShell({
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Container for canvas and side panel - positioned relatively */}
                 <div className="flex-1 relative overflow-hidden">
+                    {/* Space backdrop: a decorative animation behind the transparent scene canvas */}
+                    <div className="absolute inset-0 bg-space">
+                        <BlackHoleBackdrop dir={dir} />
+                    </div>
+
                     {/* Canvas - always full width and height */}
-                    <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-slate-100 to-slate-200">
+                    <div className="absolute inset-0 w-full h-full">
                         {children}
                     </div>
 

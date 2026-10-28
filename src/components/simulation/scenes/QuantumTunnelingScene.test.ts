@@ -36,15 +36,16 @@ describe("QuantumTunnelingScene resource management (T26)", () => {
         const geometries = new Set<THREE.BufferGeometry>();
         const materials = new Set<THREE.Material>();
         scene.traverse((node) => {
-            if (!(node instanceof THREE.Mesh)) return;
-            geometries.add(node.geometry);
-            for (const material of [node.material].flat()) materials.add(material);
+            const { geometry, material } = node as THREE.Mesh;
+            if (geometry) geometries.add(geometry);
+            if (material) for (const m of [material].flat()) materials.add(m);
         });
 
-        // floor, gun body/barrel/base, barrier, detector body/cone/arm, shared particle sphere
-        expect(geometries.size).toBe(9);
-        // the same 8 meshes plus three particle materials
-        expect(materials.size).toBe(11);
+        // The three particles share one sphere geometry but keep their own materials.
+        const particleGeometries = new Set([objects.incomingParticle, objects.transmittedParticle, objects.reflectedParticle].map((p) => p.geometry));
+        expect(particleGeometries.size).toBe(1);
+        expect(materials.has(objects.incomingParticle.material)).toBe(true);
+        expect(objects.transmittedParticle.material).not.toBe(objects.reflectedParticle.material);
 
         const geomSpies = Array.from(geometries).map((g) => vi.spyOn(g, "dispose"));
         const matSpies = Array.from(materials).map((m) => vi.spyOn(m, "dispose"));
