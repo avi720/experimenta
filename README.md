@@ -2,6 +2,14 @@
 
 Virtual physics lab with interactive simulations (free fall, harmonic oscillator, quantum tunneling, double slit).
 
+## Why Experimenta
+
+**Mission: make real, hands-on physics experiments available to anyone, anywhere, without needing a physical lab.**
+
+Experimenta lets anyone run real physics experiments: high-school students, university students, and curious people of any age. Use it to learn, to build a deeper intuition for physical ideas, or to collect data for school and university assignments.
+
+It also aims to replace the way schools give students hands-on experiments today. A physical lab needs storage space, staff to maintain the equipment, and money to buy it in the first place, and each piece of equipment serves only one experiment or a small group of them. A virtual lab removes those costs and puts every experiment within reach of every student.
+
 **Stack:** Vite + React 18 + React Router, Tailwind/shadcn UI, [Supabase](https://supabase.com) (Postgres + Auth), deployed on [Vercel](https://vercel.com).
 
 ## Local development
