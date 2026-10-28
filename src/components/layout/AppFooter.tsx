@@ -41,7 +41,7 @@ export default function AppFooter({ isRTL, currentPageName }: IsRTLProps & { cur
 
     // On the home page the footer sits inside the CTA's event horizon, so no rule separates them.
     return (
-        <footer className={`theme-space bg-hole text-dust mt-auto ${currentPageName === 'Dashboard' ? '' : 'border-t border-line'}`} dir={dir}>
+        <footer className={`bg-hole text-dust mt-auto ${currentPageName === 'Dashboard' ? '' : 'border-t border-line'}`} dir={dir}>
             <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-16 pb-10">
                 <div className="grid grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1fr] gap-x-8 gap-y-10">
                     {/* Logo and contact */}

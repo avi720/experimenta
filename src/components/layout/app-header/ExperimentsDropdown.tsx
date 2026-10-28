@@ -51,7 +51,7 @@ export default function ExperimentsDropdown({ experiments, isRTL }: HeaderExperi
             </DropdownMenuTrigger>
             <DropdownMenuContent
                 align={menuAlignStart}
-                className="theme-space w-72 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto border-line rounded-md"
+                className="w-72 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto border-line rounded-md"
                 dir={dir}
             >
                 <DropdownMenuItem asChild>

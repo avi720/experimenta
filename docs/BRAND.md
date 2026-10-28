@@ -98,8 +98,9 @@ arrows appended to button text.
 - **Links in text**: `text-blueshift` with underline offset 4.
 - **Focus**: 2 px `blueshift` outline with 2 px offset everywhere (`.focus-ring`).
 - **Thought experiments**: a `horizon` line marker and a `horizon` pill.
-- **Menus/popovers** in dark chrome get the `theme-space` class so shadcn primitives
-  pick up the brand tokens.
+- **shadcn primitives**: the shadcn HSL tokens in `:root` (`src/index.css`) are mapped onto
+  the brand, so every page, dialog and menu renders on `space` with no extra class. Prefer
+  the brand utilities (`bg-space-raised`, `border-line`, `text-dust`) over raw `slate`/`white`.
 
 ## Voice
 

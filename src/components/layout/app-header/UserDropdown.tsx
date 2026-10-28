@@ -43,7 +43,7 @@ export default function UserDropdown({ user, isRTL, handleLogout, handleLanguage
                     <ChevronDown className="w-4 h-4 opacity-70" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align={menuAlignStart} className="theme-space w-56 border-line">
+            <DropdownMenuContent align={menuAlignStart} className="w-56 border-line">
                 <DropdownMenuItem onClick={() => handleLanguageChange(oppositeLocale)} className="gap-2">
                     <Globe className="w-4 h-4" />
                     {t('common.switchToOppositeLanguage')}

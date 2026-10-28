@@ -28,7 +28,7 @@ export default function AdminDropdown({ user, location, isRTL }: HeaderUserProps
                     <ChevronDown className="w-4 h-4 opacity-70" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="theme-space border-line">
+            <DropdownMenuContent align="end" className="border-line">
                 <DropdownMenuItem asChild>
                     <Link to={createPageUrl("AdminExperiments")} className="flex items-center gap-2 w-full">
                         <Wrench className="h-4 w-4" />

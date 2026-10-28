@@ -26,7 +26,7 @@ export default function Dashboard() {
   const hasExperiment = (slug: string) => experiments.some((experiment) => experiment.slug === slug);
 
   return (
-    <div ref={rootRef} className="theme-space bg-space text-star" dir={dir}>
+    <div ref={rootRef} className="bg-space text-star" dir={dir}>
       <HeroSection settings={settings} isRTL={isRTL} hasDoubleSlit={hasExperiment("double-slit")} />
       <FeaturesSection isRTL={isRTL} />
       <HowItWorksSection isRTL={isRTL} />
