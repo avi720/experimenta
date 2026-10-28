@@ -1,10 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { useExperimentForm } from '@/hooks/useExperimentForm';
 import { useTranslation } from '@/i18n';
+import { secondaryButtonClass } from '../components/pagesComponents/admin/adminStyles';
 
 // Import UI components
 import ExperimentFormHeaderActions from '../components/pagesComponents/admin/AdminExperimentForm/ExperimentFormHeaderActions';
@@ -52,10 +52,10 @@ export default function AdminExperimentForm() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" dir={dir}>
-        <div className="flex items-center space-x-3 rtl:space-x-reverse">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="text-slate-600">{t('common.loading')}</p>
+      <div className="min-h-screen bg-space flex items-center justify-center" dir={dir}>
+        <div className="flex items-center gap-3">
+          <div className="animate-spin rounded-full h-6 w-6 border-2 border-line border-t-plasma"></div>
+          <p className="text-dust">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -63,35 +63,34 @@ export default function AdminExperimentForm() {
 
   if (notFound || !experiment) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-16" dir={dir}>
-        <Card className="border-red-200 shadow-sm">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-3">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-            </div>
-            <CardTitle className="text-2xl text-slate-900">{t('admin.form.notFoundTitle')}</CardTitle>
-            <CardDescription className="text-base text-slate-600">
-              {t('admin.form.notFoundDescription')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate(createPageUrl('AdminExperiments'))}
-              className="gap-2"
-            >
-              <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
-              {t('admin.form.backToList')}
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-space px-4 py-24" dir={dir}>
+        <div className="mx-auto max-w-xl border-y border-line py-14 text-center">
+          <div className="mx-auto mb-5 flex h-11 w-11 items-center justify-center rounded-full border border-red-400/30 bg-red-400/10">
+            <AlertTriangle className="h-5 w-5 text-red-300" />
+          </div>
+          <h1 className="text-[26px] font-light text-star">{t('admin.form.notFoundTitle')}</h1>
+          <p className="mx-auto mt-3 max-w-[30rem] text-[15px] leading-relaxed text-dust">
+            {t('admin.form.notFoundDescription')}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate(createPageUrl('AdminExperiments'))}
+            className={`${secondaryButtonClass} mt-8`}
+          >
+            <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
+            {t('admin.form.backToList')}
+          </Button>
+        </div>
       </div>
     );
   }
 
+  const tabTriggerClass =
+    'focus-ring relative h-11 shrink-0 rounded-none border-b-2 border-transparent bg-transparent px-1 text-sm font-normal text-dust shadow-none transition-colors hover:text-star data-[state=active]:border-plasma data-[state=active]:bg-transparent data-[state=active]:text-star data-[state=active]:shadow-none';
+
   return (
-    <form onSubmit={handleSubmit} className="max-w-6xl mx-auto px-4 py-8 space-y-8" dir={dir}>
+    <form onSubmit={handleSubmit} className="min-h-screen bg-space text-star" dir={dir}>
       {/* Header and Actions */}
       <ExperimentFormHeaderActions
         isEditMode={isEditMode}
@@ -102,82 +101,86 @@ export default function AdminExperimentForm() {
         hasChanges={hasChanges}
       />
 
-      {/* Progress Indicator */}
-      <ExperimentFormProgressIndicator currentTab={currentTab} />
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-32 space-y-8">
+        {/* Progress Indicator */}
+        <ExperimentFormProgressIndicator currentTab={currentTab} />
 
-      {/* Main Tabs */}
-      <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 bg-slate-100">
-          <TabsTrigger value="general" className="data-[state=active]:bg-white">
-            {t('admin.form.tabs.general')}
-          </TabsTrigger>
-          <TabsTrigger value="content" className="data-[state=active]:bg-white">
-            {t('admin.form.tabs.content')}
-          </TabsTrigger>
-          <TabsTrigger value="parameters" className="data-[state=active]:bg-white">
-            {t('admin.form.tabs.parameters')}
-          </TabsTrigger>
-          <TabsTrigger value="presets" className="data-[state=active]:bg-white">
-            {t('admin.form.tabs.presets')}
-          </TabsTrigger>
-          <TabsTrigger value="advanced" className="data-[state=active]:bg-white">
-            {t('admin.form.tabs.advanced')}
-          </TabsTrigger>
-        </TabsList>
+        {/* Main Tabs */}
+        <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-8">
+          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            <TabsList className="flex h-auto w-max min-w-full justify-start gap-6 rounded-none border-b border-line bg-transparent p-0">
+              <TabsTrigger value="general" className={tabTriggerClass}>
+                {t('admin.form.tabs.general')}
+              </TabsTrigger>
+              <TabsTrigger value="content" className={tabTriggerClass}>
+                {t('admin.form.tabs.content')}
+              </TabsTrigger>
+              <TabsTrigger value="parameters" className={tabTriggerClass}>
+                {t('admin.form.tabs.parameters')}
+              </TabsTrigger>
+              <TabsTrigger value="presets" className={tabTriggerClass}>
+                {t('admin.form.tabs.presets')}
+              </TabsTrigger>
+              <TabsTrigger value="advanced" className={tabTriggerClass}>
+                {t('admin.form.tabs.advanced')}
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-        <TabsContent value="general">
-          <GeneralSettingsTab
-            experiment={experiment}
-            handleInputChange={handleInputChange}
-            errors={errors}
-          />
-        </TabsContent>
+          <TabsContent value="general">
+            <GeneralSettingsTab
+              experiment={experiment}
+              handleInputChange={handleInputChange}
+              errors={errors}
+            />
+          </TabsContent>
 
-        <TabsContent value="content">
-          <ContentEditorTab
-            experiment={experiment}
-            handleI18nChange={handleI18nChange}
-            handleI18nStepsChange={handleI18nStepsChange}
-            addI18nStep={addI18nStep}
-            removeI18nStep={removeI18nStep}
-            errors={errors}
-          />
-        </TabsContent>
+          <TabsContent value="content">
+            <ContentEditorTab
+              experiment={experiment}
+              handleI18nChange={handleI18nChange}
+              handleI18nStepsChange={handleI18nStepsChange}
+              addI18nStep={addI18nStep}
+              removeI18nStep={removeI18nStep}
+              errors={errors}
+            />
+          </TabsContent>
 
-        <TabsContent value="parameters">
-          <ParametersEditorTab
-            experiment={experiment}
-            handleDynamicArrayChange={handleDynamicArrayChange}
-            handleNestedDynamicChange={handleNestedDynamicChange}
-            addToArray={addToArray}
-            addNestedToArray={addNestedToArray}
-            removeNestedFromArray={removeNestedFromArray}
-            removeFromArray={removeFromArray}
-            errors={errors}
-          />
-        </TabsContent>
+          <TabsContent value="parameters">
+            <ParametersEditorTab
+              experiment={experiment}
+              handleDynamicArrayChange={handleDynamicArrayChange}
+              handleNestedDynamicChange={handleNestedDynamicChange}
+              addToArray={addToArray}
+              addNestedToArray={addNestedToArray}
+              removeNestedFromArray={removeNestedFromArray}
+              removeFromArray={removeFromArray}
+              errors={errors}
+            />
+          </TabsContent>
 
-        <TabsContent value="presets">
-          <PresetsEditorTab
-            experiment={experiment}
-            presetTextValues={presetTextValues}
-            handlePresetValuesChange={handlePresetValuesChange}
-            handleDynamicArrayChange={handleDynamicArrayChange}
-            addToArray={addToArray}
-            removeFromArray={removeFromArray}
-            errors={errors}
-          />
-        </TabsContent>
+          <TabsContent value="presets">
+            <PresetsEditorTab
+              experiment={experiment}
+              presetTextValues={presetTextValues}
+              handlePresetValuesChange={handlePresetValuesChange}
+              handleDynamicArrayChange={handleDynamicArrayChange}
+              addToArray={addToArray}
+              removeFromArray={removeFromArray}
+              errors={errors}
+            />
+          </TabsContent>
 
-        <TabsContent value="advanced">
-          <AdvancedSettingsTab
-            experiment={experiment}
-            handleTagsChange={handleTagsChange}
-            handleOutputsChange={handleOutputsChange}
-            handleInputChange={handleInputChange}
-          />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="advanced">
+            <AdvancedSettingsTab
+              experiment={experiment}
+              handleTagsChange={handleTagsChange}
+              handleOutputsChange={handleOutputsChange}
+              handleInputChange={handleInputChange}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
 
       {/* Floating Save Button */}
       <ExperimentFormFloatingSaveButton

@@ -1,6 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useTranslation, translate, resolveLocale, type LocaleInput } from "@/i18n";
 import { User } from "@/entities/User";
+import BlackHoleMark from "@/components/brand/BlackHoleMark";
 
 const MIN_PASSWORD_LENGTH = 6;
 
@@ -85,6 +85,34 @@ const GoogleIcon = () => (
     <path fill="#EA4335" d="M12 4.77c1.76 0 3.34.61 4.59 1.8l3.44-3.44A11.97 11.97 0 0 0 12 0 12 12 0 0 0 1.28 6.61l4.01 3.11C6.23 6.88 8.88 4.77 12 4.77z" />
   </svg>
 );
+
+// Brand overrides for the shadcn primitives on this page (docs/BRAND.md: Components).
+const tabTriggerClass =
+  "focus-ring -mb-px rounded-none border-b-2 border-transparent py-3 text-[15px] text-dust data-[state=active]:border-plasma data-[state=active]:bg-transparent data-[state=active]:text-star data-[state=active]:shadow-none";
+const inputClass = "h-11 bg-space border-line text-star text-[16px] focus-visible:ring-blueshift";
+const submitButtonClass = "focus-ring w-full h-11 text-[16px] font-medium hover:bg-plasma-hi";
+const googleButtonClass =
+  "focus-ring w-full h-11 text-[15px] border-line bg-transparent text-star hover:bg-transparent hover:text-star hover:border-blueshift";
+const errorAlertClass = "mb-5 border-red-400/30 bg-red-500/10 text-red-300";
+const noticeAlertClass = "mb-5 border-blueshift/30 bg-blueshift/10 text-star";
+
+type AuthShellProps = { dir: string; title: string; subtitle?: string; children: ReactNode };
+
+/** A calm, focused panel on space with the brand mark above the title. */
+function AuthShell({ dir, title, subtitle, children }: AuthShellProps) {
+  return (
+    <div className="flex items-center justify-center px-4 sm:px-6 py-16 md:py-24" dir={dir}>
+      <div className="w-full max-w-md">
+        <div className="flex flex-col items-center text-center">
+          <BlackHoleMark className="h-12 w-12" />
+          <h1 className="mt-6 text-[clamp(1.9rem,4vw,2.4rem)] font-light leading-[1.1] tracking-[-0.01em] text-star">{title}</h1>
+          {subtitle && <p className="mt-3 text-[16px] leading-[1.6] text-dust">{subtitle}</p>}
+        </div>
+        <div className="mt-10 border border-line bg-space-raised/60 px-5 py-7 sm:px-8 sm:py-8">{children}</div>
+      </div>
+    </div>
+  );
+}
 
 export default function Login() {
   const navigate = useNavigate();
@@ -202,137 +230,120 @@ export default function Login() {
 
   if (isRecovery || isExpiredRecoveryLink) {
     return (
-      <div className="flex items-center justify-center px-4 py-16" dir={dir}>
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">{t("auth.chooseNewPasswordTitle")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            {isLoadingAuth ? (
-              <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400" />
-            ) : !isRecovery || !isAuthenticated ? (
-              <p className="text-sm text-slate-600 text-center">
-                {t("auth.expiredRecoveryMessage")}
-              </p>
-            ) : (
-              <form onSubmit={handleNewPassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="new-password">{t("auth.newPasswordLabel")}</Label>
-                  <Input id="new-password" type="password" dir="ltr" autoComplete="new-password" required
-                    minLength={MIN_PASSWORD_LENGTH}
-                    value={password} onChange={(e) => setPassword(e.target.value)} />
-                </div>
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {t("auth.savePasswordSubmit")}
-                </Button>
-              </form>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      <AuthShell dir={dir} title={t("auth.chooseNewPasswordTitle")}>
+        {error && (
+          <Alert variant="destructive" className={errorAlertClass}>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        {isLoadingAuth ? (
+          <Loader2 className="w-6 h-6 animate-spin mx-auto text-dust" />
+        ) : !isRecovery || !isAuthenticated ? (
+          <p className="text-[15px] leading-[1.7] text-dust text-center">
+            {t("auth.expiredRecoveryMessage")}
+          </p>
+        ) : (
+          <form onSubmit={handleNewPassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">{t("auth.newPasswordLabel")}</Label>
+              <Input id="new-password" type="password" dir="ltr" autoComplete="new-password" required
+                className={inputClass} minLength={MIN_PASSWORD_LENGTH}
+                value={password} onChange={(e) => setPassword(e.target.value)} />
+            </div>
+            <Button type="submit" className={submitButtonClass} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t("auth.savePasswordSubmit")}
+            </Button>
+          </form>
+        )}
+      </AuthShell>
     );
   }
 
   const isBusy = isSubmitting || isResettingPassword;
 
   return (
-    <div className="flex items-center justify-center px-4 py-16" dir={dir}>
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">{t("auth.welcomeTitle")}</CardTitle>
-          <CardDescription>
-            {t("auth.welcomeSubtitle")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={tab} onValueChange={(value) => { setTab(value); resetFeedback(); }}>
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="signin">{t("auth.signInTab")}</TabsTrigger>
-              <TabsTrigger value="signup">{t("auth.signUpTab")}</TabsTrigger>
-            </TabsList>
+    <AuthShell dir={dir} title={t("auth.welcomeTitle")} subtitle={t("auth.welcomeSubtitle")}>
+      <Tabs value={tab} onValueChange={(value) => { setTab(value); resetFeedback(); }}>
+        <TabsList className="grid w-full grid-cols-2 h-auto mb-7 rounded-none bg-transparent p-0 border-b border-line">
+          <TabsTrigger value="signin" className={tabTriggerClass}>{t("auth.signInTab")}</TabsTrigger>
+          <TabsTrigger value="signup" className={tabTriggerClass}>{t("auth.signUpTab")}</TabsTrigger>
+        </TabsList>
 
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            {message && (
-              <Alert className="mb-4">
-                <AlertDescription>{message}</AlertDescription>
-              </Alert>
-            )}
+        {error && (
+          <Alert variant="destructive" className={errorAlertClass}>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        {message && (
+          <Alert className={noticeAlertClass}>
+            <AlertDescription>{message}</AlertDescription>
+          </Alert>
+        )}
 
-            <Button type="button" variant="outline" className="w-full" disabled={isBusy} onClick={handleGoogleSignIn}>
-              <GoogleIcon />
-              {tab === "signup" ? t("auth.signUpWithGoogle") : t("auth.signInWithGoogle")}
-            </Button>
-            <div className="flex items-center gap-3 my-5 text-xs text-slate-400">
-              <div className="h-px flex-1 bg-slate-200" />
-              {t("auth.orWithEmail")}
-              <div className="h-px flex-1 bg-slate-200" />
+        <Button type="button" variant="outline" className={googleButtonClass} disabled={isBusy} onClick={handleGoogleSignIn}>
+          <GoogleIcon />
+          {tab === "signup" ? t("auth.signUpWithGoogle") : t("auth.signInWithGoogle")}
+        </Button>
+        <div className="flex items-center gap-3 my-6 text-[13px] text-dust">
+          <div className="h-px flex-1 bg-line" />
+          {t("auth.orWithEmail")}
+          <div className="h-px flex-1 bg-line" />
+        </div>
+
+        <TabsContent value="signin" className="mt-0">
+          <form onSubmit={handleSignIn} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="signin-email">{t("auth.emailLabel")}</Label>
+              <Input id="signin-email" type="email" dir="ltr" autoComplete="email" required className={inputClass}
+                value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="signin-password">{t("auth.passwordLabel")}</Label>
+              <Input id="signin-password" type="password" dir="ltr" autoComplete="current-password" required className={inputClass}
+                value={password} onChange={(e) => setPassword(e.target.value)} />
+            </div>
+            <Button type="submit" className={submitButtonClass} disabled={isBusy}>
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t("auth.signInSubmit")}
+            </Button>
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={handleResetPassword}
+              className="focus-ring w-full rounded-md py-1 text-sm text-dust hover:text-blueshift underline-offset-4 hover:underline disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isResettingPassword && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {t("auth.forgotPassword")}
+            </button>
+          </form>
+        </TabsContent>
 
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">{t("auth.emailLabel")}</Label>
-                  <Input id="signin-email" type="email" dir="ltr" autoComplete="email" required
-                    value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">{t("auth.passwordLabel")}</Label>
-                  <Input id="signin-password" type="password" dir="ltr" autoComplete="current-password" required
-                    value={password} onChange={(e) => setPassword(e.target.value)} />
-                </div>
-                <Button type="submit" className="w-full" disabled={isBusy}>
-                  {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {t("auth.signInSubmit")}
-                </Button>
-                <button
-                  type="button"
-                  disabled={isBusy}
-                  onClick={handleResetPassword}
-                  className="w-full text-sm text-slate-500 hover:text-slate-800 underline-offset-4 hover:underline disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isResettingPassword && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  {t("auth.forgotPassword")}
-                </button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">{t("auth.fullNameLabel")}</Label>
-                  <Input id="signup-name" autoComplete="name"
-                    value={fullName} onChange={(e) => setFullName(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">{t("auth.emailLabel")}</Label>
-                  <Input id="signup-email" type="email" dir="ltr" autoComplete="email" required
-                    value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">{t("auth.passwordLabel")}</Label>
-                  <Input id="signup-password" type="password" dir="ltr" autoComplete="new-password" required
-                    minLength={MIN_PASSWORD_LENGTH}
-                    value={password} onChange={(e) => setPassword(e.target.value)} />
-                </div>
-                <Button type="submit" className="w-full" disabled={isBusy}>
-                  {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {t("auth.createAccountSubmit")}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+        <TabsContent value="signup" className="mt-0">
+          <form onSubmit={handleSignUp} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="signup-name">{t("auth.fullNameLabel")}</Label>
+              <Input id="signup-name" autoComplete="name" className={inputClass}
+                value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="signup-email">{t("auth.emailLabel")}</Label>
+              <Input id="signup-email" type="email" dir="ltr" autoComplete="email" required className={inputClass}
+                value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="signup-password">{t("auth.passwordLabel")}</Label>
+              <Input id="signup-password" type="password" dir="ltr" autoComplete="new-password" required className={inputClass}
+                minLength={MIN_PASSWORD_LENGTH}
+                value={password} onChange={(e) => setPassword(e.target.value)} />
+            </div>
+            <Button type="submit" className={submitButtonClass} disabled={isBusy}>
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t("auth.createAccountSubmit")}
+            </Button>
+          </form>
+        </TabsContent>
+      </Tabs>
+    </AuthShell>
   );
 }

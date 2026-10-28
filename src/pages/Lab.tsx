@@ -6,6 +6,7 @@ import { useAppData } from "@/hooks/useAppData";
 import { useTranslation } from "@/i18n";
 // Import hooks and components
 import { useLabData } from "@/hooks/useLabData";
+import { spinnerClass } from "../components/pagesComponents/lab/experimentTraits";
 import LabUnavailableMessage from "../components/pagesComponents/lab/LabUnavailableMessage";
 import LabHeader from "../components/pagesComponents/lab/LabHeader";
 import LabFilters from "../components/pagesComponents/lab/LabFilters";
@@ -37,10 +38,10 @@ export default function Lab() {
 
   if (isAppSettingsLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[60vh] flex items-center justify-center" role="status">
         <div className="flex items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="text-slate-600">{t("common.loadingExperiments")}</p>
+          <div className={spinnerClass} aria-hidden="true"></div>
+          <p className="text-[15px] text-dust">{t("common.loadingExperiments")}</p>
         </div>
       </div>
     );
@@ -52,7 +53,7 @@ export default function Lab() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8" dir={dir}>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-20 md:pt-20 md:pb-28" dir={dir}>
       {/* Header */}
       <LabHeader selectedCategory={selectedCategory} isRTL={isRTL} categoryNames={categoryNames} />
 
@@ -70,10 +71,10 @@ export default function Lab() {
 
       {/* Experiments by Category or Filtered List */}
       {isExperimentsLoading ? (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center py-20" role="status">
           <div className="flex items-center gap-3">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="text-slate-600">{t("common.loadingExperiments")}</p>
+            <div className={spinnerClass} aria-hidden="true"></div>
+            <p className="text-[15px] text-dust">{t("common.loadingExperiments")}</p>
           </div>
         </div>
       ) : (

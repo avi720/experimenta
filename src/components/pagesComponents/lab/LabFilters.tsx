@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Grid3X3, BookOpen } from 'lucide-react';
@@ -18,51 +18,57 @@ type LabFiltersProps = IsRTLProps & {
     categoryNames: Record<string, Bilingual>;
 };
 
-export default function LabFilters({ 
-    isRTL, 
-    searchTerm, 
-    setSearchTerm, 
-    selectedCategory, 
+const controlClass = 'h-11 rounded-md border-line bg-space text-[15px] text-star focus-visible:ring-blueshift focus:ring-blueshift';
+
+export default function LabFilters({
+    isRTL,
+    searchTerm,
+    setSearchTerm,
+    selectedCategory,
     setSelectedCategory,
     experimentsByCategory,
     categoryIcons,
     categoryNames
 }: LabFiltersProps) {
     const { t, pick } = useTranslation(isRTL);
+    const reduceMotion = useReducedMotion();
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white rounded-2xl shadow-lg p-6 mb-8"
+            transition={{ delay: 0.08, duration: 0.4, ease: 'easeOut' }}
+            role="search"
+            className="mb-12 md:mb-16 border border-line bg-space-raised p-3 sm:p-4"
         >
-            <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative">
-                    <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <div className="flex flex-col gap-3 md:flex-row">
+                <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-dust" aria-hidden="true" />
                     <Input
+                        type="search"
+                        aria-label={t('lab.searchLabel')}
                         placeholder={t('lab.searchPlaceholder')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="ps-10 h-12 text-lg border-slate-200"
+                        className={`${controlClass} ps-10 placeholder:text-dust/80`}
                     />
                 </div>
-                
+
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger className="w-full md:w-64 h-12">
+                    <SelectTrigger className={`${controlClass} w-full md:w-72`} aria-label={t('lab.selectCategory')}>
                         <SelectValue placeholder={t('lab.selectCategory')} />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">
                             <div className="flex items-center gap-2">
-                                <Grid3X3 className="w-4 h-4" />
+                                <Grid3X3 className="h-4 w-4 text-dust" aria-hidden="true" />
                                 <span>{t('common.allCategories')}</span>
                             </div>
                         </SelectItem>
                         {Object.keys(experimentsByCategory).map(category => (
                             <SelectItem key={category} value={category}>
                                 <div className="flex items-center gap-2">
-                                    {React.createElement(categoryIcons[category] || BookOpen, { className: "w-4 h-4" })}
+                                    {React.createElement(categoryIcons[category] || BookOpen, { className: "h-4 w-4 text-dust", 'aria-hidden': true })}
                                     <span>{pick(categoryNames[category], category)}</span>
                                 </div>
                             </SelectItem>

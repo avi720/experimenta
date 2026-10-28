@@ -53,17 +53,17 @@ export default function Results() {
 
   if (runsQuery.isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" dir={dir}>
-        <div className="flex items-center space-x-3 rtl:space-x-reverse">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="text-slate-600">{t('common.loadingResults')}</p>
+      <div className="min-h-[60vh] flex items-center justify-center" dir={dir}>
+        <div className="flex items-center gap-3" role="status">
+          <div className="animate-spin rounded-full h-6 w-6 border border-line border-t-plasma"></div>
+          <p className="text-dust">{t('common.loadingResults')}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-6" dir={dir}>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 md:py-14 space-y-8" dir={dir}>
       <ResultsHeader hasLoadError={hasLoadError} onRefresh={refetchRuns} />
 
       <ResultsFilters
@@ -73,7 +73,7 @@ export default function Results() {
         resultsCount={filteredRuns.length}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(17rem,22rem)_1fr] gap-6 lg:gap-8 items-start">
         <RunsList
           runs={filteredRuns}
           showLoadFailure={hasLoadError && runs.length === 0}
@@ -83,7 +83,7 @@ export default function Results() {
           onRetry={refetchRuns}
         />
 
-        <div className="lg:col-span-2">
+        <div className="min-w-0">
           <RunDetails analysis={analysis} />
         </div>
       </div>

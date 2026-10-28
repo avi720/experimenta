@@ -1,4 +1,3 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Activity } from "lucide-react";
 import { useTranslation } from "@/i18n";
 import type { IsRTLProps } from "@/types/props";
@@ -35,16 +34,14 @@ export default function CurrentValuesDisplay({
 
     if (!point || typeof point !== "object") {
         return (
-            <Card className="bg-slate-50">
-                <CardContent className="p-4">
-                    <div className="flex items-center justify-center text-slate-400 gap-2">
-                        <Activity className="w-5 h-5" />
-                        <span className="text-sm">
-                            {t("workspace.noDataToDisplay")}
-                        </span>
-                    </div>
-                </CardContent>
-            </Card>
+            <div className="border border-dashed border-line rounded-md p-4">
+                <div className="flex items-center justify-center text-dust gap-2">
+                    <Activity className="w-4 h-4" aria-hidden="true" />
+                    <span className="text-sm">
+                        {t("workspace.noDataToDisplay")}
+                    </span>
+                </div>
+            </div>
         );
     }
 
@@ -58,27 +55,26 @@ export default function CurrentValuesDisplay({
     );
 
     return (
-        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50">
-            <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                    <Activity className="w-5 h-5 text-blue-600" />
-                    <h3 className="font-semibold text-slate-800">
-                        {t("workspace.currentValuesTitle")}
-                    </h3>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                    {visibleEntries.map(([key, value]) => (
-                        <div key={key} className="bg-white/70 rounded-lg p-2">
-                            <div className="text-xs text-slate-600 mb-1">
-                                {key.replace(/_/g, " ")}
-                            </div>
-                            <div className="text-sm font-mono font-semibold text-slate-900">
-                                {formatMetricValue(value)}
-                            </div>
+        <section>
+            <div className="flex items-center gap-2 mb-3">
+                <Activity className="w-4 h-4 text-blueshift" aria-hidden="true" />
+                <h3 className="text-[13px] font-medium text-dust">
+                    {t("workspace.currentValuesTitle")}
+                </h3>
+            </div>
+            {/* A grid of readouts split by hairlines: gap-px over a line-coloured backing. */}
+            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-line bg-line">
+                {visibleEntries.map(([key, value]) => (
+                    <div key={key} className="bg-space/90 px-3 py-2 min-w-0">
+                        <div className="text-xs text-dust mb-1 truncate" dir="ltr">
+                            {key.replace(/_/g, " ")}
                         </div>
-                    ))}
-                </div>
-            </CardContent>
-        </Card>
+                        <div className="text-sm font-mono tabular-nums text-star truncate" dir="ltr">
+                            {formatMetricValue(value)}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </section>
     );
 }

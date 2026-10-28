@@ -1,8 +1,9 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import ExperimentPreviewCard from './ExperimentPreviewCard';
 import RawJsonViewer from './RawJsonViewer';
+import FormSection from './FormSection';
+import { fieldHintClass, fieldLabelClass } from '../adminStyles';
 import { useTranslation } from '@/i18n';
 import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { ExperimentFormData } from '@/types/experiment';
@@ -15,59 +16,59 @@ export default function AdvancedSettingsTab({ experiment, handleTagsChange, hand
   const { t } = useTranslation();
 
   return (
-    <>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('admin.form.advanced.cardTitle')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+    <div className="space-y-10">
+      <FormSection title={t('admin.form.advanced.cardTitle')}>
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+          <div className="space-y-6">
             <div>
-              <Label className="text-base font-medium">{t('admin.form.advanced.searchTagsLabel')}</Label>
-              <Input 
-                value={(experiment.tags || []).join(', ')} 
+              <Label htmlFor="exp-tags" className={fieldLabelClass}>{t('admin.form.advanced.searchTagsLabel')}</Label>
+              <Input
+                id="exp-tags"
+                value={(experiment.tags || []).join(', ')}
                 onChange={e => handleTagsChange(e.target.value)}
                 placeholder={t('admin.form.advanced.searchTagsPlaceholder')}
               />
-              <p className="text-xs text-slate-500 mt-1">
+              <p className={fieldHintClass}>
                 {t('admin.form.advanced.searchTagsHint')}
               </p>
             </div>
 
             <div>
-              <Label className="text-base font-medium">{t('admin.form.advanced.outputsLabel')}</Label>
-              <Input 
-                value={(experiment.outputs || []).join(', ')} 
+              <Label htmlFor="exp-outputs" className={fieldLabelClass}>{t('admin.form.advanced.outputsLabel')}</Label>
+              <Input
+                id="exp-outputs"
+                dir="ltr"
+                className="font-mono"
+                value={(experiment.outputs || []).join(', ')}
                 onChange={e => handleOutputsChange(e.target.value)}
                 placeholder="position, velocity, energy_total"
               />
-              <p className="text-xs text-slate-500 mt-1">
+              <p className={fieldHintClass}>
                 {t('admin.form.advanced.outputsHint')}
               </p>
             </div>
 
             <div>
-              <Label className="text-base font-medium">{t('admin.form.advanced.thumbnailUrlLabel')}</Label>
-              <Input 
-                value={experiment.thumbnail_url || ''} 
+              <Label htmlFor="exp-thumbnail" className={fieldLabelClass}>{t('admin.form.advanced.thumbnailUrlLabel')}</Label>
+              <Input
+                id="exp-thumbnail"
+                dir="ltr"
+                inputMode="url"
+                value={experiment.thumbnail_url || ''}
                 onChange={e => handleInputChange('thumbnail_url', e.target.value)}
                 placeholder="https://example.com/image.jpg"
               />
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('admin.form.advanced.previewCardTitle')}</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <div>
+            <p className={fieldLabelClass}>{t('admin.form.advanced.previewCardTitle')}</p>
             <ExperimentPreviewCard experiment={experiment} />
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
+      </FormSection>
 
       <RawJsonViewer experiment={experiment} />
-    </>
+    </div>
   );
 }

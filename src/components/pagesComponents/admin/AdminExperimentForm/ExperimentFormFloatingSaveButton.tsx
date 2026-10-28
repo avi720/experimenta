@@ -16,7 +16,7 @@ export default function ExperimentFormFloatingSaveButton({ isSaving, hasChanges,
       type="submit"
       disabled={isSaving || (!hasChanges && isEditMode)}
       aria-label={t('common.save')}
-      className="fixed bottom-8 start-8 rounded-full shadow-2xl bg-blue-600 hover:bg-blue-700 w-14 h-14 p-0 disabled:opacity-50"
+      className="focus-ring fixed bottom-6 start-6 z-30 h-14 w-14 rounded-full bg-plasma p-0 text-[#1C0F04] shadow-[0_0_0_1px_rgb(var(--plasma-hi)/0.4),0_12px_32px_-8px_rgb(var(--plasma)/0.45)] hover:bg-plasma-hi disabled:opacity-0 disabled:pointer-events-none transition-opacity"
     >
       <Save className="w-6 h-6" />
     </Button>

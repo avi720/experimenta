@@ -3,9 +3,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, SlidersHorizontal, Trash } from 'lucide-react';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
+import StatusPill from '../StatusPill';
 import { useTranslation } from '@/i18n';
 import type { AdminExperimentStats } from '@/types/admin';
 import type { Bilingual } from '@/types/experiment';
@@ -26,6 +26,8 @@ type AdminExperimentsFiltersProps = {
   clearFilters: () => void;
 };
 
+const controlClass = 'h-10 border-line bg-space-raised/50 text-star placeholder:text-dust/70 focus-visible:ring-blueshift';
+
 export default function AdminExperimentsFilters({
   searchTerm, setSearchTerm,
   selectedCategory, setSelectedCategory,
@@ -39,35 +41,37 @@ export default function AdminExperimentsFilters({
   const { t, pick } = useTranslation();
 
   return (
-    <motion.div
-      layout
-      className="bg-white rounded-lg shadow-sm p-4 mb-8 border border-slate-200"
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <motion.div layout className="mt-8 mb-8">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Search aria-hidden="true" className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dust" />
           <Input
             placeholder={t('admin.list.searchPlaceholder')}
+            aria-label={t('admin.list.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pr-4 pl-10"
+            className={`${controlClass} ps-9 pe-3`}
           />
         </div>
 
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger><SelectValue placeholder={t('admin.list.filterByCategory')} /></SelectTrigger>
+          <SelectTrigger className={controlClass} aria-label={t('admin.list.filterByCategory')}>
+            <SelectValue placeholder={t('admin.list.filterByCategory')} />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('common.allCategories')}</SelectItem>
             {Object.entries(categoryNames).map(([key]) => (
               <SelectItem key={key} value={key}>
-                {pick(categoryNames[key], key)} ({stats.byCategory[key] || 0})
+                {pick(categoryNames[key], key)} <span className="font-mono text-dust">({stats.byCategory[key] || 0})</span>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        
+
         <Select value={`${sortBy}-${sortDirection}`} onValueChange={handleSortChange}>
-          <SelectTrigger><SelectValue placeholder={t('admin.list.sortByPlaceholder')} /></SelectTrigger>
+          <SelectTrigger className={controlClass} aria-label={t('admin.list.sortByPlaceholder')}>
+            <SelectValue placeholder={t('admin.list.sortByPlaceholder')} />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="created_date-desc">{t('admin.list.sortCreatedDesc')}</SelectItem>
             <SelectItem value="created_date-asc">{t('admin.list.sortCreatedAsc')}</SelectItem>
@@ -77,19 +81,24 @@ export default function AdminExperimentsFilters({
           </SelectContent>
         </Select>
       </div>
-      <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
-        <div className="flex items-center space-x-2 rtl:space-x-reverse">
+      <div className="mt-4 flex min-h-9 flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
           <Switch id="show-inactive" checked={showInactive} onCheckedChange={setShowInactive} />
-          <Label htmlFor="show-inactive">{t('admin.list.showInactiveLabel')}</Label>
+          <Label htmlFor="show-inactive" className="text-sm font-normal text-dust">{t('admin.list.showInactiveLabel')}</Label>
         </div>
         {activeFiltersCount > 0 && (
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="gap-2">
-              <SlidersHorizontal className="w-3 h-3" />
+            <StatusPill tone="info">
+              <SlidersHorizontal aria-hidden="true" className="w-3 h-3" />
               {t('admin.list.activeFiltersBadge', { count: activeFiltersCount })}
-            </Badge>
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-slate-500 hover:text-slate-800">
-              <Trash className="w-3 h-3 me-1" />
+            </StatusPill>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="focus-ring h-8 gap-1 text-dust hover:bg-space-raised hover:text-star"
+            >
+              <X className="w-3.5 h-3.5" />
               {t('common.clearAll')}
             </Button>
           </div>
