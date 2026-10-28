@@ -57,30 +57,55 @@ export type LabFloorOptions = {
 };
 
 /**
- * A dark lab floor with a fine grid; with scene fog its edges dissolve into space.
+ * A dark lab floor with a fine grid. The floor fades out towards its rim, so it reads as a
+ * platform floating in space and the backdrop behind the scene stays visible.
  */
 export function createLabFloor({ size, divisions = Math.round(size / 5), y = 0 }: LabFloorOptions): THREE.Group {
     const group = new THREE.Group();
     group.name = 'lab-floor';
 
+    const fade = drawTexture(128, 128, (ctx) => {
+        const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        g.addColorStop(0, '#fff');
+        g.addColorStop(0.45, '#fff');
+        g.addColorStop(1, '#000');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, 128, 128);
+    });
+    // The grid is painted into the floor texture so it fades out with the floor.
+    const gridPx = 1024;
+    const grid = drawTexture(gridPx, gridPx, (ctx) => {
+        ctx.fillStyle = '#110e1a';
+        ctx.fillRect(0, 0, gridPx, gridPx);
+        const cell = gridPx / divisions;
+        for (let i = 0; i <= divisions; i++) {
+            const at = Math.round(i * cell) + 0.5;
+            ctx.strokeStyle = i % 5 === 0 ? '#2f2843' : '#1c1829';
+            ctx.lineWidth = i % 5 === 0 ? 1.5 : 1;
+            ctx.beginPath();
+            ctx.moveTo(at, 0);
+            ctx.lineTo(at, gridPx);
+            ctx.moveTo(0, at);
+            ctx.lineTo(gridPx, at);
+            ctx.stroke();
+        }
+    });
+    if (grid) grid.anisotropy = 8;
     const floor = new THREE.Mesh(
         new THREE.PlaneGeometry(size, size),
-        new THREE.MeshStandardMaterial({ color: 0x110e1a, metalness: 0.2, roughness: 0.88 })
+        new THREE.MeshStandardMaterial({
+            color: grid ? 0xffffff : 0x110e1a,
+            map: grid,
+            metalness: 0.2,
+            roughness: 0.88,
+            alphaMap: fade,
+            transparent: fade !== null,
+        })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = y;
     floor.receiveShadow = true;
     group.add(floor);
-
-    const grid = new THREE.GridHelper(size, divisions, 0x3a3152, 0x231e31);
-    grid.position.y = y + 0.02;
-    const gridMaterials = Array.isArray(grid.material) ? grid.material : [grid.material];
-    gridMaterials.forEach((material) => {
-        material.transparent = true;
-        material.opacity = 0.6;
-        material.depthWrite = false;
-    });
-    group.add(grid);
 
     return group;
 }

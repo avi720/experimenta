@@ -49,8 +49,8 @@ export function populateQuantumTunnelingScene(scene: THREE.Scene, barrierWidth: 
 
     // Beamline: a faint guide the particle travels along.
     const beamline = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.05, 0.05, DETECTOR_X_POSITION + 46, 8),
-        new THREE.MeshBasicMaterial({ color: LAB_COLORS.blueshift, transparent: true, opacity: 0.25, toneMapped: false })
+        new THREE.CylinderGeometry(0.08, 0.08, DETECTOR_X_POSITION + 46, 8),
+        new THREE.MeshBasicMaterial({ color: LAB_COLORS.blueshift, transparent: true, opacity: 0.45, toneMapped: false })
     );
     beamline.rotation.z = Math.PI / 2;
     beamline.position.x = (DETECTOR_X_POSITION - 46) / 2;
@@ -203,8 +203,8 @@ export default function QuantumTunnelingScene({ parameters, dataPointToRender }:
             fov: 45,
             far: 1000,
             fog: { near: 90, far: 200 },
-            cameraPosition: [-8, 20, 46],
-            target: [-6, 0, 0],
+            cameraPosition: [-11, 24, 68],
+            target: [-11, 0, 0],
             lights: {
                 ambientIntensity: 0.5,
                 directionalIntensity: 1.4,

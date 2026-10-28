@@ -141,7 +141,7 @@ export default function BlackHoleBackdrop({ dir = "ltr", className = "" }: Black
             canvas.height = height;
             radius = Math.max(14, Math.min(width, height) * 0.055);
             cx = (dir === "rtl" ? 0.76 : 0.24) * width;
-            cy = 0.3 * height;
+            cy = 0.24 * height;
             stars = paintStars(width, height, 7);
             annuli = ANNULI.map((a, i) => paintAnnulus(radius, a, 11 + i));
             const outer = ANNULI[ANNULI.length - 1].outer * radius;
@@ -242,13 +242,14 @@ export default function BlackHoleBackdrop({ dir = "ltr", className = "" }: Black
 
         // Repainting the sprites is the expensive part, so wait for the size to settle
         // (the side panel animates open and closed).
-        let skipFirst = true;
+        // The parent can still be unsized at mount (the page is laid out after this effect),
+        // so compare against the size last painted instead of skipping the first callback.
         let resizeTimer = 0;
+        let paintedSize = `${parent.clientWidth}x${parent.clientHeight}`;
         const resizeObserver = new ResizeObserver(() => {
-            if (skipFirst) {
-                skipFirst = false;
-                return;
-            }
+            const size = `${parent.clientWidth}x${parent.clientHeight}`;
+            if (size === paintedSize) return;
+            paintedSize = size;
             window.clearTimeout(resizeTimer);
             resizeTimer = window.setTimeout(() => {
                 layout();

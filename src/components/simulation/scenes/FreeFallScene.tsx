@@ -144,8 +144,8 @@ export function createDropTower(h0: number): DropTower {
         majorStep,
         labelStep: majorStep,
         format: (v) => `${Number(v.toFixed(3))} m`,
-        tickSize: 0.9 * u,
-        labelHeight: 0.75 * u,
+        tickSize: 1.1 * u,
+        labelHeight: 1.6 * u,
     });
     ruler.position.set(scaleX, 0, 0);
     group.add(ruler);

@@ -7,9 +7,9 @@ import { createLabFloor, createRuler, LAB_COLORS, labMaterials } from '@/simulat
 
 const SPRING_SAMPLES = 360;
 const SPRING_TUBULAR_SEGMENTS = 360;
-const SPRING_TUBE_RADIUS = 0.2;
+const SPRING_TUBE_RADIUS = 0.26;
 const SPRING_RADIAL_SEGMENTS = 8;
-const SPRING_COIL_RADIUS = 1.5;
+const SPRING_COIL_RADIUS = 2.1;
 const SPRING_COILS = 18;
 
 /**
@@ -143,7 +143,7 @@ function populateAirTrack(scene: THREE.Scene) {
         labelStep: 1,
         format: (v) => `${v} m`,
         tickSize: 1.2,
-        labelHeight: 1.3,
+        labelHeight: 1.9,
     });
     ruler.rotation.z = -Math.PI / 2;
     ruler.position.set(0, TRACK_TOP - 2.9, 2.2);
@@ -208,8 +208,8 @@ const ShoScene = ({ parameters, dataPointToRender }: SimulationSceneProps) => {
             fov: 40,
             far: 2000,
             fog: { near: 260, far: 700 },
-            cameraPosition: [30, 62, 170],
-            target: [-4, 6, 0],
+            cameraPosition: [24, 46, 128],
+            target: [-4, 8, 0],
             lights: {
                 ambientIntensity: 0.55,
                 directionalIntensity: 1.6,
