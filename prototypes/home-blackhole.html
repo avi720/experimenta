@@ -54,7 +54,7 @@
   .hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -2; }
   .hero .scrim { position: absolute; inset: 0; z-index: -1; pointer-events: none;
     background: linear-gradient(to left, var(--space) 0%, rgb(11 9 18 / .9) 40%, rgb(11 9 18 / 0) 62%); }
-  .hero-body { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-top: 56px; padding-bottom: 64px; pointer-events: none; }
+  .hero-body { flex: 1; padding-inline: clamp(24px, 6vw, 112px); display: flex; flex-direction: column; justify-content: center; padding-top: 56px; padding-bottom: 64px; pointer-events: none; }
   .hero-copy { max-width: 36rem; }
   .hero-copy a { pointer-events: auto; }
   .hero h1 { font-size: clamp(2.6rem, 6vw, 5.3rem); line-height: 1.04; letter-spacing: -.02em; }
@@ -180,7 +180,7 @@
     <canvas id="stars" aria-hidden="true"></canvas>
     <canvas id="disk" role="img" aria-label="הדמיה חיה של חור שחור שבולע גז מדיסק הצבירה שסביבו"></canvas>
     <div class="scrim" aria-hidden="true"></div>
-    <div class="hero-body wrap">
+    <div class="hero-body">
       <div class="hero-copy">
         <h1 id="hero-title">מעבדה לכל ניסוי שאפשר לחשוב עליו</h1>
         <p class="hero-sub">סימולציות פיזיקה אינטראקטיביות, מנפילה חופשית ועד מנהור קוונטי. משנים פרמטר, מריצים, ורואים את התוצאה בגרף חי.</p>
@@ -357,6 +357,8 @@
   const X = new Float32Array(MAX), Z = new Float32Array(MAX);
   const VX = new Float32Array(MAX), VZ = new Float32Array(MAX);
   const VISC = new Float32Array(MAX), SIZE = new Float32Array(MAX), AGE = new Float32Array(MAX);
+  // Pointer streams: STREAM marks a parcel as part of one, R0 is the radius it was released at.
+  const STREAM = new Uint8Array(MAX), R0 = new Float32Array(MAX);
   let n = 0, swallowed = 0, flare = 0, feedDebt = 0;
   let W = 0, H = 0, dpr = 1, cx = 0, cy = 0, R = 0, GM = 0;
 
@@ -425,15 +427,16 @@
     }
   }
 
-  function add(x, z, vx, vz, visc, size) {
+  function add(x, z, vx, vz, visc, size, stream = 0) {
     const i = n < MAX ? n++ : (Math.random() * MAX) | 0;
     X[i] = x; Z[i] = z; VX[i] = vx; VZ[i] = vz; VISC[i] = visc; SIZE[i] = size; AGE[i] = 0;
+    STREAM[i] = stream; R0[i] = Math.hypot(x, z);
   }
 
   function remove(i) {
     n--;
     X[i] = X[n]; Z[i] = Z[n]; VX[i] = VX[n]; VZ[i] = VZ[n];
-    VISC[i] = VISC[n]; SIZE[i] = SIZE[n]; AGE[i] = AGE[n];
+    VISC[i] = VISC[n]; SIZE[i] = SIZE[n]; AGE[i] = AGE[n]; STREAM[i] = STREAM[n]; R0[i] = R0[n];
   }
 
   // Steady supply on near-circular orbits keeps a disk visible with no input.
@@ -446,20 +449,21 @@
     }
   }
 
-  // A puff of gas where the pointer passes: it shares the stroke's orbital spin, so it
-  // shears into one stream, and starts large and diffuse before the disk compresses it.
+  // A wisp of gas where the pointer passes. One gesture shares a sub-orbital spin, so the wisp
+  // falls inward on a tightening spiral: it speeds up and heats as it goes, and swells and
+  // scatters near the hole until it blends into the disk.
+  let gestureSpin = 0.55;
   function release(sx, sy, dx, dy, count) {
-    const strokeSpin = 0.35 + Math.random() * 0.65;
     for (let k = 0; k < count; k++) {
       const t = k / count;
-      const x = sx - dx * t - cx + (Math.random() - 0.5) * R * 0.8;
-      const z = (sy - dy * t - cy + (Math.random() - 0.5) * R * 0.8) / COS_I;
+      const x = sx - dx * t - cx + (Math.random() - 0.5) * R * 0.35;
+      const z = (sy - dy * t - cy + (Math.random() - 0.5) * R * 0.35) / COS_I;
       const r = Math.max(R * 1.5, Math.hypot(x, z));
-      const vc = Math.sqrt(GM / r), spin = strokeSpin + (Math.random() - 0.5) * 0.15;
+      const vc = Math.sqrt(GM / r), spin = gestureSpin + (Math.random() - 0.5) * 0.08;
       add(x, z,
-        (-z / r) * vc * spin - (x / r) * vc * 0.2 + dx * 0.03,
-        (x / r) * vc * spin - (z / r) * vc * 0.2 + (dy / COS_I) * 0.03,
-        0.4 + Math.random() * 1.5, 1.2 + Math.random() * 0.8);
+        (-z / r) * vc * spin - (x / r) * vc * 0.05 + dx * 0.012,
+        (x / r) * vc * spin - (z / r) * vc * 0.05 + (dy / COS_I) * 0.012,
+        0.6 + Math.random() * 0.8, 0.45 + Math.random() * 0.3, 1);
     }
   }
 
@@ -478,6 +482,11 @@
         vr *= 1 - 0.01 * h;
         vt *= 1 - VISC[i] * (r < isco ? 0.02 : 0.0008) * h;
         vx = vr * ux - vt * uz; vz = vr * uz + vt * ux;
+        if (STREAM[i]) {
+          // Turbulent scatter grows toward the hole, so a stream disperses as it falls.
+          const kick = 0.05 * Math.sqrt(GM / r) * Math.min(1, (2.5 * R / r) ** 2) * h;
+          vx += (Math.random() - 0.5) * kick; vz += (Math.random() - 0.5) * kick;
+        }
         VX[i] = vx; VZ[i] = vz; X[i] = x + vx * h; Z[i] = z + vz * h;
         AGE[i] += h;
       }
@@ -504,14 +513,16 @@
 
       // Puffs grow outward (the outer disk is thicker and more diffuse) and stretch along their
       // motion; near the hole the stretch grows with the tidal term (R/r)^3.
-      const base = R * SIZE[i] * (0.55 + 0.11 * r / R);
+      // Pointer gas starts as fine puffs and swells as it falls, until it matches the disk.
+      const fall = STREAM[i] ? Math.max(0, Math.min(1, (R0[i] - r) / Math.max(R, R0[i] - 2 * R))) : 1;
+      const base = R * SIZE[i] * (0.55 + 0.11 * r / R) * (STREAM[i] ? 0.45 + 0.55 * fall : 1);
       const along = base * (1.8 + 3 * Math.min(1, Math.pow(1.5 * R / r, 3)));
       const across = base * (0.9 - 0.3 * Math.min(1, Math.pow(1.6 * R / r, 2)));
       // Direction of motion on screen (the disk plane is foreshortened vertically).
       const mx = vx / speed, my = (vz * COS_I) / speed, ml = Math.hypot(mx, my) || 1;
       const ex = mx / ml, ey = my / ml;
       // A fresh puff fades in, gas dims as it crosses into the shadow, and brightness follows Doppler beaming.
-      const alpha = Math.min(1, AGE[i] / 40) * Math.min(1, (r - R) / (0.7 * R)) * (0.045 + 0.055 * temp) * (1 + 0.35 * approach);
+      const alpha = Math.min(1, AGE[i] / (STREAM[i] ? 10 : 40)) * (STREAM[i] ? 1.5 - 0.5 * fall : 1) * Math.min(1, (r - R) / (0.7 * R)) * (0.045 + 0.055 * temp) * (1 + 0.35 * approach);
       if (alpha <= 0.004) continue;
       const c = z < 0 ? bctx : fctx;
       c.globalAlpha = alpha;
@@ -577,14 +588,16 @@
     const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
     if (last) {
       const dx = sx - last.x, dy = sy - last.y;
-      release(sx, sy, dx, dy, Math.min(10, Math.floor(Math.hypot(dx, dy) / 6)));
+      release(sx, sy, dx, dy, Math.min(14, Math.floor(Math.hypot(dx, dy) / 5)));
+    } else {
+      gestureSpin = 0.55 + Math.random() * 0.3;
     }
     last = { x: sx, y: sy };
   });
   hero.addEventListener('pointerleave', () => { last = null; });
   hero.addEventListener('pointerdown', (e) => {
     const rect = canvas.getBoundingClientRect();
-    release(e.clientX - rect.left, e.clientY - rect.top, 0, 0, 40);
+    release(e.clientX - rect.left, e.clientY - rect.top, 0, 0, 24);
   });
 
   let raf = 0, lastT = 0, lastMeters = 0, onScreen = true;
