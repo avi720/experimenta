@@ -3,6 +3,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Settings, PlayCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
+import { isParameterVisible } from "@/simulation/parameterValidation";
 import ParameterControls from "../ParameterControls";
 import SimulationConsole from "../SimulationConsole";
 import type { ExperimentTemplateData, Parameter, ParameterValues } from "@/types/experiment";
@@ -56,12 +57,8 @@ export default function ExperimentSidePanel({
     const { t, locale } = useTranslation(isRTL);
     const slideOffset = locale === "he" ? -400 : 400;
 
-    // סינון פרמטרים - הצגת רק פרמטרים פעילים ותקינים
-    const activeParameters = (parameters || []).filter(param =>
-        param &&
-        param.key &&
-        param.is_active !== false
-    );
+    // Only active parameters whose `visible_when` condition holds for the current values.
+    const activeParameters = (parameters || []).filter((param) => isParameterVisible(param, paramValues));
 
     return (
         <motion.div

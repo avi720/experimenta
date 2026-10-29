@@ -47,6 +47,8 @@ export default function SimulationCharts({
 
     const hasData = simulationData && simulationData.length > 0;
     const outputs = experiment?.outputs || [];
+    // Time-series runs plot against time; static patterns (double slit) against screen position.
+    const xKey = hasData && simulationData[0].time === undefined && simulationData[0].position !== undefined ? "position" : "time";
 
     const handleMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
         setIsDragging(true);
@@ -146,9 +148,12 @@ export default function SimulationCharts({
                         >
                             <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} />
                             <XAxis
-                                dataKey="time"
+                                dataKey={xKey}
+                                {...(xKey === "position"
+                                    ? { type: "number" as const, tickCount: 7, tickFormatter: (v: number) => String(Number(v.toPrecision(3))) }
+                                    : {})}
                                 label={{
-                                    value: t("workspace.timeAxisLabel"),
+                                    value: t(xKey === "position" ? "workspace.positionAxisLabel" : "workspace.timeAxisLabel"),
                                     position: 'insideBottom',
                                     offset: -5,
                                     fill: AXIS_COLOR
@@ -156,7 +161,7 @@ export default function SimulationCharts({
                                 stroke={AXIS_COLOR}
                                 tick={{ fill: AXIS_COLOR, fontFamily: "IBM Plex Mono, monospace" }}
                                 style={{ fontSize: '12px' }}
-                                domain={['dataMin', 'dataMax']}
+                                domain={xKey === "position" ? ['auto', 'auto'] : ['dataMin', 'dataMax']}
                             />
                             <YAxis
                                 label={{

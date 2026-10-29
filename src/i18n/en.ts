@@ -80,7 +80,6 @@ const en = {
       inDisk: 'In the disk',
       crossed: 'Crossed the horizon',
     },
-    thoughtTag: 'Thought experiment',
     featuresTitle: "What's in the lab",
     features: [
       {
@@ -132,7 +131,6 @@ const en = {
       {
         question: 'What about thought experiments?',
         answer: "They're on the way. Experiments like Einstein's elevator, Maxwell's demon or Schrödinger's cat will get simulations of their own, so you can play with their assumptions instead of only reading about them.",
-        thought: true,
       },
       {
         question: 'Which devices does it run on?',
@@ -184,6 +182,7 @@ const en = {
     runSimulationToSeeCharts: 'Run the simulation to see charts',
     clickPlayInConsole: 'Click the play button in the console',
     timeAxisLabel: 'Time (s)',
+    positionAxisLabel: 'Position on the screen (mm)',
     valuesAxisLabel: 'Values',
     noParametersAvailable: 'No parameters available',
     presetsCardTitle: 'Presets',

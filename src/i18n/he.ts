@@ -80,7 +80,6 @@ const he = {
       inDisk: 'בדיסק',
       crossed: 'חצו את האופק',
     },
-    thoughtTag: 'ניסוי מחשבתי',
     featuresTitle: 'מה מחכה במעבדה',
     features: [
       {
@@ -132,7 +131,6 @@ const he = {
       {
         question: 'מה עם ניסויים מחשבתיים?',
         answer: 'הם בדרך. ניסויים כמו המעלית של איינשטיין, השד של מקסוול או החתול של שרדינגר יקבלו הדמיה משלהם, כדי שאפשר יהיה לשחק בהנחות שלהם ולא רק לקרוא עליהן.',
-        thought: true,
       },
       {
         question: 'על אילו מכשירים זה עובד?',
@@ -184,6 +182,7 @@ const he = {
     runSimulationToSeeCharts: 'הרץ את הסימולציה כדי לראות גרפים',
     clickPlayInConsole: 'לחץ על כפתור ההפעלה בקונסולה',
     timeAxisLabel: 'זמן (s)',
+    positionAxisLabel: 'מיקום על המסך (מ"מ)',
     valuesAxisLabel: 'ערכים',
     noParametersAvailable: 'אין פרמטרים זמינים',
     presetsCardTitle: 'תצורות מוכנות',

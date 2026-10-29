@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { canAccessExperiment } from '@/lib/access';
 import { cn } from '@/lib/utils';
 import { categoryNames, getExperimentPageUrl } from './labConstants';
-import { hasSimulation, isThoughtExperiment } from './experimentTraits';
+import { hasSimulation } from './experimentTraits';
 import type { LucideIcon } from 'lucide-react';
 import type { ExperimentTemplateData, LocalizedTexts } from '@/types/experiment';
 import type { IsRTLProps } from '@/types/props';
@@ -28,17 +28,13 @@ export default function ExperimentCard({ experiment, isRTL, delay, categoryIcons
     const texts = pick<LocalizedTexts>(experiment.i18n_texts);
     const title = texts?.title || experiment.slug;
     const categoryLabel = experiment.category ? pick(categoryNames[experiment.category], experiment.category) : null;
-    const thought = isThoughtExperiment(experiment);
     const ready = hasSimulation(experiment);
     const accessLevel = experiment.access_level ?? 'public';
     const locked = !canAccessExperiment(user, experiment);
-    const visibleTags = (experiment.tags ?? []).filter((tag) => !isThoughtExperiment({ type: null, tags: [tag] })).slice(0, 3);
+    const visibleTags = (experiment.tags ?? []).slice(0, 3);
 
     const body = (
         <>
-            {/* Horizon violet marks thought experiments across the brand. */}
-            {thought && <span aria-hidden="true" className="absolute inset-y-0 start-0 w-0.5 bg-horizon" />}
-
             <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2.5 text-[13px] text-dust">
                     <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-line bg-space">
@@ -48,11 +44,6 @@ export default function ExperimentCard({ experiment, isRTL, delay, categoryIcons
                 </div>
 
                 <div className="flex flex-shrink-0 flex-wrap justify-end gap-1.5">
-                    {thought && (
-                        <span className={cn(pillClass, 'border-horizon/40 bg-horizon/10 text-horizon')}>
-                            {t('dashboard.thoughtTag')}
-                        </span>
-                    )}
                     {accessLevel === 'premium' && (
                         <span className={cn(pillClass, 'border-plasma/40 bg-plasma/10 text-plasma')}>
                             {t('lab.accessPremium')}

@@ -2,7 +2,7 @@ import { Plus } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import type { IsRTLProps } from '@/types/props';
 
-type FaqItem = { question: string; answer: string; thought?: boolean };
+type FaqItem = { question: string; answer: string };
 
 export default function FaqSection({ isRTL }: IsRTLProps) {
     const { t } = useTranslation(isRTL);
@@ -19,16 +19,7 @@ export default function FaqSection({ isRTL }: IsRTLProps) {
                     {items.map((item) => (
                         <details key={item.question} className="group border-b border-line">
                             <summary className="focus-ring flex cursor-pointer list-none items-center justify-between gap-6 py-6 text-[19px] leading-snug text-star hover:text-blueshift [&::-webkit-details-marker]:hidden">
-                                <span className="flex flex-wrap items-center gap-3">
-                                    {/* Horizon violet marks thought experiments across the brand. */}
-                                    {item.thought && <span aria-hidden="true" className="h-5 w-0.5 flex-shrink-0 bg-horizon" />}
-                                    {item.question}
-                                    {item.thought && (
-                                        <span className="rounded-full border border-horizon/45 px-2.5 text-[13px] text-horizon">
-                                            {t('dashboard.thoughtTag')}
-                                        </span>
-                                    )}
-                                </span>
+                                <span>{item.question}</span>
                                 <Plus aria-hidden="true" className="h-5 w-5 flex-shrink-0 text-blueshift transition-transform duration-200 group-open:rotate-45 motion-reduce:transition-none" />
                             </summary>
                             <p className="pb-7 pe-11 text-[17px] leading-[1.7] text-dust max-w-[40rem]">{item.answer}</p>

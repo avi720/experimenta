@@ -47,8 +47,11 @@ export const EXPERIMENT_REGISTRY = {
         calculateStaticFn: calculateInterference,
         Scene: DoubleSlitScene,
         defaultParameters: {
-            wavelength: 500,
-            slit_separation: 2000,
+            source: "light",
+            wavelength: 532,
+            accelerating_voltage: 50,
+            slit_spacing: 250,
+            slit_width: 50,
             screen_distance: 1,
         },
     },

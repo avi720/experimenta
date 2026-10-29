@@ -32,11 +32,11 @@ Tokens are CSS custom properties in `src/index.css` (`:root`) and Tailwind color
 | `--plasma` | `plasma` | `#FFB25E` | Hot disk gas. Primary action, active nav line, live readouts |
 | `--plasma-hi` | `plasma-hi` | `#FFE2B8` | Photon ring; primary button hover |
 | `--blueshift` | `blueshift` | `#9DBBFF` | The approaching side. Links, data traces, focus ring |
-| `--horizon` | `horizon` | `#B48CFF` | Beyond the horizon. Reserved for thought experiments |
+| `--horizon` | `horizon` | `#B48CFF` | Beyond the horizon. The cool far edge of the disk; a rare accent in illustration and data |
 
 Rules:
 - Color carries meaning. **Plasma** means "act here" (one primary per view). **Blueshift**
-  is for links, data and focus. **Horizon** marks thought experiments only, so it stays rare.
+  is for links, data and focus. **Horizon** is a rare accent for illustration and data, never a category marker.
 - Body text is `star` or `dust` on `space`. Never put `dust` text on `line`.
 - No gradient washes as decoration. A gradient is allowed only when it is a physical
   quantity (a field, a temperature, a glow) or a scrim that keeps text legible over one.
@@ -97,7 +97,8 @@ arrows appended to button text.
 - **Secondary button**: text in `star` with a 1 px `line` border, turning `blueshift` on hover.
 - **Links in text**: `text-blueshift` with underline offset 4.
 - **Focus**: 2 px `blueshift` outline with 2 px offset everywhere (`.focus-ring`).
-- **Thought experiments**: a `horizon` line marker and a `horizon` pill.
+- **Thought experiments** look exactly like every other experiment: no marker, pill or colour of
+  their own. Their point is that the lab makes them physical, so they sit among the real ones.
 - **shadcn primitives**: the shadcn HSL tokens in `:root` (`src/index.css`) are mapped onto
   the brand, so every page, dialog and menu renders on `space` with no extra class. Prefer
   the brand utilities (`bg-space-raised`, `border-line`, `text-dust`) over raw `slate`/`white`.

@@ -118,22 +118,33 @@ export function populateQuantumTunnelingScene(scene: THREE.Scene, barrierWidth: 
     barrier.scale.x = barrierWidth;
     scene.add(barrier);
 
-    // Detector: a sensor head on a post beside the beamline, its lens aimed at the beam.
+    // Detector: a sensor head on a vertical post behind and above the beamline. Only the head
+    // tilts: it looks down and forward so its lens (local +Z) faces the beam axis at y = z = 0.
+    const DETECTOR_HEIGHT = 3;
+    const DETECTOR_DEPTH = -4;
     const detectorGroup = new THREE.Group();
-    detectorGroup.position.set(DETECTOR_X_POSITION, 3, -4);
-    detectorGroup.rotation.x = -Math.PI / 7;
+    detectorGroup.position.set(DETECTOR_X_POSITION, DETECTOR_HEIGHT, DETECTOR_DEPTH);
+    const detectorHead = new THREE.Group();
+    detectorHead.lookAt(new THREE.Vector3(0, -DETECTOR_HEIGHT, -DETECTOR_DEPTH));
+    detectorGroup.add(detectorHead);
     const head = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.6, 2.6), anodized);
-    detectorGroup.add(head);
+    detectorHead.add(head);
     const lensBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 1, 32), steel);
     lensBarrel.rotation.x = Math.PI / 2;
     lensBarrel.position.z = 1.8;
-    detectorGroup.add(lensBarrel);
+    detectorHead.add(lensBarrel);
     const detectorLens = new THREE.Mesh(new THREE.CircleGeometry(0.6, 32), labMaterials.glow(DETECTOR_IDLE, 1.2));
     detectorLens.position.z = 2.31;
-    detectorGroup.add(detectorLens);
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 6, 12), steel);
-    post.position.y = -3.6;
+    detectorHead.add(detectorLens);
+    // The post runs from the floor (y = -3) up to the underside of the head.
+    const postTop = -0.6;
+    const postBottom = -3 - DETECTOR_HEIGHT;
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, postTop - postBottom, 12), steel);
+    post.position.y = (postTop + postBottom) / 2;
     detectorGroup.add(post);
+    const postBase = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.2, 0.3, 32), graphite);
+    postBase.position.y = postBottom + 0.15;
+    detectorGroup.add(postBase);
     detectorGroup.traverse((node) => {
         node.castShadow = true;
     });

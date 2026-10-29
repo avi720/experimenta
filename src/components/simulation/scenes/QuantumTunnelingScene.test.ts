@@ -56,3 +56,18 @@ describe("QuantumTunnelingScene resource management (T26)", () => {
         matSpies.forEach((spy) => expect(spy).toHaveBeenCalledTimes(1));
     });
 });
+
+describe("QuantumTunnelingScene detector", () => {
+    it("aims the detector lens at the beam axis", () => {
+        const scene = new THREE.Scene();
+        const { detectorLens } = populateQuantumTunnelingScene(scene, 1);
+        scene.updateMatrixWorld(true);
+
+        const lensPosition = detectorLens.getWorldPosition(new THREE.Vector3());
+        const facing = detectorLens.getWorldDirection(new THREE.Vector3());
+        // Follow the lens normal until it reaches the beam's height (y = 0): it must hit the beam (z = 0).
+        const steps = -lensPosition.y / facing.y;
+        expect(steps).toBeGreaterThan(0);
+        expect(lensPosition.z + facing.z * steps).toBeCloseTo(0, 1);
+    });
+});
