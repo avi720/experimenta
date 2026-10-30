@@ -6,7 +6,13 @@
 /**
  * חישוב צעד בודד בסימולציה
  */
-import type { EngineParameters } from './types';
+import type { EngineParameters, ParameterValue } from './types';
+
+/** A missing or non-numeric input uses `fallback`; a real zero does not. */
+function finiteOr(value: ParameterValue, fallback: number): number {
+    const parsed = parseFloat(String(value));
+    return Number.isFinite(parsed) ? parsed : fallback;
+}
 
 export function calculateStep(t: number, parameters?: EngineParameters | null) {
     const { 
@@ -21,7 +27,8 @@ export function calculateStep(t: number, parameters?: EngineParameters | null) {
     // המרה למספרים
     const m_num = parseFloat(String(m)) || 1;
     const k_num = parseFloat(String(k)) || 10;
-    const x0_num = parseFloat(String(x0)) || 1;
+    // x0 = 0 is equilibrium, not a missing value. `parseFloat("0") || 1` would replace it with 1 m.
+    const x0_num = finiteOr(x0, 1);
     const v0_num = parseFloat(String(v0)) || 0;
     
     // תמיכה בשני שמות לפרמטר הדעיכה: c או damping
