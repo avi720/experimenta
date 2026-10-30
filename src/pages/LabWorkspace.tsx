@@ -107,18 +107,18 @@ export default function LabWorkspace({ forcedSlug = null }: { forcedSlug?: strin
 
         return (
             <div
-                className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-16"
+                className="min-h-screen flex items-center justify-center bg-space text-star px-4 py-16"
                 dir={dir}
             >
-                <Card className="w-full max-w-md shadow-lg border-amber-200">
+                <Card className="w-full max-w-md rounded-md border-line bg-space-raised shadow-none">
                     <CardHeader className="text-center">
-                        <div className="mx-auto w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-3">
-                            <Lock className="w-6 h-6 text-amber-600" />
+                        <div className="mx-auto w-12 h-12 rounded-full border border-plasma/40 bg-plasma/10 flex items-center justify-center mb-3">
+                            <Lock className="w-5 h-5 text-plasma" />
                         </div>
-                        <CardTitle className="text-2xl text-slate-900">
+                        <CardTitle className="text-2xl font-light text-star">
                             {t("workspace.premiumRequiredTitle")}
                         </CardTitle>
-                        <CardDescription className="text-base text-slate-600 mt-2">
+                        <CardDescription className="text-base text-dust mt-2 leading-relaxed">
                             {t("workspace.premiumRequiredDescription", { title: expTitle })}
                         </CardDescription>
                     </CardHeader>
@@ -126,7 +126,7 @@ export default function LabWorkspace({ forcedSlug = null }: { forcedSlug?: strin
                         <Button
                             type="button"
                             onClick={() => navigate(createPageUrl("Lab"))}
-                            className="gap-2"
+                            className="focus-ring gap-2 bg-plasma text-primary-foreground hover:bg-plasma-hi"
                         >
                             <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
                             {t("common.backToLab")}

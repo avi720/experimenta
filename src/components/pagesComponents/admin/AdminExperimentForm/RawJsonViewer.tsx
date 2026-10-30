@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import FormSection from './FormSection';
 import { useTranslation } from '@/i18n';
 import type { ExperimentFormData } from '@/types/experiment';
 
@@ -7,21 +7,16 @@ export default function RawJsonViewer({ experiment }: { experiment: ExperimentFo
   const { t } = useTranslation();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('admin.form.advanced.rawJsonTitle')}</CardTitle>
-        <CardDescription>
-          {t('admin.form.advanced.rawJsonDescription')}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Textarea 
-          value={JSON.stringify(experiment, null, 2)} 
-          readOnly
-          rows={12}
-          className="font-mono text-xs bg-slate-50"
-        />
-      </CardContent>
-    </Card>
+    <FormSection title={t('admin.form.advanced.rawJsonTitle')} description={t('admin.form.advanced.rawJsonDescription')}>
+      <Textarea
+        value={JSON.stringify(experiment, null, 2)}
+        readOnly
+        dir="ltr"
+        spellCheck={false}
+        rows={16}
+        aria-label={t('admin.form.advanced.rawJsonTitle')}
+        className="border-line bg-hole/60 font-mono text-xs leading-relaxed text-dust"
+      />
+    </FormSection>
   );
 }

@@ -1,165 +1,274 @@
 import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import type { SimulationSceneProps } from '@/types/simulation';
-import { createGroundPlane, disposeObject3D, setupScene } from '@/simulation/sceneUtils';
+import { disposeObject3D, setupScene, type SceneSetup } from '@/simulation/sceneUtils';
+import { createLabFloor, createRuler, LAB_COLORS, labMaterials, niceStep } from '@/simulation/labKit';
 
 export { disposeObject3D };
 
-export function createBuildingWithWindows(height: number): THREE.Group {
-    const buildingGroup = new THREE.Group();
+const DEFAULT_H0 = 50;
+/** Heights below this keep the apparatus at a readable minimum size. */
+const MIN_RIG_HEIGHT = 4;
+const REBUILD_THRESHOLD = 0.5;
 
-    const buildingGeometry = new THREE.BoxGeometry(40, height, 40);
-    const buildingMaterial = new THREE.MeshLambertMaterial({ color: 0x888899 });
-    const mainBuilding = new THREE.Mesh(buildingGeometry, buildingMaterial);
-    mainBuilding.position.y = height / 2;
-    buildingGroup.add(mainBuilding);
+/** Parts of the drop rig the component updates after it is built. */
+export type DropTower = {
+    group: THREE.Group;
+    ball: THREE.Mesh;
+    heightMarker: THREE.Mesh;
+    magnetGlow: THREE.MeshStandardMaterial;
+    ballRadius: number;
+    /** Overall height of the rig, used to frame the camera. */
+    extent: number;
+};
 
-    const doorGeometry = new THREE.BoxGeometry(8, 12, 0.5);
-    const doorMaterial = new THREE.MeshLambertMaterial({ color: 0x664422 });
-    const door = new THREE.Mesh(doorGeometry, doorMaterial);
-    door.position.set(0, 6, 20.3);
-    buildingGroup.add(door);
+/**
+ * Builds a drop tower for a release height of `h0` metres (1 scene unit = 1 m): a steel lattice
+ * mast with an electromagnet release on an arm over the drop line, a polished ball, a landing
+ * sensor pad, a metre scale beside the drop line and a marker that tracks the ball's height.
+ *
+ * The apparatus scales with `h0` so it stays readable from 1 m to 500 m, and the lattice is
+ * instanced, so the geometry and material count is the same at every height (T25).
+ */
+export function createDropTower(h0: number): DropTower {
+    const u = Math.max(h0, MIN_RIG_HEIGHT) / 50; // 1 at the default 50 m drop
+    const ballRadius = 0.8 * u;
+    const magnetHeight = 1.4 * u;
+    const top = h0 + 2 * ballRadius + magnetHeight;
+    const extent = top + 2 * u;
 
-    const windowMaterial = new THREE.MeshLambertMaterial({ color: 0x444455 });
-    const frontBackWindowGeometry = new THREE.BoxGeometry(8, 6, 0.5);
-    const sideWindowGeometry = new THREE.BoxGeometry(0.5, 6, 8);
-    const floorHeight = 10;
-    const numFloors = Math.floor(height / floorHeight);
+    const group = new THREE.Group();
+    group.name = 'drop-tower';
 
-    for (let floor = 2; floor <= numFloors; floor++) {
-        const floorY = floor * floorHeight - floorHeight / 2;
+    const steel = labMaterials.steel();
+    const anodized = labMaterials.anodized();
+    const graphite = labMaterials.graphite();
 
-        for (let i = 0; i < 2; i++) {
-            const windowX = -10 + i * 20;
+    // Lattice mast: four corner posts, a rung ring per bay and one diagonal per face per bay.
+    const mastX = -5 * u;
+    const mastHalf = 0.9 * u;
+    const post = 0.14 * u;
+    const bays = Math.max(4, Math.round(extent / (2.6 * u)));
+    const bay = extent / bays;
+    const unitBox = new THREE.BoxGeometry(1, 1, 1);
+    const corners: [number, number][] = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
 
-            const frontWindow = new THREE.Mesh(frontBackWindowGeometry, windowMaterial);
-            frontWindow.position.set(windowX, floorY, 20.3);
-            buildingGroup.add(frontWindow);
+    const posts = new THREE.InstancedMesh(unitBox, steel, 4);
+    const rungs = new THREE.InstancedMesh(unitBox, steel, bays * 4);
+    const braces = new THREE.InstancedMesh(unitBox, steel, bays * 4);
+    const m = new THREE.Matrix4();
+    const p = new THREE.Vector3();
+    const q = new THREE.Quaternion();
+    const s = new THREE.Vector3();
+    const faceSpan = mastHalf * 2;
+    const braceLength = Math.hypot(faceSpan, bay);
+    const braceTilt = Math.atan2(faceSpan, bay);
 
-            const backWindow = new THREE.Mesh(frontBackWindowGeometry, windowMaterial);
-            backWindow.position.set(windowX, floorY, -20.3);
-            buildingGroup.add(backWindow);
-        }
+    corners.forEach(([cx, cz], i) => {
+        p.set(mastX + cx * mastHalf, extent / 2, cz * mastHalf);
+        posts.setMatrixAt(i, m.compose(p, q.identity(), s.set(post, extent, post)));
+    });
+    for (let b = 0; b < bays; b++) {
+        const y = (b + 1) * bay;
+        for (let f = 0; f < 4; f++) {
+            // Faces: 0 front (+z), 1 right (+x), 2 back (-z), 3 left (-x).
+            const alongX = f % 2 === 0;
+            const sign = f < 2 ? 1 : -1;
+            const cx = alongX ? mastX : mastX + sign * mastHalf;
+            const cz = alongX ? sign * mastHalf : 0;
+            p.set(cx, y, cz);
+            s.set(alongX ? faceSpan : post * 0.7, post * 0.7, alongX ? post * 0.7 : faceSpan);
+            rungs.setMatrixAt(b * 4 + f, m.compose(p, q.identity(), s));
 
-        for (let i = 0; i < 2; i++) {
-            const windowZ = -10 + i * 20;
-
-            const leftWindow = new THREE.Mesh(sideWindowGeometry, windowMaterial);
-            leftWindow.position.set(-20.3, floorY, windowZ);
-            buildingGroup.add(leftWindow);
-
-            const rightWindow = new THREE.Mesh(sideWindowGeometry, windowMaterial);
-            rightWindow.position.set(20.3, floorY, windowZ);
-            buildingGroup.add(rightWindow);
+            p.set(cx, y - bay / 2, cz);
+            const axis = alongX ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(1, 0, 0);
+            q.setFromAxisAngle(axis, (b % 2 === 0 ? 1 : -1) * braceTilt);
+            s.set(post * 0.5, braceLength, post * 0.5);
+            braces.setMatrixAt(b * 4 + f, m.compose(p, q, s));
         }
     }
+    [posts, rungs, braces].forEach((mesh) => {
+        mesh.instanceMatrix.needsUpdate = true;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        group.add(mesh);
+    });
 
-    if (numFloors < 2) {
-        frontBackWindowGeometry.dispose();
-        sideWindowGeometry.dispose();
-        windowMaterial.dispose();
-    }
+    const base = new THREE.Mesh(new THREE.BoxGeometry(4 * u, 0.4 * u, 4 * u), graphite);
+    base.position.set(mastX, 0.2 * u, 0);
+    base.receiveShadow = true;
+    group.add(base);
 
-    return buildingGroup;
+    // Release arm and electromagnet over the drop line (x = 0).
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(Math.abs(mastX) + 1.2 * u, 0.5 * u, 0.6 * u), anodized);
+    arm.position.set(mastX / 2 + 0.3 * u, top + 0.25 * u, 0);
+    arm.castShadow = true;
+    group.add(arm);
+
+    const magnet = new THREE.Mesh(new THREE.CylinderGeometry(0.75 * u, 0.85 * u, magnetHeight, 32), anodized);
+    magnet.position.set(0, top - magnetHeight / 2, 0);
+    magnet.castShadow = true;
+    group.add(magnet);
+
+    // Lit while the magnet holds the ball, dark once it is released.
+    const magnetGlow = labMaterials.glow(LAB_COLORS.plasma, 2.2);
+    const coil = new THREE.Mesh(new THREE.TorusGeometry(0.82 * u, 0.07 * u, 12, 48), magnetGlow);
+    coil.rotation.x = Math.PI / 2;
+    coil.position.set(0, top - magnetHeight + 0.18 * u, 0);
+    group.add(coil);
+
+    // Landing sensor pad.
+    const pad = new THREE.Mesh(new THREE.CylinderGeometry(3 * u, 3.2 * u, 0.12 * u, 64), graphite);
+    pad.position.y = 0.06 * u;
+    pad.receiveShadow = true;
+    group.add(pad);
+    const padRing = new THREE.Mesh(new THREE.TorusGeometry(2.5 * u, 0.05 * u, 8, 96), labMaterials.glow(LAB_COLORS.blueshift, 1.2));
+    padRing.rotation.x = Math.PI / 2;
+    padRing.position.y = 0.13 * u;
+    group.add(padRing);
+
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(ballRadius, 48, 32), labMaterials.polished());
+    ball.castShadow = true;
+    ball.position.set(0, h0 + ballRadius, 0);
+    ball.name = 'ball';
+    group.add(ball);
+
+    // Metre scale beside the drop line, and a marker line from the ball to it.
+    const scaleX = 2.6 * u;
+    const majorStep = niceStep(h0, 8);
+    const ruler = createRuler({
+        min: 0,
+        max: h0,
+        scale: 1,
+        minorStep: majorStep / 5,
+        majorStep,
+        labelStep: majorStep,
+        format: (v) => `${Number(v.toFixed(3))} m`,
+        tickSize: 1.1 * u,
+        labelHeight: 1.6 * u,
+    });
+    ruler.position.set(scaleX, 0, 0);
+    group.add(ruler);
+
+    const heightMarker = new THREE.Mesh(
+        new THREE.BoxGeometry(scaleX, 0.05 * u, 0.05 * u),
+        new THREE.MeshBasicMaterial({ color: LAB_COLORS.blueshift, toneMapped: false })
+    );
+    heightMarker.position.set(scaleX / 2, h0, 0);
+    group.add(heightMarker);
+
+    const floorSize = Math.max(120, extent * 8);
+    group.add(createLabFloor({ size: floorSize, divisions: Math.round(floorSize / niceStep(extent, 6)) }));
+
+    return { group, ball, heightMarker, magnetGlow, ballRadius, extent };
 }
 
-const SPHERE_RADIUS = 3;
-const INITIAL_Z_OFFSET = 23;
-const DEFAULT_H0 = 50;
+/** Points the camera, shadows and fog at a rig of the given height. */
+function frameRig(setup: SceneSetup, extent: number) {
+    const { camera, controls, scene, lights } = setup;
+    const target = new THREE.Vector3(-0.04 * extent, extent * 0.46, 0);
+    const offset = new THREE.Vector3(0.55, 0.16, 0.82).normalize().multiplyScalar(extent * 1.45 + 6);
+    camera.position.copy(target).add(offset);
+    camera.near = Math.max(0.05, extent / 500);
+    camera.far = extent * 40;
+    camera.updateProjectionMatrix();
+    controls.target.copy(target);
+    controls.minDistance = extent * 0.05;
+    controls.maxDistance = extent * 12;
+    controls.update();
+
+    const key = lights.directionalLight;
+    key.position.set(0.55, 1, 0.4).multiplyScalar(extent * 1.6);
+    const shadow = key.shadow.camera;
+    shadow.left = -extent * 0.8;
+    shadow.right = extent * 0.8;
+    shadow.top = extent * 1.1;
+    shadow.bottom = -extent * 0.6;
+    shadow.near = 0.1;
+    shadow.far = extent * 5;
+    shadow.updateProjectionMatrix();
+    lights.rimLight.position.set(-0.6, 0.7, -0.8).multiplyScalar(extent * 1.6);
+
+    if (scene.fog instanceof THREE.Fog) {
+        scene.fog.near = extent * 2.2;
+        scene.fog.far = extent * 6;
+    }
+}
+
+function readH0(paramValues: SimulationSceneProps['paramValues']) {
+    return parseFloat(String(paramValues?.h0)) || DEFAULT_H0;
+}
 
 const FreeFallScene = ({ dataPointToRender, paramValues }: SimulationSceneProps) => {
     const mountRef = useRef<HTMLDivElement>(null);
-    const sceneRef = useRef<THREE.Scene | null>(null);
-    const sphereRef = useRef<THREE.Mesh | null>(null);
-    const buildingRef = useRef<THREE.Group | null>(null);
+    const setupRef = useRef<SceneSetup | null>(null);
+    const towerRef = useRef<DropTower | null>(null);
+    const heightRef = useRef<number | null>(null);
 
     // Initialize scene
     useEffect(() => {
         const currentMount = mountRef.current;
         if (!currentMount) return;
 
-        const { scene, start, dispose } = setupScene(currentMount, {
-            background: 0x87ceeb,
-            fov: 75,
-            far: 2000,
-            cameraPosition: [80, 60, 120],
-            target: [0, 25, 0],
+        const setup = setupScene(currentMount, {
+            fov: 45,
+            far: 20000,
+            fog: { near: 200, far: 600 },
             lights: {
-                ambientIntensity: 0.7,
-                directionalIntensity: 1.0,
-                directionalPosition: [100, 150, 100],
-                shadowCamera: { near: 0.5, far: 500, left: -150, right: 150, top: 150, bottom: -150 },
+                ambientIntensity: 0.55,
+                directionalIntensity: 1.6,
+                shadowMapSize: 2048,
             },
-            controls: { minDistance: 10, maxDistance: 600, maxPolarAngle: Math.PI / 2 },
+            controls: { maxPolarAngle: Math.PI / 2 - 0.02 },
         });
-        sceneRef.current = scene;
-
-        scene.add(createGroundPlane(500, 500, new THREE.MeshLambertMaterial({ color: 0x3c7a3c })));
-
-        const sphere = new THREE.Mesh(
-            new THREE.SphereGeometry(SPHERE_RADIUS, 32, 32),
-            new THREE.MeshLambertMaterial({ color: 0x0077ff })
-        );
-        sphere.castShadow = true;
-        scene.add(sphere);
-        sphereRef.current = sphere;
-
-        const building = createBuildingWithWindows(DEFAULT_H0);
-        building.userData.height = DEFAULT_H0;
-        building.name = "building";
-        scene.add(building);
-        buildingRef.current = building;
-
-        start();
+        setupRef.current = setup;
+        setup.start();
 
         return () => {
-            dispose();
-            sceneRef.current = null;
-            sphereRef.current = null;
-            buildingRef.current = null;
+            setup.dispose();
+            setupRef.current = null;
+            towerRef.current = null;
+            heightRef.current = null;
         };
     }, []);
 
-    // Update building height based on parameters
+    // Rebuild the rig when the release height changes
     useEffect(() => {
-        if (!buildingRef.current || !sceneRef.current || !paramValues) return;
+        const setup = setupRef.current;
+        if (!setup) return;
+        const h0 = readH0(paramValues);
+        if (heightRef.current !== null && Math.abs(heightRef.current - h0) <= REBUILD_THRESHOLD) return;
 
-        const h0 = parseFloat(String(paramValues.h0)) || DEFAULT_H0;
-        const currentBuilding = buildingRef.current;
-        const currentHeight: number = currentBuilding.userData.height || DEFAULT_H0;
-
-        if (Math.abs(currentHeight - h0) > 0.5) {
-            sceneRef.current.remove(currentBuilding);
-            disposeObject3D(currentBuilding);
-            const newBuilding = createBuildingWithWindows(h0);
-            newBuilding.userData.height = h0;
-            newBuilding.name = "building";
-            sceneRef.current.add(newBuilding);
-            buildingRef.current = newBuilding;
+        if (towerRef.current) {
+            setup.scene.remove(towerRef.current.group);
+            disposeObject3D(towerRef.current.group);
         }
+        const tower = createDropTower(h0);
+        setup.scene.add(tower.group);
+        towerRef.current = tower;
+        heightRef.current = h0;
+        frameRig(setup, tower.extent);
     }, [paramValues]);
 
-    // Update sphere position
+    // Move the ball (its lowest point sits at the simulated height)
     useEffect(() => {
-        if (!sphereRef.current || !paramValues) return;
+        const tower = towerRef.current;
+        if (!tower) return;
 
-        const h0 = parseFloat(String(paramValues.h0)) || DEFAULT_H0;
-
-        // If no simulation data yet, position sphere at initial height (top of building)
-        if (!dataPointToRender || !dataPointToRender.position) {
-            const initialYPos = h0 + SPHERE_RADIUS;
-            sphereRef.current.position.set(0, initialYPos, INITIAL_Z_OFFSET);
-            return;
+        const h0 = readH0(paramValues);
+        let height = h0;
+        let released = false;
+        if (dataPointToRender && dataPointToRender.position !== undefined) {
+            height =
+                typeof dataPointToRender.position === 'number'
+                    ? dataPointToRender.position
+                    : dataPointToRender.position.y ?? 0;
+            released = Number(dataPointToRender.time) > 0;
         }
-
-        // During simulation, use the position from dataPoint
-        const sim_y =
-            typeof dataPointToRender.position === 'number'
-                ? dataPointToRender.position
-                : dataPointToRender.position.y ?? 0;
-
-        const yPos = Math.max(sim_y, 0) + SPHERE_RADIUS;
-        sphereRef.current.position.set(0, yPos, INITIAL_Z_OFFSET);
+        const y = Math.max(height, 0);
+        tower.ball.position.y = y + tower.ballRadius;
+        tower.heightMarker.position.y = y;
+        tower.magnetGlow.emissiveIntensity = released ? 0.15 : 2.2;
     }, [dataPointToRender, paramValues]);
 
     return <div ref={mountRef} className="w-full h-full" style={{ cursor: 'grab' }} />;

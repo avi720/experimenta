@@ -1,9 +1,11 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useTranslation } from "@/i18n";
+import {
+  chartAxisLabelStyle, chartColors, chartTick, chartTooltipProps, fieldLabelClass, panelTitleClass, selectTriggerClass,
+} from "./resultsStyles";
 import type { ChartConfig, PhysicsFormula, Sample } from "@/types/results";
 
 type AxisSelectProps = {
@@ -26,10 +28,10 @@ type ChartsTabProps = {
 function AxisSelect({ label, value, options, onChange }: AxisSelectProps) {
   const { t } = useTranslation();
   return (
-    <div>
-      <Label>{label}</Label>
+    <div className="space-y-2">
+      <Label className={fieldLabelClass}>{label}</Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger>
+        <SelectTrigger className={selectTriggerClass}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -51,11 +53,9 @@ export default function ChartsTab({
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('results.chartConfigTitle')}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <section>
+        <h3 className={panelTitleClass}>{t('results.chartConfigTitle')}</h3>
+        <div className="mt-4 grid grid-cols-1 min-[480px]:grid-cols-2 xl:grid-cols-4 gap-4">
           <AxisSelect
             label={t('results.xAxisLabel')}
             value={chartConfig.xAxis}
@@ -69,10 +69,10 @@ export default function ChartsTab({
             onChange={(value) => onChartConfigChange({ yAxis: value })}
           />
 
-          <div>
-            <Label>{t('results.physicsFormulaLabel')}</Label>
+          <div className="space-y-2">
+            <Label className={fieldLabelClass}>{t('results.physicsFormulaLabel')}</Label>
             <Select value={chartConfig.selectedFormula?.id || 'none'} onValueChange={onFormulaChange}>
-              <SelectTrigger>
+              <SelectTrigger className={selectTriggerClass}>
                 <SelectValue placeholder={t('results.selectFormulaPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
@@ -87,72 +87,82 @@ export default function ChartsTab({
           </div>
 
           <div className="flex items-end">
-            <div className="flex items-center space-x-2 rtl:space-x-reverse">
+            <div className="flex h-10 items-center gap-2">
               <Checkbox
                 id="theoretical"
                 checked={chartConfig.showTheoretical}
                 onCheckedChange={(checked) => onChartConfigChange({ showTheoretical: Boolean(checked) })}
+                className="border-dust/60 data-[state=checked]:border-plasma data-[state=checked]:bg-plasma data-[state=checked]:text-[#1C0F04] focus-visible:ring-blueshift"
               />
-              <Label htmlFor="theoretical" className="text-sm">
+              <Label htmlFor="theoretical" className="text-sm font-normal text-star cursor-pointer">
                 {t('results.showTheoreticalLabel')}
               </Label>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('results.interactiveChartTitle')}</CardTitle>
+      <section className="border-t border-line pt-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+          <h3 className={panelTitleClass}>{t('results.interactiveChartTitle')}</h3>
           {chartConfig.selectedFormula && (
-            <p className="text-sm text-slate-600 font-mono">
+            <p className="text-sm text-plasma font-mono" dir="ltr">
               {chartConfig.selectedFormula.formula}
             </p>
           )}
-        </CardHeader>
-        <CardContent>
-          <div className="h-96">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey={chartConfig.xAxis}
-                  label={{ value: chartConfig.xAxis, position: 'insideBottom', offset: -10 }}
-                />
-                <YAxis
-                  label={{ value: chartConfig.yAxis, angle: -90, position: 'insideLeft' }}
-                />
-                <Tooltip
-                  formatter={(value, name) => [
-                    typeof value === 'number' ? value.toFixed(4) : value,
-                    name
-                  ]}
-                />
-                <Legend />
+        </div>
+        {/* Chart axes are physical quantities: they read left to right in both languages. */}
+        <div className="mt-4 h-80 sm:h-96" dir="ltr">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 24, left: 8 }}>
+              <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
+              <XAxis
+                dataKey={chartConfig.xAxis}
+                stroke={chartColors.grid}
+                tick={chartTick}
+                tickLine={{ stroke: chartColors.grid }}
+                label={{ value: chartConfig.xAxis, position: 'insideBottom', offset: -16, style: chartAxisLabelStyle }}
+              />
+              <YAxis
+                stroke={chartColors.grid}
+                tick={chartTick}
+                tickLine={{ stroke: chartColors.grid }}
+                label={{ value: chartConfig.yAxis, angle: -90, position: 'insideLeft', style: chartAxisLabelStyle }}
+              />
+              <Tooltip
+                {...chartTooltipProps}
+                formatter={(value, name) => [
+                  typeof value === 'number' ? value.toFixed(4) : value,
+                  name
+                ]}
+              />
+              <Legend verticalAlign="top" height={32} iconType="plainline" wrapperStyle={{ fontSize: 12, color: chartColors.tick }} />
+              <Line
+                type="monotone"
+                dataKey={chartConfig.yAxis}
+                stroke={chartColors.experimental}
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4, fill: chartColors.experimental, stroke: 'rgb(var(--space))' }}
+                name={t('results.experimentalDataSeries')}
+                isAnimationActive={false}
+              />
+              {chartConfig.showTheoretical && chartConfig.selectedFormula && hasTheoreticalSeries && (
                 <Line
                   type="monotone"
-                  dataKey={chartConfig.yAxis}
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  name={t('results.experimentalDataSeries')}
+                  dataKey="theoretical_yAxis"
+                  stroke={chartColors.theoretical}
+                  strokeWidth={1.5}
+                  strokeDasharray="5 5"
+                  dot={false}
+                  name={t('results.theoreticalSeries')}
                   isAnimationActive={false}
                 />
-                {chartConfig.showTheoretical && chartConfig.selectedFormula && hasTheoreticalSeries && (
-                  <Line
-                    type="monotone"
-                    dataKey="theoretical_yAxis"
-                    stroke="#ef4444"
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    name={t('results.theoreticalSeries')}
-                    isAnimationActive={false}
-                  />
-                )}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </section>
     </>
   );
 }

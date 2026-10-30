@@ -4,78 +4,48 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
+    /* Brand tokens as RGB triplets (docs/BRAND.md): an accretion disk seen from outside. */
+    --hole: 0 0 0;
+    --space: 11 9 18;
+    --space-raised: 19 16 29;
+    --line: 42 36 57;
+    --star: 241 236 247;
+    --dust: 163 155 181;
+    --plasma: 255 178 94;
+    --plasma-hi: 255 226 184;
+    --blueshift: 157 187 255;
+    --horizon: 180 140 255;
 
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* shadcn tokens (HSL) mapped onto the brand: the whole site renders on space. */
+    color-scheme: dark;
+    --background: 257 33% 5%;
+    --foreground: 276 41% 95%;
+    --card: 256 29% 9%;
+    --card-foreground: 276 41% 95%;
+    --popover: 256 29% 9%;
+    --popover-foreground: 276 41% 95%;
+    --primary: 31 100% 68%;
+    --primary-foreground: 28 75% 6%;
+    --secondary: 256 29% 9%;
+    --secondary-foreground: 276 41% 95%;
+    --muted: 258 23% 18%;
+    --muted-foreground: 260 15% 66%;
+    --accent: 258 23% 18%;
+    --accent-foreground: 276 41% 95%;
+    --destructive: 0 72% 56%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 258 23% 18%;
+    --input: 258 23% 18%;
+    --ring: 221 100% 81%;
+    /* Chart series: plasma, blueshift, horizon, plasma-hi, then a cool teal. */
+    --chart-1: 31 100% 68%;
+    --chart-2: 221 100% 81%;
+    --chart-3: 263 100% 77%;
+    --chart-4: 35 100% 86%;
+    --chart-5: 170 60% 60%;
+    --radius: 0.5rem;
   }
 }
-
-
 
 @layer base {
   * {
@@ -86,12 +56,65 @@
     @apply bg-background text-foreground;
   }
 }
-/* Fonts are loaded once from index.html; <html dir> is set by I18nProvider (T68). */
+/* Fonts are loaded once from index.html (IBM Plex Sans Hebrew covers both locales);
+   <html dir> is set by I18nProvider (T68). */
 @layer base {
-  html[dir="rtl"] body {
-    font-family: 'Heebo', 'Segoe UI', Tahoma, Arial, sans-serif;
+  body {
+    font-feature-settings: "kern";
+    -webkit-font-smoothing: antialiased;
   }
-  html[dir="ltr"] body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Home page scroll motion. useScrollMotion sets each progress variable (0..1) from scroll
+   position; without it, or under reduced motion, every variable falls back to its finished state. */
+@layer components {
+  .motion-hero-copy {
+    transform: translateY(calc(var(--hp, 0) * -90px));
+    opacity: calc(1 - var(--hp, 0) * 1.15);
   }
+  .motion-hero-field { transform: translateY(calc(var(--hp, 0) * 30%)); }
+  [data-reveal] {
+    opacity: calc(0.12 + 0.88 * var(--p, 1));
+    transform: translateY(calc((1 - var(--p, 1)) * 32px));
+  }
+  .motion-step-node { opacity: calc(0.25 + 0.75 * var(--lit, 1)); }
+  .motion-cta-title {
+    opacity: clamp(0, calc(var(--cp, 1) * 2.2 - 0.3), 1);
+    transform: translateY(calc((1 - var(--cp, 1)) * 48px));
+  }
+  .motion-cta-body {
+    opacity: clamp(0, calc(var(--cp, 1) * 2.2 - 0.6), 1);
+    transform: translateY(calc((1 - var(--cp, 1)) * 36px));
+  }
+  .motion-cta-actions { opacity: clamp(0, calc(var(--cp, 1) * 2.2 - 0.9), 1); }
+
+  /* The CTA's event horizon: a black disk far larger than the screen, its photon ring glowing,
+     bluer on the approaching side. It rises over the second part of the approach and settles
+     exactly as the footer, which sits inside it, arrives. */
+  .event-horizon {
+    position: absolute;
+    left: 50%;
+    top: calc(100% - 260px);
+    width: max(1500px, 160vw);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: rgb(var(--hole));
+    pointer-events: none;
+    box-shadow:
+      0 0 0 1.5px rgb(var(--plasma-hi) / 0.95),
+      0 -2px 26px 4px rgb(var(--plasma) / 0.55),
+      0 -10px 120px 34px rgb(255 120 60 / 0.2),
+      -260px -30px 160px -40px rgb(var(--blueshift) / 0.22);
+    transform: translateX(-50%) translateY(calc((1 - clamp(0, calc((var(--cp, 1) - 0.3) / 0.7), 1)) * 460px));
+  }
+  @media (max-width: 767px) {
+    .event-horizon { top: calc(100% - 140px); }
+  }
+}
+
+/* Brand focus ring. The doubled class outranks the `focus-visible:outline-none` utility
+   that shadcn primitives carry, which Tailwind emits after this rule. */
+.focus-ring.focus-ring:focus-visible {
+  outline: 2px solid rgb(var(--blueshift));
+  outline-offset: 2px;
 }

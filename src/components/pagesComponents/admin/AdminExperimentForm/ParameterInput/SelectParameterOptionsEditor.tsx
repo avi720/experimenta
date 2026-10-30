@@ -2,7 +2,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
+import { dangerIconButtonClass, fieldErrorClass, fieldLabelClass, inputErrorClass } from '../../adminStyles';
 import { useTranslation } from '@/i18n';
 import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { FormErrors } from '@/types/admin';
@@ -27,59 +28,78 @@ export default function SelectParameterOptionsEditor({
   const options = param.options || [];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <Label className="text-base font-medium">{t('admin.form.parameters.selectOptionsLabel')}</Label>
-        <div className="space-y-2 mt-2">
+        <p className={fieldLabelClass}>{t('admin.form.parameters.selectOptionsLabel')}</p>
+        <ol className="divide-y divide-line/70 rounded-md border border-line">
           {options.map((option, optIndex) => (
-            <div key={optIndex} className="grid grid-cols-1 md:grid-cols-4 gap-2 p-3 bg-slate-50 rounded">
+            <li key={optIndex} className="grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-2 p-2 md:grid-cols-[1.5rem_repeat(3,minmax(0,1fr))_auto]">
+              <span className="text-center font-mono text-xs tabular-nums text-dust" aria-hidden="true">{optIndex + 1}</span>
               <Input
                 placeholder={t('admin.form.parameters.optionValuePlaceholder')}
+                aria-label={t('admin.form.parameters.optionValuePlaceholder')}
+                dir="ltr"
+                className="font-mono"
                 value={option.value || ''}
                 onChange={e => handleNestedDynamicChange('parameters', index, 'options', optIndex, 'value', e.target.value)}
               />
               <Input
                 placeholder={t('admin.form.parameters.optionLabelHePlaceholder')}
+                aria-label={t('admin.form.parameters.optionLabelHePlaceholder')}
+                dir="rtl"
+                lang="he"
+                className="col-start-2 md:col-start-auto"
                 value={option.label_he || ''}
                 onChange={e => handleNestedDynamicChange('parameters', index, 'options', optIndex, 'label_he', e.target.value)}
               />
               <Input
                 placeholder={t('admin.form.parameters.optionLabelEnPlaceholder')}
+                aria-label={t('admin.form.parameters.optionLabelEnPlaceholder')}
+                dir="ltr"
+                lang="en"
+                className="col-start-2 md:col-start-auto"
                 value={option.label_en || ''}
                 onChange={e => handleNestedDynamicChange('parameters', index, 'options', optIndex, 'label_en', e.target.value)}
               />
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="icon"
+                className={`${dangerIconButtonClass} col-start-3 row-start-1 md:col-start-auto md:row-start-auto`}
                 onClick={() => removeNestedFromArray('parameters', index, 'options', optIndex)}
+                aria-label={`${t('admin.form.removeItem')} ${optIndex + 1}`}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
-            </div>
+            </li>
           ))}
-        </div>
+          <li className="p-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="focus-ring h-9 w-full gap-2 text-dust hover:bg-space-raised hover:text-star"
+              onClick={() => addNestedToArray('parameters', index, 'options', { value: '', label_he: '', label_en: '' })}
+            >
+              <Plus className="h-4 w-4" />
+              {t('admin.form.parameters.addOption')}
+            </Button>
+          </li>
+        </ol>
         {errors[`param_${index}_options`] && (
-          <p className="text-red-500 text-xs mt-1" role="alert">{errors[`param_${index}_options`]}</p>
+          <p className={fieldErrorClass} role="alert">{errors[`param_${index}_options`]}</p>
         )}
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full mt-2"
-          onClick={() => addNestedToArray('parameters', index, 'options', { value: '', label_he: '', label_en: '' })}
-        >
-          <PlusCircle className="me-2 h-4 w-4" />
-          {t('admin.form.parameters.addOption')}
-        </Button>
       </div>
 
-      <div>
-        <Label>{t('admin.form.parameters.defaultValueLabel')}</Label>
+      <div className="max-w-xs">
+        <Label className={fieldLabelClass}>{t('admin.form.parameters.defaultValueLabel')}</Label>
         <Select
           value={String(param.default || '')}
           onValueChange={val => handleDynamicArrayChange('parameters', index, 'default', val)}
         >
-          <SelectTrigger className={errors[`param_${index}_default`] ? 'border-red-500' : ''}>
+          <SelectTrigger
+            className={errors[`param_${index}_default`] ? inputErrorClass : ''}
+            aria-label={t('admin.form.parameters.defaultValueLabel')}
+          >
             <SelectValue placeholder={t('admin.form.parameters.selectDefaultPlaceholder')} />
           </SelectTrigger>
           <SelectContent>

@@ -10,15 +10,15 @@ export default function NoExperimentsFound({ isRTL }: IsRTLProps) {
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center py-12"
+            className="border-t border-line py-16 md:py-20"
         >
-            <div className="w-20 h-20 bg-slate-100 rounded-2xl mx-auto mb-6 flex items-center justify-center">
-                <Search className="w-10 h-10 text-slate-400" />
-            </div>
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">
+            <span className="mb-6 flex h-10 w-10 items-center justify-center rounded-md border border-line bg-space-raised">
+                <Search className="h-5 w-5 text-dust" aria-hidden="true" />
+            </span>
+            <h3 className="text-[clamp(1.5rem,3vw,1.9rem)] font-light leading-[1.12] text-star">
                 {t('lab.noExperimentsTitle')}
             </h3>
-            <p className="text-slate-600">
+            <p className="mt-3 max-w-[34rem] text-[17px] leading-[1.7] text-dust">
                 {t('lab.noExperimentsDescription')}
             </p>
         </motion.div>

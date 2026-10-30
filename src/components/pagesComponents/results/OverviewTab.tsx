@@ -1,7 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { useTranslation } from "@/i18n";
 import { formatDisplayValue, formatRunDate } from "./resultsDomain";
+import { fieldLabelClass, panelTitleClass, valueClass } from "./resultsStyles";
 import type { ExperimentRun } from "@/types/models";
 import type { ParamState, Sample } from "@/types/results";
 
@@ -16,59 +15,50 @@ export default function OverviewTab({ run, samples, paramState }: OverviewTabPro
   const lastTime = samples[samples.length - 1]?.time;
   const parameterEntries = Object.entries(paramState.parameters);
 
+  const details = [
+    { label: t('results.experimentTypeLabel'), value: run.experiment_slug, mono: false },
+    { label: t('results.dateTimeLabel'), value: formatRunDate(run.created_date, 'dd/MM/yyyy HH:mm:ss'), mono: true },
+    { label: t('results.samplesCountLabel'), value: samples.length || run.samples_count, mono: true },
+    { label: t('results.durationLabel'), value: typeof lastTime === 'number' ? `${lastTime.toFixed(3)} s` : 'N/A', mono: true },
+  ];
+
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('results.experimentDetailsTitle')}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4">
-          <div>
-            <Label className="text-sm text-slate-500">{t('results.experimentTypeLabel')}</Label>
-            <p className="font-medium">{run.experiment_slug}</p>
-          </div>
-          <div>
-            <Label className="text-sm text-slate-500">{t('results.dateTimeLabel')}</Label>
-            <p className="font-medium">{formatRunDate(run.created_date, 'dd/MM/yyyy HH:mm:ss')}</p>
-          </div>
-          <div>
-            <Label className="text-sm text-slate-500">{t('results.samplesCountLabel')}</Label>
-            <p className="font-medium">{samples.length || run.samples_count}</p>
-          </div>
-          <div>
-            <Label className="text-sm text-slate-500">{t('results.durationLabel')}</Label>
-            <p className="font-medium">
-              {typeof lastTime === 'number' ? `${lastTime.toFixed(3)}s` : 'N/A'}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('results.experimentParametersTitle')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {paramState.error ? (
-            <p className="text-sm text-red-600">
-              {t('results.corruptedParamsInline')}
-            </p>
-          ) : parameterEntries.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              {t('results.noParamsRecorded')}
-            </p>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {parameterEntries.map(([key, value]) => (
-                <div key={key} className="p-3 bg-slate-50 rounded-lg">
-                  <Label className="text-xs text-slate-500 uppercase">{key}</Label>
-                  <p className="font-mono text-lg break-all">{formatDisplayValue(value, 3)}</p>
-                </div>
-              ))}
+      <section>
+        <h3 className={panelTitleClass}>{t('results.experimentDetailsTitle')}</h3>
+        <dl className="mt-4 grid grid-cols-2 md:grid-cols-4 border-t border-line">
+          {details.map(({ label, value, mono }) => (
+            <div key={label} className="border-b border-line py-4 pe-4">
+              <dt className={fieldLabelClass}>{label}</dt>
+              <dd className={`mt-1.5 break-all ${mono ? `${valueClass} text-[15px]` : 'text-[15px] font-medium text-star'}`} dir={mono ? 'ltr' : undefined}>
+                {value}
+              </dd>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          ))}
+        </dl>
+      </section>
+
+      <section>
+        <h3 className={panelTitleClass}>{t('results.experimentParametersTitle')}</h3>
+        {paramState.error ? (
+          <p className="mt-4 text-sm text-red-300">
+            {t('results.corruptedParamsInline')}
+          </p>
+        ) : parameterEntries.length === 0 ? (
+          <p className="mt-4 text-sm text-dust">
+            {t('results.noParamsRecorded')}
+          </p>
+        ) : (
+          <dl className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-px bg-line border border-line">
+            {parameterEntries.map(([key, value]) => (
+              <div key={key} className="bg-space px-4 py-3.5">
+                <dt className="text-xs text-dust break-all">{key}</dt>
+                <dd className={`mt-1 text-lg break-all ${valueClass}`} dir="ltr">{formatDisplayValue(value, 3)}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </section>
     </>
   );
 }

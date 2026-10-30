@@ -12,6 +12,11 @@ import type { ParameterValidationResult } from "@/types/simulation";
 
 type ParameterValue = ParameterValues[string];
 
+// Instrument fields: a dark well with a hairline that turns blueshift on hover/focus.
+const fieldClass =
+    "bg-space/60 border-line text-star placeholder:text-dust/60 hover:border-blueshift/60 focus-visible:ring-blueshift";
+const invalidFieldClass = "border-red-500/70 hover:border-red-500/70 focus-visible:ring-red-400";
+
 type ParameterInputProps = IsRTLProps & {
     parameter: Parameter | null | undefined;
     value: ParameterValue;
@@ -55,16 +60,17 @@ export default function ParameterInput({
         return (
             <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                    <Label htmlFor={parameter.key} className="text-sm font-medium">
+                    <Label htmlFor={parameter.key} className="text-sm font-normal text-dust">
                         {label}
                     </Label>
                     <Switch
                         id={parameter.key}
                         checked={value === true || value === 'true'}
                         onCheckedChange={(checked) => onChange(checked)}
+                        className="focus-ring data-[state=checked]:bg-plasma data-[state=unchecked]:bg-line"
                     />
                 </div>
-                {tooltip && <p className="text-xs text-slate-500">{tooltip}</p>}
+                {tooltip && <p className="text-xs text-dust/80 leading-relaxed">{tooltip}</p>}
             </div>
         );
     }
@@ -73,18 +79,18 @@ export default function ParameterInput({
     if (parameter.type === 'select' && parameter.options) {
         return (
             <div className="space-y-2">
-                <Label htmlFor={parameter.key} className="text-sm font-medium flex items-center gap-2">
+                <Label htmlFor={parameter.key} className="text-sm font-normal text-dust flex items-center gap-2">
                     {label}
-                    {!isValid && <AlertCircle className="w-4 h-4 text-red-500" />}
+                    {!isValid && <AlertCircle className="w-4 h-4 text-red-400" />}
                 </Label>
                 <Select value={value?.toString()} onValueChange={(val) => onChange(val)}>
                     <SelectTrigger
                         id={parameter.key}
-                        className={cn(!isValid && "border-red-500")}
+                        className={cn(fieldClass, !isValid && invalidFieldClass)}
                     >
                         <SelectValue placeholder={t("workspace.selectValuePlaceholder")} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-space-raised border-line">
                         {parameter.options.map((option) => (
                             <SelectItem key={option.value} value={option.value}>
                                 {pick(option, option.value)}
@@ -92,10 +98,10 @@ export default function ParameterInput({
                         ))}
                     </SelectContent>
                 </Select>
-                {tooltip && <p className="text-xs text-slate-500">{tooltip}</p>}
+                {tooltip && <p className="text-xs text-dust/80 leading-relaxed">{tooltip}</p>}
                 {!isValid && errorMessage && (
-                    <p className="text-xs text-red-500 flex items-center gap-1" role="alert">
-                        <AlertCircle className="w-3 h-3" />
+                    <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-md px-2 py-1.5 flex items-center gap-1.5" role="alert">
+                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
                         {errorMessage}
                     </p>
                 )}
@@ -109,45 +115,63 @@ export default function ParameterInput({
 
     return (
         <div className="space-y-2">
-            <Label htmlFor={parameter.key} className="text-sm font-medium flex items-center gap-2">
+            <Label htmlFor={parameter.key} className="text-sm font-normal text-dust flex items-center gap-2">
                 {label}
-                {parameter.unit && <span className="text-slate-500 font-normal">({parameter.unit})</span>}
-                {!isValid && <AlertCircle className="w-4 h-4 text-red-500" />}
+                {parameter.unit && <span className="sr-only">({parameter.unit})</span>}
+                {!isValid && <AlertCircle className="w-4 h-4 text-red-400" />}
             </Label>
-            <Input
-                id={parameter.key}
-                type="number"
-                value={typeof value === 'boolean' ? String(value) : value ?? ''}
-                aria-invalid={!isValid}
-                onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '') {
-                        onChange('');
-                        return;
-                    }
-                    const numVal = Number(val);
-                    if (!Number.isNaN(numVal)) {
-                        onChange(numVal);
-                    } else {
-                        onChange(val);
-                    }
-                }}
-                step={step}
-                min={parameter.min ?? undefined}
-                max={parameter.max ?? undefined}
-                className={cn(!isValid && "border-red-500 focus:ring-red-500")}
-            />
-            {tooltip && <p className="text-xs text-slate-500">{tooltip}</p>}
+            <div className="relative">
+                <Input
+                    id={parameter.key}
+                    type="number"
+                    value={typeof value === 'boolean' ? String(value) : value ?? ''}
+                    aria-invalid={!isValid}
+                    onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                            onChange('');
+                            return;
+                        }
+                        const numVal = Number(val);
+                        if (!Number.isNaN(numVal)) {
+                            onChange(numVal);
+                        } else {
+                            onChange(val);
+                        }
+                    }}
+                    step={step}
+                    min={parameter.min ?? undefined}
+                    max={parameter.max ?? undefined}
+                    className={cn(
+                        fieldClass,
+                        "font-mono tabular-nums",
+                        parameter.unit && "pe-14",
+                        !isValid && invalidFieldClass
+                    )}
+                />
+                {parameter.unit && (
+                    <span
+                        className="pointer-events-none absolute inset-y-0 end-3 flex items-center font-mono text-xs text-dust"
+                        dir="ltr"
+                        aria-hidden="true"
+                    >
+                        {parameter.unit}
+                    </span>
+                )}
+            </div>
+            {tooltip && <p className="text-xs text-dust/80 leading-relaxed">{tooltip}</p>}
             {!isValid && errorMessage && (
-                <p className="text-xs text-red-500 flex items-center gap-1" role="alert">
-                    <AlertCircle className="w-3 h-3" />
+                <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-md px-2 py-1.5 flex items-center gap-1.5" role="alert">
+                    <AlertCircle className="w-3 h-3 flex-shrink-0" />
                     {errorMessage}
                 </p>
             )}
             {isNumeric && (parameter.min !== undefined || parameter.max !== undefined) && isValid && (
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-dust/80">
                     {t("workspace.rangePrefix")}
-                    {parameter.min !== undefined ? parameter.min : '∞'} - {parameter.max !== undefined ? parameter.max : '∞'}
+                    <span className="font-mono tabular-nums" dir="ltr">
+                        {parameter.min !== undefined ? parameter.min : '∞'} - {parameter.max !== undefined ? parameter.max : '∞'}
+                    </span>
                 </p>
             )}
         </div>

@@ -55,18 +55,26 @@ type FallbackCardProps = IsRTLProps & { onRetry: () => void; onHome: () => void 
 function FallbackCard({ isRTL, onRetry, onHome }: FallbackCardProps) {
   const { t, dir } = useTranslation(isRTL);
   return (
-    <div className="flex items-center justify-center px-4 py-24" dir={dir} role="alert">
-      <div className="max-w-md w-full bg-white border border-slate-200 rounded-xl shadow-sm p-8 text-center">
-        <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-4" aria-hidden="true" />
-        <h1 className="text-xl font-semibold text-slate-900 mb-2">{t("errors.pageCrashTitle")}</h1>
-        <p className="text-slate-600 mb-6">{t("errors.pageCrashBody")}</p>
-        <div className="flex flex-wrap justify-center gap-3">
-          <Button variant="outline" onClick={onRetry}>
-            <RotateCcw className="w-4 h-4 me-2" aria-hidden="true" />
+    <div className="flex items-center justify-center px-4 sm:px-6 py-24" dir={dir} role="alert">
+      <div className="max-w-lg w-full border border-line bg-space-raised/60 px-6 py-10 sm:px-10">
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-amber-400/10">
+            <AlertTriangle className="w-5 h-5 text-amber-300" aria-hidden="true" />
+          </span>
+          <h1 className="text-[22px] font-light leading-snug text-star">{t("errors.pageCrashTitle")}</h1>
+        </div>
+        <p className="mt-4 text-[17px] leading-[1.7] text-dust">{t("errors.pageCrashBody")}</p>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Button onClick={onRetry} className="focus-ring h-11 px-5 text-[15px] font-medium hover:bg-plasma-hi">
+            <RotateCcw className="w-4 h-4" aria-hidden="true" />
             {t("common.tryAgain")}
           </Button>
-          <Button onClick={onHome}>
-            <Home className="w-4 h-4 me-2" aria-hidden="true" />
+          <Button
+            variant="outline"
+            onClick={onHome}
+            className="focus-ring h-11 px-5 text-[15px] border-line bg-transparent text-star hover:bg-transparent hover:text-star hover:border-blueshift"
+          >
+            <Home className="w-4 h-4" aria-hidden="true" />
             {t("common.backToHome")}
           </Button>
         </div>
@@ -88,7 +96,7 @@ export function PageErrorFallback({ isRTL, reset }: IsRTLProps & Pick<ErrorFallb
 /** Last-resort fallback outside the router (e.g. the header itself crashed); reloads the app. */
 export function AppErrorFallback() {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-space">
       <FallbackCard
         onRetry={() => window.location.reload()}
         onHome={() => window.location.assign("/")}

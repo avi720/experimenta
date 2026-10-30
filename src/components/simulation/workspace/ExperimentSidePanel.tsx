@@ -1,13 +1,19 @@
 import { motion } from "framer-motion";
-import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Settings, PlayCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
+import { isParameterVisible } from "@/simulation/parameterValidation";
 import ParameterControls from "../ParameterControls";
 import SimulationConsole from "../SimulationConsole";
 import type { ExperimentTemplateData, Parameter, ParameterValues } from "@/types/experiment";
 import type { IsRTLProps } from "@/types/props";
 import type { SimulationConsoleHandlers } from "@/types/simulation";
+import { instrumentSurfaceClass } from "./workspaceStyles";
+
+// Underlined tabs: dust at rest, star with a plasma line when active (the brand nav idiom).
+const tabTriggerClass =
+    "focus-ring h-full flex items-center gap-2 rounded-none border-b-2 border-transparent bg-transparent px-2 text-[14px] font-normal text-dust shadow-none hover:text-star data-[state=active]:border-plasma data-[state=active]:bg-transparent data-[state=active]:text-star data-[state=active]:shadow-none";
 
 type ExperimentSidePanelProps = IsRTLProps & SimulationConsoleHandlers & {
     activeTab: string;
@@ -51,12 +57,8 @@ export default function ExperimentSidePanel({
     const { t, locale } = useTranslation(isRTL);
     const slideOffset = locale === "he" ? -400 : 400;
 
-    // סינון פרמטרים - הצגת רק פרמטרים פעילים ותקינים
-    const activeParameters = (parameters || []).filter(param =>
-        param &&
-        param.key &&
-        param.is_active !== false
-    );
+    // Only active parameters whose `visible_when` condition holds for the current values.
+    const activeParameters = (parameters || []).filter((param) => isParameterVisible(param, paramValues));
 
     return (
         <motion.div
@@ -64,16 +66,16 @@ export default function ExperimentSidePanel({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: slideOffset, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="absolute top-0 end-0 border-s h-full w-full sm:w-96 bg-white/95 backdrop-blur-sm shadow-2xl border-slate-200 z-30 flex flex-col"
+            className={cn("absolute top-0 end-0 border-s h-full w-full sm:w-96 shadow-2xl shadow-hole/60 z-30 flex flex-col", instrumentSurfaceClass)}
         >
             <Tabs value={activeTab} onValueChange={onTabChange} className="flex-1 flex flex-col overflow-hidden">
-                <div className="border-b border-slate-200 px-4 py-3 flex-shrink-0">
-                    <TabsList className="grid w-full grid-cols-2 bg-slate-100">
-                        <TabsTrigger value="parameters" className="flex items-center gap-2">
+                <div className="border-b border-line px-4 flex-shrink-0">
+                    <TabsList className="grid w-full grid-cols-2 h-11 rounded-none bg-transparent p-0">
+                        <TabsTrigger value="parameters" className={tabTriggerClass}>
                             <Settings className="w-4 h-4" />
                             <span>{t("workspace.parametersTab")}</span>
                         </TabsTrigger>
-                        <TabsTrigger value="console" className="flex items-center gap-2">
+                        <TabsTrigger value="console" className={tabTriggerClass}>
                             <PlayCircle className="w-4 h-4" />
                             <span>{t("workspace.consoleTab")}</span>
                         </TabsTrigger>
@@ -114,11 +116,11 @@ export default function ExperimentSidePanel({
                                 validationState={validationState}
                             />
                         ) : (
-                            <Card className="p-6 text-center">
-                                <p className="text-slate-500">
+                            <div className="border border-dashed border-line rounded-md p-6 text-center">
+                                <p className="text-sm text-dust">
                                     {t("workspace.consoleInFloatingWindow")}
                                 </p>
-                            </Card>
+                            </div>
                         )}
                     </TabsContent>
                 </div>

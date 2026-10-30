@@ -1,8 +1,9 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import ParameterInput from './ParameterInput/ParameterInput';
+import FormSection from './FormSection';
 import { createEmptyParameter } from './adminFormConstants';
+import { secondaryButtonClass } from '../adminStyles';
 import { useTranslation } from '@/i18n';
 import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { FormErrors } from '@/types/admin';
@@ -16,26 +17,27 @@ type ParametersEditorTabProps = Pick<
   errors: FormErrors;
 };
 
-export default function ParametersEditorTab({ 
-  experiment, 
-  handleDynamicArrayChange, 
+export default function ParametersEditorTab({
+  experiment,
+  handleDynamicArrayChange,
   handleNestedDynamicChange,
-  addToArray, 
-  addNestedToArray, 
-  removeNestedFromArray, 
-  removeFromArray, 
-  errors 
+  addToArray,
+  addNestedToArray,
+  removeNestedFromArray,
+  removeFromArray,
+  errors
 }: ParametersEditorTabProps) {
   const { t } = useTranslation();
+  const parameters = experiment.parameters || [];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('admin.form.parameters.cardTitle')}</CardTitle>
-        <CardDescription>{t('admin.form.parameters.cardDescription')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {(experiment.parameters || []).map((param, index) => (
+    <FormSection
+      title={t('admin.form.parameters.cardTitle')}
+      description={t('admin.form.parameters.cardDescription')}
+      aside={<span className="font-mono text-sm tabular-nums text-dust">{parameters.length}</span>}
+    >
+      <div className="space-y-4">
+        {parameters.map((param, index) => (
           <ParameterInput
             key={index}
             param={param}
@@ -48,17 +50,17 @@ export default function ParametersEditorTab({
             errors={errors}
           />
         ))}
-        
-        <Button 
-          type="button" 
-          variant="outline" 
-          className="w-full"
+
+        <Button
+          type="button"
+          variant="outline"
+          className={`${secondaryButtonClass} h-12 w-full border-dashed`}
           onClick={() => addToArray('parameters', createEmptyParameter())}
         >
-          <PlusCircle className="me-2 h-5 w-5" />
+          <Plus className="h-4 w-4" />
           {t('admin.form.parameters.addParameter')}
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </FormSection>
   );
 }

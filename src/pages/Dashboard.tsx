@@ -1,40 +1,37 @@
+import { useRef } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import { useTranslation } from "@/i18n";
-
-// Import the dashboard components from the new location
 import HeroSection from "../components/pagesComponents/dashboard/HeroSection";
-import FeaturesGrid from "../components/pagesComponents/dashboard/FeaturesGrid";
-import WhatYouCanDoSection from "../components/pagesComponents/dashboard/WhatYouCanDoSection";
-import LabStatusSection from "../components/pagesComponents/dashboard/LabStatusSection";
+import FeaturesSection from "../components/pagesComponents/dashboard/FeaturesSection";
+import HowItWorksSection from "../components/pagesComponents/dashboard/HowItWorksSection";
+import FaqSection from "../components/pagesComponents/dashboard/FaqSection";
+import FinalCtaSection from "../components/pagesComponents/dashboard/FinalCtaSection";
+import { useScrollMotion } from "../components/pagesComponents/dashboard/useScrollMotion";
 
+// The home page is the first surface on the new brand (docs/BRAND.md).
 export default function Dashboard() {
-  const { settings, isLoading, isRTL } = useAppData();
+  const { settings, experiments, isLoading, isRTL } = useAppData();
   const { t, dir } = useTranslation(isRTL);
+  const rootRef = useRef<HTMLDivElement>(null);
+  useScrollMotion(rootRef, !isLoading);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="text-slate-600">{t("common.loading")}</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-space">
+        <p className="text-dust">{t("common.loading")}</p>
       </div>
     );
   }
 
+  const hasExperiment = (slug: string) => experiments.some((experiment) => experiment.slug === slug);
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8" dir={dir}>
-      {/* Hero Section */}
-      <HeroSection settings={settings} isRTL={isRTL} />
-
-      {/* Features Grid */}
-      <FeaturesGrid isRTL={isRTL} />
-
-      {/* What You Can Do */}
-      <WhatYouCanDoSection isRTL={isRTL} />
-
-      {/* Lab Status */}
-      <LabStatusSection settings={settings} isRTL={isRTL} />
+    <div ref={rootRef} className="bg-space text-star" dir={dir}>
+      <HeroSection settings={settings} isRTL={isRTL} hasDoubleSlit={hasExperiment("double-slit")} />
+      <FeaturesSection isRTL={isRTL} />
+      <HowItWorksSection isRTL={isRTL} />
+      <FaqSection isRTL={isRTL} />
+      <FinalCtaSection isRTL={isRTL} hasFreeFall={hasExperiment("free-fall")} />
     </div>
   );
 }

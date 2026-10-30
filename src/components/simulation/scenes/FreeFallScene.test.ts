@@ -1,29 +1,43 @@
 import { describe, it, expect, vi } from "vitest";
 import * as THREE from "three";
-import { createBuildingWithWindows, disposeObject3D } from "./FreeFallScene";
+import { createDropTower, disposeObject3D } from "./FreeFallScene";
 
-describe("FreeFallScene resource management (T25)", () => {
-    it("shares window geometries across floors and disposes all geometries and materials on rebuild", () => {
-        const building = createBuildingWithWindows(500);
-        const geometries = new Set<THREE.BufferGeometry>();
-        const materials = new Set<THREE.Material>();
+function collectResources(root: THREE.Object3D) {
+    const geometries = new Set<THREE.BufferGeometry>();
+    const materials = new Set<THREE.Material>();
+    root.traverse((node) => {
+        const { geometry, material } = node as THREE.Mesh;
+        if (geometry) geometries.add(geometry);
+        if (material) for (const m of [material].flat()) materials.add(m);
+    });
+    return { geometries, materials };
+}
 
-        building.traverse((node) => {
-            if (!(node instanceof THREE.Mesh)) return;
-            geometries.add(node.geometry);
-            for (const material of [node.material].flat()) materials.add(material);
-        });
+describe("FreeFallScene drop tower resource management (T25)", () => {
+    it("keeps the same number of geometries and materials at every release height", () => {
+        const low = collectResources(createDropTower(2).group);
+        const high = collectResources(createDropTower(500).group);
 
-        // 4 unique geometries: main building box, door box, front/back window box, left/right window box
-        expect(geometries.size).toBe(4);
-        expect(materials.size).toBe(3);
+        expect(high.geometries.size).toBe(low.geometries.size);
+        expect(high.materials.size).toBe(low.materials.size);
+    });
+
+    it("disposes every geometry and material exactly once on rebuild", () => {
+        const tower = createDropTower(120);
+        const { geometries, materials } = collectResources(tower.group);
 
         const geomSpies = Array.from(geometries).map((g) => vi.spyOn(g, "dispose"));
         const matSpies = Array.from(materials).map((m) => vi.spyOn(m, "dispose"));
 
-        disposeObject3D(building);
+        disposeObject3D(tower.group);
 
         geomSpies.forEach((spy) => expect(spy).toHaveBeenCalledTimes(1));
         matSpies.forEach((spy) => expect(spy).toHaveBeenCalledTimes(1));
+    });
+
+    it("rests the ball's lowest point at the release height", () => {
+        const tower = createDropTower(50);
+        expect(tower.ball.position.y - tower.ballRadius).toBeCloseTo(50, 6);
+        expect(tower.heightMarker.position.y).toBeCloseTo(50, 6);
     });
 });
