@@ -4,7 +4,7 @@ import { freeFallGuide } from './freeFallGuide';
 import { quantumTunnelingGuide } from './quantumTunnelingGuide';
 import { doubleSlitGuide } from './doubleSlitGuide';
 
-export type { ChartView, ExperimentGuide, Formula, FormulaGroup, Quantity, SymbolEntry, UnknownSpec } from './types';
+export type { ChartView, ExperimentAbout, ExperimentGuide, Formula, FormulaGroup, Quantity, SymbolEntry, UnknownSpec } from './types';
 
 /** Teaching content per experiment slug (the same slugs as `EXPERIMENT_REGISTRY`). */
 export const EXPERIMENT_GUIDES: Readonly<Record<string, ExperimentGuide | undefined>> = {

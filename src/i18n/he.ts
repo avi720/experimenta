@@ -218,6 +218,10 @@ const he = {
     info: {
       button: 'מידע',
       title: 'על הניסוי',
+      whatTitle: 'מה זה הניסוי',
+      historyTitle: 'קצת היסטוריה',
+      showsTitle: 'מה הניסוי מראה',
+      questionTitle: 'מה ניסו לגלות',
       stepsTitle: 'שלבי הניסוי',
       safetyTitle: 'הערות בטיחות',
       empty: 'עדיין אין תיאור לניסוי הזה.',

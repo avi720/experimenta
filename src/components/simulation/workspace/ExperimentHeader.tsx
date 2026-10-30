@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, Save, Download, User, LogOut, Home, ChevronDown, Info, Sigma
@@ -88,7 +88,9 @@ export default function ExperimentHeader({
                         </Button>
                         <span className="w-px h-6 bg-line hidden sm:block" aria-hidden="true"></span>
                         <div className="flex items-center gap-2.5 min-w-0">
-                           <BlackHoleMark className="h-7 w-7 flex-shrink-0" />
+                           <Link to={createPageUrl("Dashboard")} aria-label={t("common.home")} className="focus-ring flex-shrink-0 rounded-full">
+                               <BlackHoleMark className="h-7 w-7" />
+                           </Link>
                            <h1 className="text-[17px] font-medium text-star hidden sm:block truncate">
                                {title}
                            </h1>
@@ -215,7 +217,7 @@ export default function ExperimentHeader({
                     </div>
                 </div>
             </div>
-            <ExperimentInfoDialog open={isInfoOpen} onOpenChange={setIsInfoOpen} texts={experiment?.i18n_texts} />
+            <ExperimentInfoDialog open={isInfoOpen} onOpenChange={setIsInfoOpen} texts={experiment?.i18n_texts} about={guide?.about} />
             <ExperimentFormulasDialog
                 open={isFormulasOpen}
                 onOpenChange={setIsFormulasOpen}

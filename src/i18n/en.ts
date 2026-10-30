@@ -218,6 +218,10 @@ const en = {
     info: {
       button: 'Info',
       title: 'About the experiment',
+      whatTitle: 'What it is',
+      historyTitle: 'A little history',
+      showsTitle: 'What it shows',
+      questionTitle: 'What they wanted to find out',
       stepsTitle: 'Steps',
       safetyTitle: 'Safety notes',
       empty: 'This experiment has no description yet.',

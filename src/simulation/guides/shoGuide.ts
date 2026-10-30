@@ -2,6 +2,24 @@ import type { ExperimentGuide } from './types';
 
 /** Simple harmonic oscillator (mass on a spring), matching `engines/shoEngine.ts`. */
 export const shoGuide: ExperimentGuide = {
+    about: {
+        what: {
+            he: 'מסה שמחוברת לקפיץ ומתנודדת סביב נקודת שיווי המשקל. זו הדוגמה הבסיסית ביותר לתנודה הרמונית, תנועה שחוזרת על עצמה בקצב קבוע, כמו מטוטלת, מיתר של גיטרה או אטומים ברשת של גביש.',
+            en: 'A mass on a spring swinging back and forth around its resting point. It is the simplest example of harmonic oscillation, a motion that repeats at a steady rate, like a pendulum, a guitar string or atoms in a crystal.',
+        },
+        history: {
+            he: 'רוברט הוק גילה ב-1660 שהכוח של קפיץ גדל ביחס ישר למתיחה שלו. הוא פרסם את הגילוי ב-1676 כחידה מוצפנת, ופענח אותה ב-1678: "ut tensio, sic vis", כלומר "כמו המתיחה, כך הכוח". באותן שנים כריסטיאן הויגנס ובהמשך הוק השתמשו בקפיץ מתנודד כדי לבנות שעוני כיס מדויקים.',
+            en: 'Robert Hooke found in 1660 that a spring’s force grows in proportion to how far it is stretched. He published the finding in 1676 as a coded anagram and revealed it in 1678: "ut tensio, sic vis", "as the extension, so the force". In the same years Christiaan Huygens, and Hooke himself, used an oscillating spring to build accurate pocket watches.',
+        },
+        shows: {
+            he: 'זמן המחזור תלוי רק במסה ובקשיחות הקפיץ, ולא בגודל התנודה. האנרגיה עוברת שוב ושוב בין אנרגיית תנועה לאנרגיה שאגורה בקפיץ, וריסון גורם לתנודה לדעוך.',
+            en: 'The period depends only on the mass and the spring’s stiffness, not on how wide the swing is. Energy passes back and forth between motion and the stretched spring, and damping makes the swing die down.',
+        },
+        question: {
+            he: 'איך חומרים אלסטיים מגיבים לכוח, ואיך אפשר לנצל תנועה שחוזרת על עצמה בקצב קבוע כדי למדוד זמן במדויק.',
+            en: 'How elastic materials respond to force, and how a motion that repeats at a steady rate can be used to keep accurate time.',
+        },
+    },
     quantities: [
         { key: 'time', label: { he: 'זמן', en: 'Time' }, symbol: 't', unit: 's' },
         { key: 'position', label: { he: 'מיקום', en: 'Position' }, symbol: 'x', unit: 'm' },

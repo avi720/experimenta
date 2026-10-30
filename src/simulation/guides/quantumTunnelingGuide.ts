@@ -6,6 +6,24 @@ import type { ExperimentGuide } from './types';
  * not a measurement a student can make from these charts.
  */
 export const quantumTunnelingGuide: ExperimentGuide = {
+    about: {
+        what: {
+            he: 'חלקיק קוונטי, כמו אלקטרון, פוגש מחסום אנרגיה שלפי הפיזיקה הקלאסית אין לו מספיק אנרגיה לעבור. בכל זאת יש לו סיכוי לעבור דרכו. התופעה נקראת מנהור קוונטי.',
+            en: 'A quantum particle, such as an electron, meets an energy barrier it does not have enough energy to cross by classical physics. Still, it has a chance of getting through. This is called quantum tunneling.',
+        },
+        history: {
+            he: 'פרידריך הונד תיאר את התופעה ב-1927. ב-1928 ג׳ורג׳ גאמוב, ובאופן בלתי תלוי רונלד גרני ואדוארד קונדון, השתמשו בה כדי להסביר דעיכת אלפא: איך חלקיק אלפא בורח מגרעין האטום למרות המחסום שמחזיק אותו. מאוחר יותר המנהור הוביל לדיודת המנהור של לאו אסאקי (1957) ולמיקרוסקופ המנהור הסורק של בינינג ורוהרר (1981), ששניהם זכו בפרס נובל.',
+            en: 'Friedrich Hund described the effect in 1927. In 1928 George Gamow, and independently Ronald Gurney and Edward Condon, used it to explain alpha decay: how an alpha particle escapes an atomic nucleus despite the barrier holding it in. Tunneling later led to Leo Esaki’s tunnel diode (1957) and Binnig and Rohrer’s scanning tunneling microscope (1981), both of which won Nobel Prizes.',
+        },
+        shows: {
+            he: 'לחלקיקים יש גם התנהגות של גל. הגל דועך בתוך המחסום אבל לא נעלם, ולכן יש סיכוי לעבור. הסיכוי יורד מהר מאוד כשהמחסום רחב או גבוה יותר.',
+            en: 'Particles also behave like waves. The wave fades inside the barrier but does not vanish, so there is a chance of getting through. That chance drops very fast as the barrier gets wider or higher.',
+        },
+        question: {
+            he: 'איך ייתכן שגרעינים רדיואקטיביים פולטים חלקיקי אלפא, כשלפי הפיזיקה הקלאסית לחלקיקים אין מספיק אנרגיה לצאת.',
+            en: 'How can radioactive nuclei emit alpha particles, when by classical physics the particles do not have enough energy to get out?',
+        },
+    },
     quantities: [
         { key: 'time', label: { he: 'זמן הדמיה', en: 'Animation time' }, symbol: 't', unit: 's' },
         { key: 'position', label: { he: 'מיקום בהדמיה', en: 'Position in the animation' }, symbol: 'x', unit: '' },

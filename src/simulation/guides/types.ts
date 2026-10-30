@@ -66,7 +66,20 @@ export type ChartView = {
     y: string[];
 };
 
+/** The Info window's story of an experiment, each part a short paragraph. */
+export type ExperimentAbout = {
+    /** What the experiment is. */
+    what: Bilingual;
+    /** A short history: who did it, when, and how. */
+    history: Bilingual;
+    /** What it demonstrates. */
+    shows: Bilingual;
+    /** The question people were trying to answer when they did it. */
+    question: Bilingual;
+};
+
 export type ExperimentGuide = {
+    about: ExperimentAbout;
     quantities: Quantity[];
     formulas: FormulaGroup[];
     symbols: SymbolEntry[];

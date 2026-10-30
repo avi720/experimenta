@@ -2,6 +2,24 @@ import type { ExperimentGuide } from './types';
 
 /** Free fall with optional linear drag, matching `engines/freeFallEngine.ts` (y up, v > 0 upwards). */
 export const freeFallGuide: ExperimentGuide = {
+    about: {
+        what: {
+            he: 'גוף שנופל רק בהשפעת כוח הכובד. אפשר להוסיף התנגדות אוויר (גרר) ולראות איך היא משנה את הנפילה.',
+            en: 'A body falling under gravity alone. You can add air resistance (drag) and see how it changes the fall.',
+        },
+        history: {
+            he: 'אריסטו טען שגוף כבד נופל מהר יותר מגוף קל, וכך האמינו כמעט אלפיים שנה. בתחילת המאה ה-17 גלילאו גליליי חקר נפילה בעזרת כדורים שמתגלגלים על מישור משופע, ומצא שהמרחק גדל כמו ריבוע הזמן, בלי קשר למשקל. הסיפור שהפיל כדורים ממגדל פיזה כנראה לא קרה כפי שמספרים אותו. ב-1971 האסטרונאוט דייוויד סקוט הפיל פטיש ונוצה על הירח, ושניהם נחתו יחד.',
+            en: 'Aristotle held that heavy bodies fall faster than light ones, and people believed it for almost two thousand years. In the early 1600s Galileo Galilei studied falling with balls rolling down a ramp, and found that the distance grows with the square of the time, whatever the weight. The story of him dropping balls from the Tower of Pisa probably did not happen as it is told. In 1971 astronaut David Scott dropped a hammer and a feather on the Moon, and they landed together.',
+        },
+        shows: {
+            he: 'בלי התנגדות אוויר כל הגופים נופלים עם אותה תאוצה, g, והמהירות גדלה באופן קבוע. עם גרר הגוף מגיע למהירות סופית שבה הוא מפסיק להאיץ.',
+            en: 'Without air resistance every body falls with the same acceleration, g, and its speed grows steadily. With drag the body reaches a terminal speed at which it stops speeding up.',
+        },
+        question: {
+            he: 'האם גופים כבדים באמת נופלים מהר יותר, ואיזה חוק מתאר את הנפילה.',
+            en: 'Do heavy bodies really fall faster, and what law describes the fall?',
+        },
+    },
     quantities: [
         { key: 'time', label: { he: 'זמן', en: 'Time' }, symbol: 't', unit: 's' },
         { key: 'position', label: { he: 'גובה', en: 'Height' }, symbol: 'y', unit: 'm' },

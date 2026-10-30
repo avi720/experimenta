@@ -60,6 +60,7 @@ describe.each(Object.entries(EXPERIMENT_GUIDES))('guide %s', (slug, guide) => {
         guide.quantities.forEach((q) => expect(bilingual(q.label), q.key).toBe(true));
         guide.unknowns.forEach((u) => expect(bilingual(u.hint), u.key).toBe(true));
         guide.chartViews.forEach((v) => expect(bilingual(v.name)).toBe(true));
+        Object.entries(guide.about).forEach(([part, text]) => expect(bilingual(text), part).toBe(true));
     });
 
     it('refers only to real parameters and engine outputs', () => {

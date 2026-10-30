@@ -2,6 +2,24 @@ import type { ExperimentGuide } from './types';
 
 /** Two-slit interference with a single-slit envelope, matching `engines/doubleSlitEngine.ts`. */
 export const doubleSlitGuide: ExperimentGuide = {
+    about: {
+        what: {
+            he: 'שולחים אור, או אלקטרונים, דרך שני סדקים צרים שקרובים זה לזה, ומסתכלים על המסך שמאחוריהם. במקום שני פסים מופיע דגם של הרבה פסים בהירים וכהים לסירוגין: דגם התאבכות.',
+            en: 'Light, or electrons, is sent through two narrow slits close together, and you look at the screen behind them. Instead of two stripes, a pattern of many alternating bright and dark fringes appears: an interference pattern.',
+        },
+        history: {
+            he: 'תומאס יאנג הציג את הניסוי עם אור בתחילת המאה ה-19 (1803). בזמנו רבים קיבלו את דעתו של ניוטון שאור עשוי מחלקיקים, והפסים של יאנג תמכו בכך שאור הוא גל. ב-1924 לואי דה־ברויי הציע שגם לחומר יש אורך גל, וב-1927 דייוויסון וג׳רמר הראו עקיפה של אלקטרונים. קלאוס ינסון ביצע את ניסוי שני הסדקים עם אלקטרונים ב-1961, וב-1974 ושוב ב-1989 צוותים באיטליה וביפן הראו שהדגם נבנה גם כשהאלקטרונים מגיעים אחד אחד.',
+            en: 'Thomas Young presented the experiment with light in the early 19th century (1803). At the time many followed Newton’s view that light is made of particles, and Young’s fringes supported light being a wave. In 1924 Louis de Broglie proposed that matter has a wavelength too, and in 1927 Davisson and Germer showed electrons diffracting. Claus Jönsson did the double-slit experiment with electrons in 1961, and in 1974 and again in 1989 teams in Italy and Japan showed the pattern builds up even when the electrons arrive one at a time.',
+        },
+        shows: {
+            he: 'אור וגם חומר מתנהגים כגלים: הגלים משני הסדקים מתחזקים במקומות מסוימים ומבטלים זה את זה במקומות אחרים. ועם זאת כל אלקטרון נקלט במסך בנקודה אחת, כמו חלקיק. זה הדואליות גל־חלקיק.',
+            en: 'Light and matter both behave like waves: the waves from the two slits reinforce each other in some places and cancel in others. Yet each electron lands on the screen at a single point, like a particle. This is wave–particle duality.',
+        },
+        question: {
+            he: 'האם אור הוא גל או זרם של חלקיקים, ובהמשך: האם גם לחלקיקי חומר, כמו אלקטרונים, יש טבע של גל.',
+            en: 'Is light a wave or a stream of particles? And later: do particles of matter, such as electrons, have a wave nature too?',
+        },
+    },
     quantities: [
         { key: 'position', label: { he: 'מיקום על המסך', en: 'Position on the screen' }, symbol: 'y', unit: 'mm' },
         { key: 'intensity', label: { he: 'עוצמה יחסית', en: 'Relative intensity' }, symbol: 'I', unit: '' },
