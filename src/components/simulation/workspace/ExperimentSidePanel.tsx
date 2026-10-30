@@ -50,6 +50,7 @@ export default function ExperimentSidePanel({
     onScrub,
     currentTime,
     playbackTime,
+    playedUntil,
     displayedDataPoint,
     simulationData,
     validationState,
@@ -115,6 +116,7 @@ export default function ExperimentSidePanel({
                                 onScrub={onScrub}
                                 currentTime={currentTime}
                                 playbackTime={playbackTime}
+                                playedUntil={playedUntil}
                                 displayedDataPoint={displayedDataPoint}
                                 simulationData={simulationData}
                                 isRTL={isRTL}

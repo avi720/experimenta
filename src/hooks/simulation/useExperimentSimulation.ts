@@ -29,6 +29,7 @@ export type ExperimentSimulation = {
     simulationData: SimulationDataPoint[];
     currentTime: number;
     playbackTime: number;
+    playedUntil: number;
     displayedDataPoint: SimulationDataPoint | null;
     validationState: ParameterValidationState;
     maxSimulationTime: number;
@@ -192,6 +193,7 @@ export function useExperimentSimulation(
             simulationData,
             currentTime: 0,
             playbackTime: 0,
+            playedUntil: 0,
             displayedDataPoint,
             validationState,
             maxSimulationTime: 0,
@@ -219,6 +221,7 @@ export function useExperimentSimulation(
         simulationData: manager.simulationData,
         currentTime: manager.playbackTime,
         playbackTime: manager.playbackTime,
+        playedUntil: manager.playedUntil,
         displayedDataPoint,
         validationState,
         maxSimulationTime,

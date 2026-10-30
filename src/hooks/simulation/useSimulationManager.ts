@@ -18,11 +18,28 @@ export function useSimulationManager({
     const [simulationStatus, setSimulationStatus] = useState<SimulationStatus>('idle');
     const [isPlaying, setIsPlaying] = useState(false);
     const [playbackTime, setPlaybackTime] = useState(0);
+    // The furthest time the run has actually played to. The engine computes the whole run up
+    // front, but stepping or scrubbing past this point would show results the student has not
+    // reached yet, so both stop here.
+    const [playedUntil, setPlayedUntil] = useState(0);
+    const playedUntilRef = useRef(0);
 
     const playbackIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const lastUpdateTimeRef = useRef(0);
     const playbackTimeRef = useRef(0);
     const isMountedRef = useRef(true);
+
+    const markPlayed = useCallback((time: number) => {
+        if (time > playedUntilRef.current) {
+            playedUntilRef.current = time;
+            setPlayedUntil(time);
+        }
+    }, []);
+
+    const clearPlayed = useCallback(() => {
+        playedUntilRef.current = 0;
+        setPlayedUntil(0);
+    }, []);
 
     useEffect(() => {
         isMountedRef.current = true;
@@ -40,6 +57,7 @@ export function useSimulationManager({
         if (data && data.length > 0) {
             playbackTimeRef.current = 0;
             setPlaybackTime(0);
+            clearPlayed();
             // Playback starts now either way, so the run is "running" (and can be paused) until the
             // playback loop reaches the end. A run that ended early (shouldStop, e.g. Free Fall
             // hitting the ground) used to be marked "completed" here, which hid the pause button.
@@ -49,7 +67,7 @@ export function useSimulationManager({
             setSimulationStatus('idle');
             setIsPlaying(false);
         }
-    }, []);
+    }, [clearPlayed]);
 
     const {
         isSimulating,
@@ -101,6 +119,7 @@ export function useSimulationManager({
                     playbackIntervalRef.current = null;
                 }
                 setPlaybackTime(currentMaxAvailableTime);
+                markPlayed(currentMaxAvailableTime);
                 setIsPlaying(false);
                 setSimulationStatus('completed');
                 return;
@@ -108,6 +127,7 @@ export function useSimulationManager({
 
             playbackTimeRef.current = newTime;
             setPlaybackTime(newTime);
+            markPlayed(newTime);
         }, 16);
 
         return () => {
@@ -116,15 +136,16 @@ export function useSimulationManager({
                 playbackIntervalRef.current = null;
             }
         };
-    }, [isPlaying, isSimulating, playbackSpeed, getMaxAvailableTime]);
+    }, [isPlaying, isSimulating, playbackSpeed, getMaxAvailableTime, markPlayed]);
 
     const startSimulation = useCallback(() => {
         playbackTimeRef.current = 0;
         setPlaybackTime(0);
+        clearPlayed();
         setSimulationStatus('calculating');
         setIsPlaying(false);
         engineStartSimulation(parameters, maxSimulationTime);
-    }, [parameters, maxSimulationTime, engineStartSimulation]);
+    }, [parameters, maxSimulationTime, engineStartSimulation, clearPlayed]);
 
     const pauseSimulation = useCallback(() => {
         setIsPlaying(false);
@@ -160,14 +181,15 @@ export function useSimulationManager({
         setIsPlaying(false);
         playbackTimeRef.current = 0;
         setPlaybackTime(0);
+        clearPlayed();
         setSimulationStatus('idle');
         engineResetSimulation();
-    }, [engineResetSimulation]);
+    }, [engineResetSimulation, clearPlayed]);
 
     const stepForward = useCallback(() => {
         const step = 0.1;
-        const maxAvailable = getMaxAvailableTime();
-        const newTime = Math.min(playbackTimeRef.current + step, maxAvailable);
+        const limit = Math.min(getMaxAvailableTime(), playedUntilRef.current);
+        const newTime = Math.max(playbackTimeRef.current, Math.min(playbackTimeRef.current + step, limit));
         playbackTimeRef.current = newTime;
         setPlaybackTime(newTime);
     }, [getMaxAvailableTime]);
@@ -180,8 +202,8 @@ export function useSimulationManager({
     }, []);
 
     const scrubSimulation = useCallback((time: number) => {
-        const maxAvailable = getMaxAvailableTime();
-        const clampedTime = Math.max(0, Math.min(time, maxAvailable));
+        const limit = Math.min(getMaxAvailableTime(), playedUntilRef.current);
+        const clampedTime = Math.max(0, Math.min(time, limit));
         playbackTimeRef.current = clampedTime;
         setPlaybackTime(clampedTime);
     }, [getMaxAvailableTime]);
@@ -206,6 +228,7 @@ export function useSimulationManager({
         isPlaying,
         isSimulating,
         playbackTime,
+        playedUntil,
         simulationData,
         startSimulation,
         pauseSimulation,

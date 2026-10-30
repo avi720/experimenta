@@ -30,6 +30,7 @@ export default function FloatingWindowsManager({
     onScrub,
     currentTime,
     playbackTime,
+    playedUntil,
     displayedDataPoint,
     simulationData,
     validationState,
@@ -60,6 +61,7 @@ export default function FloatingWindowsManager({
                         onScrub={onScrub}
                         currentTime={currentTime}
                         playbackTime={playbackTime}
+                        playedUntil={playedUntil}
                         displayedDataPoint={displayedDataPoint}
                         simulationData={simulationData}
                         isRTL={isRTL}

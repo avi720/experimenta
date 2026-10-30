@@ -19,6 +19,7 @@ type SimulationControlsProps = IsRTLProps &
         | "onStepBackward"
         | "onScrub"
         | "playbackTime"
+        | "playedUntil"
         | "simulationData"
     > & {
         maxAvailableTime: number;
@@ -35,6 +36,7 @@ export default function SimulationControls({
     onStepBackward,
     onScrub,
     playbackTime,
+    playedUntil,
     maxAvailableTime,
     simulationData,
     isRTL,
@@ -106,7 +108,8 @@ export default function SimulationControls({
                     variant="ghost"
                     size="icon"
                     onClick={onStepForward}
-                    disabled={disableStep || playbackTime >= maxAvailableTime}
+                    // Forward stops at what has been played so far, not at the end of the computed run.
+                    disabled={disableStep || playbackTime >= Math.min(maxAvailableTime, playedUntil ?? maxAvailableTime) - 1e-9}
                     aria-label={t("workspace.stepForward")}
                     className={cn("flex-shrink-0", ghostIconButtonClass)}
                 >

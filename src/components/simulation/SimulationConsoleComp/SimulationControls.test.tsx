@@ -51,3 +51,15 @@ describe("SimulationControls direction", () => {
         expect(screen.getByRole("slider").closest("[dir]")?.getAttribute("dir")).toBe("ltr");
     });
 });
+
+describe("SimulationControls forward step", () => {
+    it("is disabled at the furthest played time even when more of the run is computed", () => {
+        render(<SimulationControls {...handlers} isRTL simulationState="paused" playbackTime={1.1} playedUntil={1.1} maxAvailableTime={10} simulationData={samples} />);
+        expect((screen.getByRole("button", { name: "צעד קדימה" }) as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it("is enabled after stepping back from the furthest played time", () => {
+        render(<SimulationControls {...handlers} isRTL simulationState="paused" playbackTime={0.9} playedUntil={1.1} maxAvailableTime={10} simulationData={samples} />);
+        expect((screen.getByRole("button", { name: "צעד קדימה" }) as HTMLButtonElement).disabled).toBe(false);
+    });
+});

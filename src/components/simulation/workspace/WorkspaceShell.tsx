@@ -57,6 +57,7 @@ export default function WorkspaceShell({
     onScrub,
     currentTime,
     playbackTime,
+    playedUntil,
     displayedDataPoint,
     simulationData = [],
     parameters,
@@ -231,6 +232,7 @@ export default function WorkspaceShell({
                                 onScrub={onScrub}
                                 currentTime={effectiveTime}
                                 playbackTime={playbackTime}
+                                playedUntil={playedUntil}
                                 displayedDataPoint={displayedDataPoint}
                                 simulationData={normalizedSimulationData}
                                 validationState={validationState}
@@ -255,6 +257,7 @@ export default function WorkspaceShell({
                             onScrub={onScrub}
                             currentTime={effectiveTime}
                             playbackTime={playbackTime}
+                            playedUntil={playedUntil}
                             displayedDataPoint={displayedDataPoint}
                             simulationData={normalizedSimulationData}
                             experiment={experiment}

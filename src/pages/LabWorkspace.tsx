@@ -70,6 +70,7 @@ export default function LabWorkspace({ forcedSlug = null }: { forcedSlug?: strin
         simulationData,
         currentTime,
         playbackTime,
+        playedUntil,
         displayedDataPoint,
         validationState,
         maxSimulationTime,
@@ -168,6 +169,7 @@ export default function LabWorkspace({ forcedSlug = null }: { forcedSlug?: strin
             onScrub={scrubTime}
             currentTime={currentTime}
             playbackTime={playbackTime}
+            playedUntil={playedUntil}
             displayedDataPoint={displayedDataPoint}
             simulationData={simulationData}
             onSave={saveRun}

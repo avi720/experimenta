@@ -50,6 +50,7 @@ export default function SimulationConsole({
     onScrub,
     currentTime,
     playbackTime,
+    playedUntil,
     displayedDataPoint,
     simulationData = [],
     isRTL,
@@ -102,6 +103,7 @@ export default function SimulationConsole({
                     onStepBackward={onStepBackward}
                     onScrub={onScrub}
                     playbackTime={playbackTime}
+                    playedUntil={playedUntil}
                     maxAvailableTime={maxAvailableTime}
                     simulationData={simulationData}
                     isRTL={isRTL}

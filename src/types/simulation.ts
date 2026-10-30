@@ -77,6 +77,8 @@ export type SimulationConsoleHandlers = {
   onScrub: (time: number) => void;
   currentTime?: number;
   playbackTime: number;
+  /** The furthest time this run has played to; stepping and scrubbing stop there. */
+  playedUntil?: number;
   displayedDataPoint?: SimulationDataPoint | null;
   simulationData?: SimulationDataPoint[];
   validationState?: ParameterValidationState;
