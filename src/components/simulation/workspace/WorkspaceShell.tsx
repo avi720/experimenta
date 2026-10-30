@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
 import { AnimatePresence } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
 import ExperimentHeader, { type ExperimentMenuItem } from "./ExperimentHeader";
 import ExperimentSidePanel from "./ExperimentSidePanel";
@@ -70,7 +72,7 @@ export default function WorkspaceShell({
     handleLogout,
     challenge
 }: WorkspaceShellProps) {
-    const { dir, pick } = useTranslation(isRTL);
+    const { t, dir, pick } = useTranslation(isRTL);
     const guide = challenge?.guide ?? null;
     const hiddenKeys = challenge?.hiddenKeys ?? [];
     const hiddenOption = challenge?.isHiding
@@ -79,7 +81,7 @@ export default function WorkspaceShell({
     const unknown = hiddenOption
         ? { spec: hiddenOption.spec, label: pick(hiddenOption.parameter.i18n_labels, hiddenOption.parameter.key) }
         : null;
-    const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+    const [isSidePanelOpen, setIsSidePanelOpen] = useState(true);
     const [activeTab, setActiveTab] = useState("parameters");
     const [floatingWindows, setFloatingWindows] = useState({
         console: false,
@@ -164,8 +166,6 @@ export default function WorkspaceShell({
                 isRTL={isRTL}
                 experiments={experiments}
                 experimentsByCategory={experimentsByCategory}
-                onToggleRightPanel={() => setIsRightPanelOpen(!isRightPanelOpen)}
-                isRightPanelOpen={isRightPanelOpen}
                 onSave={onSave}
                 onExport={onExport}
                 onLogout={handleLogout}
@@ -190,8 +190,27 @@ export default function WorkspaceShell({
                     </div>
 
                     {/* Side Panel - floating over the canvas with absolute positioning */}
+                    {/* The panel's own handle: a tab on its inner edge while open, and a small tab
+                        on the screen's start edge while closed. On phones the panel leaves a strip
+                        of scene for it (see ExperimentSidePanel), so it never covers the inputs. */}
+                    <button
+                        type="button"
+                        onClick={() => setIsSidePanelOpen((open) => !open)}
+                        aria-label={t("workspace.toggleSidePanel")}
+                        aria-expanded={isSidePanelOpen}
+                        className={cn(
+                            "focus-ring absolute top-1/2 z-[35] flex h-16 w-6 -translate-y-1/2 items-center justify-center rounded-e-md border border-s-0 border-line bg-space/90 text-dust shadow-lg shadow-hole/50 backdrop-blur-md transition-[inset-inline-start,color] duration-300 hover:text-blueshift",
+                            isSidePanelOpen ? "start-[calc(100%-1.5rem)] sm:start-96" : "start-0"
+                        )}
+                    >
+                        {/* Points the way the panel will move: back to its edge when open, out when closed. */}
+                        {isSidePanelOpen
+                            ? <ChevronLeft className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
+                            : <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />}
+                    </button>
+
                     <AnimatePresence>
-                        {isRightPanelOpen && (
+                        {isSidePanelOpen && (
                             <ExperimentSidePanel
                                 isRTL={isRTL}
                                 activeTab={activeTab}

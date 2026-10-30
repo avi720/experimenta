@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowLeft, SlidersHorizontal, Save, Download, User, LogOut, Home, ChevronDown, Info, Sigma
+  ArrowLeft, Save, Download, User, LogOut, Home, ChevronDown, Info, Sigma
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -36,8 +36,6 @@ type ExperimentHeaderProps = IsRTLProps & {
     user?: AppUser | null;
     experiments?: ExperimentMenuItem[];
     experimentsByCategory?: Record<string, ExperimentMenuItem[]>;
-    onToggleRightPanel?: () => void;
-    isRightPanelOpen?: boolean;
     onSave?: () => void;
     onExport?: () => void;
     onLogout?: () => void;
@@ -56,8 +54,6 @@ export default function ExperimentHeader({
     isRTL,
     experiments,
     experimentsByCategory,
-    onToggleRightPanel,
-    isRightPanelOpen,
     onSave,
     onExport,
     onLogout,
@@ -74,12 +70,6 @@ export default function ExperimentHeader({
     const groupedExperiments = groupExperimentsByCategory<ExperimentMenuItem>(
         experimentsByCategory ?? experiments ?? []
     );
-
-    const handleToggleClick = () => {
-        if (onToggleRightPanel) {
-            onToggleRightPanel();
-        }
-    };
 
     return (
         <header className="bg-space/80 backdrop-blur-md border-b border-line sticky top-0 z-50 flex-shrink-0 text-star">
@@ -196,7 +186,9 @@ export default function ExperimentHeader({
                             </DropdownMenuContent>
                         </DropdownMenu>
 
-                        <div className="w-px h-6 bg-line hidden sm:block" aria-hidden="true"></div>
+                        {user && (
+                            <div className="w-px h-6 bg-line hidden sm:block" aria-hidden="true"></div>
+                        )}
 
                         {user && (
                             <DropdownMenu>
@@ -220,19 +212,6 @@ export default function ExperimentHeader({
                             </DropdownMenu>
                         )}
 
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            aria-label={t("workspace.toggleSidePanel")}
-                            aria-pressed={!!isRightPanelOpen}
-                            onClick={handleToggleClick}
-                            className={cn(
-                                quietButtonClass,
-                                isRightPanelOpen && "border-blueshift/60 bg-blueshift/10 text-blueshift"
-                            )}
-                        >
-                            <SlidersHorizontal className="w-5 h-5" />
-                        </Button>
                     </div>
                 </div>
             </div>

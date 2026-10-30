@@ -70,7 +70,7 @@ export default function ExperimentSidePanel({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: slideOffset, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className={cn("absolute top-0 start-0 border-e h-full w-full sm:w-96 shadow-2xl shadow-hole/60 z-30 flex flex-col", instrumentSurfaceClass)}
+            className={cn("absolute top-0 start-0 border-e h-full w-[calc(100%-1.5rem)] sm:w-96 shadow-2xl shadow-hole/60 z-30 flex flex-col", instrumentSurfaceClass)}
         >
             <Tabs value={activeTab} onValueChange={onTabChange} className="flex-1 flex flex-col overflow-hidden">
                 <div className="border-b border-line px-4 flex-shrink-0">
