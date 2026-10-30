@@ -24,7 +24,8 @@ export default function AppHeader({ isRTL, user, settings, experiments, location
 
     return (
         <header className="sticky top-0 z-50 bg-space/[0.85] backdrop-blur-md border-b border-line/70 text-star">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            {/* Full width: the brand and tabs hug the reading-start edge, the controls the other. */}
+            <div className="px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16 gap-2">
                     <Link
                         to={createPageUrl("Dashboard")}
