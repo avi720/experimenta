@@ -51,7 +51,9 @@ export default function SimulationControls({
     // כפתורי step מושבתים כשאין נתונים או בזמן חישוב/ריצה; כפתור reset זמין גם בזמן חישוב/ריצה (T23)
     const disableStep = !hasData || isCalculating || isRunning;
     const disableReset = isIdle && !hasData;
-    const sliderMax = hasData ? maxAvailableTime : 0;
+    // Never a zero-width range: with min = max = 0 (after a reset clears the data) Radix keeps the
+    // previous thumb position, so the bar would stay full. A positive max draws 0 at the start.
+    const sliderMax = hasData ? maxAvailableTime : 1;
     const mainButtonClass = "flex-grow h-10 flex items-center justify-center gap-2";
 
     return (
