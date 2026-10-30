@@ -5,17 +5,32 @@ function quoteIfNeeded(text: string): string {
 }
 
 /**
- * Serializes one cell: numbers to 6 decimals (non-finite → empty), `{ y }` vectors to their y,
- * other objects to quoted JSON, null/undefined to empty.
+ * Six decimal places for ordinary values. A non-zero number that would print as
+ * 0.000000 (a tunneling probability, for example) is written in scientific notation,
+ * which spreadsheets still parse as a number.
+ */
+export function formatCsvNumber(value: number): string {
+    if (!Number.isFinite(value)) return '';
+    const fixed = value.toFixed(6);
+    if (value !== 0 && (fixed === '0.000000' || fixed === '-0.000000')) {
+        return value.toExponential(6);
+    }
+    return fixed;
+}
+
+/**
+ * Serializes one cell: numbers to 6 decimals, or scientific notation when that would
+ * hide them (non-finite → empty), `{ y }` vectors to their y, other objects to quoted
+ * JSON, null/undefined to empty.
  */
 export function serializeCsvCell(value: unknown): string {
     if (typeof value === 'number') {
-        return Number.isFinite(value) ? value.toFixed(6) : '';
+        return formatCsvNumber(value);
     }
     if (value && typeof value === 'object') {
         const { y } = value as { y?: unknown };
         if (typeof y === 'number') {
-            return y.toFixed(6);
+            return formatCsvNumber(y);
         }
         return quoteIfNeeded(JSON.stringify(value));
     }

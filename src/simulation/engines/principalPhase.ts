@@ -4,6 +4,11 @@
  * For an electron ω is about 10^16 rad/s, so φ itself does not fit in a double
  * with a fractional part finer than 2π. The ratio uses the CODATA decimals
  * (e = 1.602176634×10^−19 C exactly, ℏ = 1.054571817×10^−34 J·s) and a 50-digit π.
+ *
+ * Convention: φ(0) = (k x0) mod 2π with x0 = −50 µm (where the picture starts),
+ * and φ(t) = [φ(0) + ω t] mod 2π. The export fixture checks φ(0) in double
+ * arithmetic and checks that the exported phase advances at a constant rate.
+ * It does not reimplement this reducer: ωt at a sample time is not a double.
  */
 
 const PI_10_50 = 314159265358979323846264338327950288419716939937511n;

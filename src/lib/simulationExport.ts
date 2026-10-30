@@ -1,5 +1,5 @@
 // CSV the workspace Export button and the Results table both download.
-import { samplesToCsv } from '@/lib/csv';
+import { formatCsvNumber, samplesToCsv } from '@/lib/csv';
 
 /** One stored sample: numeric values rounded, nested `position.y` flattened, objects dropped. */
 export type StoredSample = Record<string, unknown>;
@@ -12,7 +12,9 @@ export const OMITTED_SAMPLE_KEYS = ['shouldStop', 'debug', 'pattern', 'parameter
 const OMITTED = new Set<string>(OMITTED_SAMPLE_KEYS);
 
 function roundNumeric(val: number): number {
-    return Number.isFinite(val) ? Number(val.toFixed(6)) : val;
+    if (!Number.isFinite(val)) return val;
+    const text = formatCsvNumber(val);
+    return text === '' ? val : Number(text);
 }
 
 /**

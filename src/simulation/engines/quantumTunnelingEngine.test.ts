@@ -93,9 +93,29 @@ describe('quantum tunneling transmission (T6)', () => {
         expect(transmission).toBeCloseTo(1, 9);
     });
 
-    it('returns transmission = 0 for non-physical inputs', () => {
+    it('returns transmission = 0 for a particle with no energy or no mass', () => {
         expect(calculateTransmissionReflection(0, V0, 1e-9, ELECTRON_MASS).transmission).toBe(0);
-        expect(calculateTransmissionReflection(V0, V0, 0, ELECTRON_MASS).transmission).toBe(0);
+        expect(calculateTransmissionReflection(V0, V0, 1e-9, 0).transmission).toBe(0);
+    });
+
+    it('transmits in full when the barrier height or width is zero', () => {
+        expect(calculateTransmissionReflection(V0, 0, 1e-9, ELECTRON_MASS).transmission).toBe(1);
+        expect(calculateTransmissionReflection(V0, V0, 0, ELECTRON_MASS).transmission).toBe(1);
+    });
+
+    it('keeps a thick-barrier transmission instead of cutting it off at κL = 50', () => {
+        // Electron, E = 1.022 eV, V0 = 10 eV, L = 5 nm → κL ≈ 77, T ≈ 3×10^−67.
+        const mass = 5.11e5 * (EV / (299792458 * 299792458));
+        const speed = 0.002 * 299792458;
+        const E = 0.5 * mass * speed * speed;
+        const height = 10 * EV;
+        const width = 5e-9;
+        const kappa = Math.sqrt(2 * mass * (height - E)) / HBAR;
+        expect(kappa * width).toBeGreaterThan(50);
+        const asymptotic = (16 * E * (height - E)) / (height * height) * Math.exp(-2 * kappa * width);
+        const { transmission } = calculateTransmissionReflection(E, height, width, mass);
+        expect(transmission).toBeGreaterThan(0);
+        expect(Math.abs(Math.log(transmission) - Math.log(asymptotic))).toBeLessThan(1e-6);
     });
 });
 
@@ -113,6 +133,40 @@ describe('calculateQuantumTunnelingStep', () => {
         expect(Math.abs(point.transmission - expected)).toBeLessThan(1e-6);
         expect(point.transmission + point.reflection).toBeCloseTo(1, 12);
         expect(point.debug.ratio_E_V0).toBeCloseTo(E / EV, 9);
+    });
+
+    it('keeps a zero speed, barrier, and width instead of the defaults', () => {
+        const noBarrier = calculateQuantumTunnelingStep(0, { v: 0.01, m: 5.11, V0: 0, L: 0.005 });
+        expect(noBarrier.transmission).toBe(1);
+        const noWidth = calculateQuantumTunnelingStep(0, { v: 0.01, m: 5.11, V0: 1, L: 0 });
+        expect(noWidth.transmission).toBe(1);
+        const atRest = calculateQuantumTunnelingStep(1, { v: 0, m: 5.11, V0: 1, L: 0.001 });
+        expect(atRest.position).toBeCloseTo(-50, 6);
+        expect(atRest.transmission).toBe(0);
+        const massless = calculateQuantumTunnelingStep(0, { v: 0.01, m: 0, V0: 1, L: 0.001 });
+        expect(massless.debug.mass_eV_per_c2).toBeCloseTo(5.11e5, 6);
+    });
+
+    it('anchors φ(0) to (k x0) mod 2π, which a double can still resolve', () => {
+        // ω ≈ 4×10^16 rad/s, so ωt itself is not a double-precision angle at the
+        // sample times. At t = 0 the phase is k x0 with x0 = −50 µm, about 10^6 rad.
+        const params = { v: 0.01, m: 5.11, V0: 1, L: 0.005 };
+        const point = calculateQuantumTunnelingStep(0, params);
+        const mass = 5.11e5 * (EV / (299792458 * 299792458));
+        const speed = 0.01 * 299792458;
+        const x0 = -50e-6;
+        let phase = ((mass * speed) / HBAR) * x0;
+        phase %= 2 * Math.PI;
+        if (phase < 0) phase += 2 * Math.PI;
+        expect(point.phase).toBeCloseTo(phase, 8);
+
+        const t = 1e-9;
+        const later = calculateQuantumTunnelingStep(t, params);
+        const energy = 0.5 * mass * speed * speed;
+        let naive = ((mass * speed) / HBAR) * (x0 + speed * t) - (energy / HBAR) * t;
+        naive %= 2 * Math.PI;
+        if (naive < 0) naive += 2 * Math.PI;
+        expect(later.phase).toBeCloseTo(naive, 6);
     });
 
     it('collapses the wave-function at DETECTOR_X_POSITION = 25 based on randomSeed (T49)', () => {

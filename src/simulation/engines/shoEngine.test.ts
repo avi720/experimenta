@@ -70,6 +70,16 @@ describe("SHO engine (T45)", () => {
         }
     });
 
+    it("keeps k = 0 as uniform motion and does not accept a zero mass", () => {
+        const free = calculateStep(0.5, { m: 1, k: 0, x0: 1, v0: 2, c: 0 });
+        expect(free.position).toBeCloseTo(2, 12);
+        expect(free.velocity).toBeCloseTo(2, 12);
+        expect(free.acceleration).toBe(0);
+        const massless = calculateStep(0, { m: 0, k: 10, x0: 0.5, v0: 0, c: 0 });
+        expect(massless.position).toBeCloseTo(0.5, 12);
+        expect(massless.angular_frequency).toBeCloseTo(Math.sqrt(10), 10);
+    });
+
     it("falls back to defaults instead of throwing on null parameters", () => {
         const p = calculateStep(0, { m: null, k: null, x0: null, v0: null });
         expect(p.position).toBe(1);
