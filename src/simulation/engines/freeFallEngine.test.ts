@@ -68,6 +68,18 @@ describe('free fall engine (T15)', () => {
         expect(Math.abs(last.velocity)).toBeLessThan(Math.abs(vTerminal)); // below terminal speed
     });
 
+    it('stays on the vacuum drop plus the first drag correction when c is tiny', () => {
+        // The expanded v_t form cancels at c = 1e-8 and is off by about a millimetre.
+        const t = 3;
+        const g = 9.81;
+        const c = 1e-8;
+        const point = calculateFreeFallStep(t, { h0: 80, v0: 0, g, m: 1, c });
+        const yVacuum = 80 - 0.5 * g * t * t;
+        const ySeries = yVacuum - c * (0 - (g * t * t * t) / 6);
+        expect(Math.abs(point.position.y - ySeries)).toBeLessThan(1e-9);
+        expect(Math.abs(point.position.y - yVacuum)).toBeLessThan(1e-6);
+    });
+
     it('treats h0 = 0 as ground level, not as the default height', () => {
         // Thrown up from the ground at 5 m/s: lands after 2·v0/g at -v0
         const points = runToImpact({ h0: 0, v0: 5, g: 9.81, m: 1, c: 0 });

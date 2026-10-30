@@ -21,10 +21,21 @@ import type { EngineParameters } from "@/simulation/engines/types";
  *
  * Headers are the quantity names. The CSV does not print units; each column's unit is
  * locked by the exact string below, and the numbers are checked in those units.
- * Cells are written with `toFixed(6)`, so a correct value can differ from the formula
- * by at most half a unit in the last place.
+ * Ordinary cells are written with `toFixed(6)`, so a correct value can differ from the
+ * formula by half a unit in the last place, plus a few ulps. A non-zero value smaller
+ * than that (a thick-barrier transmission) is written in scientific notation and is
+ * checked relatively, because an absolute 5×10⁻⁷ would accept 0.
  */
-const CSV_TOLERANCE = 5e-7;
+const CSV_ABSOLUTE = 5e-7;
+
+function exportTolerance(expected: number): number {
+    return CSV_ABSOLUTE + 4 * Number.EPSILON * Math.max(1, Math.abs(expected));
+}
+
+function withinExportTolerance(error: number, expected: number): boolean {
+    if (error <= exportTolerance(expected)) return true;
+    return expected !== 0 && Math.abs(expected) < CSV_ABSOLUTE && error <= 1e-6 * Math.abs(expected);
+}
 
 const COVERED_SLUGS = ["double-slit", "free-fall", "quantum-tunneling", "sho"];
 
@@ -102,7 +113,7 @@ function columnMisses(
         const actual = Number(row[index]);
         const expected = expectedAt(rowIndex);
         const error = delta(actual, expected);
-        if (!(error <= CSV_TOLERANCE) && misses.length < 5) {
+        if (!withinExportTolerance(error, expected) && misses.length < 5) {
             misses.push(`row ${rowIndex}: csv ${row[index]} vs textbook ${expected} (Δ=${error})`);
         }
     });
@@ -128,10 +139,32 @@ function textMisses(
     return misses;
 }
 
-function phaseDelta(actual: number, expected: number): number {
-    const twoPi = 2 * Math.PI;
-    const wrapped = Math.abs(actual - expected) % twoPi;
-    return Math.min(wrapped, twoPi - wrapped);
+function phaseCell(row: string[], header: string[]): number {
+    return Number(row[header.indexOf("phase")]);
+}
+
+/**
+ * The exported phase is φ(t) = [φ(0) + ω t] mod 2π, with φ(0) = (k x0) mod 2π
+ * and x0 = −50 µm. ω is about 4×10^16 rad/s, so ω × ulp(t) is ~0.04 rad on the
+ * sample grid: a double cannot check the advance. φ(0) can, because k x0 is
+ * only ~10^6 rad. The reduction for later times is `freeParticlePhase`.
+ */
+function phaseAnchorMisses(rows: string[][], header: string[], speedOverC: number, massUi: number): string[] {
+    if (rows.length === 0) return ["no phase samples"];
+    const phase0 = phaseAtRest(speedOverC, massUi);
+    const exported0 = phaseCell(rows[0], header);
+    const anchor = Math.abs(exported0 - phase0);
+    if (anchor > exportTolerance(phase0)) {
+        return [`t = 0: csv ${exported0} vs (k x0) mod 2π ${phase0} (Δ=${anchor})`];
+    }
+    const misses: string[] = [];
+    rows.forEach((row, index) => {
+        const phase = phaseCell(row, header);
+        if ((!(phase >= 0) || phase >= 2 * Math.PI) && misses.length < 5) {
+            misses.push(`row ${index}: phase ${phase} is outside [0, 2π)`);
+        }
+    });
+    return misses;
 }
 
 type RowCheck = (
@@ -221,13 +254,29 @@ function shoAt(t: number, { m, k, c, x0, v0 }: Sho) {
         velocity = -amplitude * omega0 * Math.sin(omega0 * t + phi);
     } else {
         const gamma = c / (2 * m);
-        const omegaD = Math.sqrt(omega0 * omega0 - gamma * gamma);
-        const decay = Math.exp(-gamma * t);
-        const sine = (v0 + gamma * x0) / omegaD;
-        x = decay * (x0 * Math.cos(omegaD * t) + sine * Math.sin(omegaD * t));
-        velocity =
-            -gamma * x +
-            decay * (-x0 * omegaD * Math.sin(omegaD * t) + sine * omegaD * Math.cos(omegaD * t));
+        const discriminant = omega0 * omega0 - gamma * gamma;
+        if (Math.abs(discriminant) < 1e-12) {
+            const slope = v0 + gamma * x0;
+            const decay = Math.exp(-gamma * t);
+            x = (x0 + slope * t) * decay;
+            velocity = (slope - gamma * (x0 + slope * t)) * decay;
+        } else if (discriminant > 0) {
+            const omegaD = Math.sqrt(discriminant);
+            const decay = Math.exp(-gamma * t);
+            const sine = (v0 + gamma * x0) / omegaD;
+            x = decay * (x0 * Math.cos(omegaD * t) + sine * Math.sin(omegaD * t));
+            velocity =
+                -gamma * x +
+                decay * (-x0 * omegaD * Math.sin(omegaD * t) + sine * omegaD * Math.cos(omegaD * t));
+        } else {
+            const root = Math.sqrt(-discriminant);
+            const r1 = -gamma + root;
+            const r2 = -gamma - root;
+            const c1 = (v0 - r2 * x0) / (r1 - r2);
+            const c2 = (r1 * x0 - v0) / (r1 - r2);
+            x = c1 * Math.exp(r1 * t) + c2 * Math.exp(r2 * t);
+            velocity = c1 * r1 * Math.exp(r1 * t) + c2 * r2 * Math.exp(r2 * t);
+        }
     }
     const acceleration = -(k / m) * x - (c / m) * velocity;
     const kinetic = 0.5 * m * velocity * velocity;
@@ -277,84 +326,19 @@ function scenePosition(speedOverC: number, t: number): number {
 }
 
 /**
- * Principal value of φ = kx − ωt for a free particle that starts at `initialXMetres`.
- * ωt for an electron is ~10^16 rad/s, so a double cannot keep the fractional part;
- * the ratio below is the same CODATA decimals reduced with a 50-digit π.
+ * φ(0) = (k x0) mod 2π with x0 = −50 µm. k x0 is about 10^6 rad, so a double
+ * still has a fractional part. φ(t) − φ(0) = ωt mod 2π is not recomputed here:
+ * ω ~ 4×10^16 rad/s and ωt at a sample does not fit in a double. The export is
+ * checked for this φ(0) and for a constant advance. The reduction itself is
+ * `freeParticlePhase` (CODATA decimals, 50-digit π).
  */
-const PI_10_50 = 314159265358979323846264338327950288419716939937511n;
-
-function bitLength(n: bigint): number {
-    let x = n < 0n ? -n : n;
-    if (x === 0n) return 0;
-    let bits = 0;
-    while (x > 0xffffffffn) {
-        x >>= 32n;
-        bits += 32;
-    }
-    return bits + (32 - Math.clz32(Number(x)));
-}
-
-function doubleToRatio(x: number): { n: bigint; d: bigint } {
-    if (x === 0) return { n: 0n, d: 1n };
-    const sign = x < 0 ? -1n : 1n;
-    const view = new DataView(new ArrayBuffer(8));
-    view.setFloat64(0, Math.abs(x));
-    const bits = view.getBigUint64(0);
-    const exponent = Number((bits >> 52n) & 0x7ffn);
-    const fraction = bits & 0xfffffffffffffn;
-    const subnormal = exponent === 0;
-    const mantissa = subnormal ? fraction : (1n << 52n) | fraction;
-    const power = subnormal ? -1022 - 52 : exponent - 1023 - 52;
-    let n = sign * mantissa;
-    let d = 1n;
-    if (power >= 0) n <<= BigInt(power);
-    else d <<= BigInt(-power);
-    return { n, d };
-}
-
-function ratioModTwoPi(n: bigint, d: bigint): number {
-    if (d < 0n) {
-        n = -n;
-        d = -d;
-    }
-    const twoPiScaled = d * 2n * PI_10_50;
-    let remainder = (n * 10n ** 50n) % twoPiScaled;
-    if (remainder < 0n) remainder += twoPiScaled;
-    const shift = bitLength(twoPiScaled) - 53;
-    const fraction =
-        shift > 0
-            ? Number(remainder >> BigInt(shift)) / Number(twoPiScaled >> BigInt(shift))
-            : Number(remainder) / Number(twoPiScaled);
-    let phase = fraction * 2 * Math.PI;
-    if (phase >= 2 * Math.PI) phase -= 2 * Math.PI;
-    if (phase < 0) phase += 2 * Math.PI;
-    return phase;
-}
-
-function textbookPhase(massEvPerC2: number, speedOverC: number, t: number, initialXMetres: number): number {
-    // φ = (m c² / eV) · (e / ℏ) · (v x0 / c + ½ v² t), with v = speed / c.
-    const mass = doubleToRatio(massEvPerC2);
-    const speed = doubleToRatio(speedOverC);
-    const time = doubleToRatio(t);
-    const x0 = doubleToRatio(initialXMetres);
-    const chargeOverHbar = { n: 1602176634n * 10n ** 15n, d: 1054571817n };
-    const light = { n: BigInt(LIGHT), d: 1n };
-    const halfV2T = {
-        n: speed.n * speed.n * time.n,
-        d: speed.d * speed.d * time.d * 2n,
-    };
-    const vXOverC = {
-        n: speed.n * x0.n * light.d,
-        d: speed.d * x0.d * light.n,
-    };
-    const inner = {
-        n: halfV2T.n * vXOverC.d + vXOverC.n * halfV2T.d,
-        d: halfV2T.d * vXOverC.d,
-    };
-    return ratioModTwoPi(
-        mass.n * chargeOverHbar.n * inner.n,
-        mass.d * chargeOverHbar.d * inner.d,
-    );
+function phaseAtRest(speedOverC: number, massUi: number): number {
+    const mass = massUi * 1e5 * ELEMENTARY / (LIGHT * LIGHT);
+    const speed = speedOverC * LIGHT;
+    let phase = ((mass * speed) / HBAR) * (-50e-6);
+    const twoPi = 2 * Math.PI;
+    phase %= twoPi;
+    return phase < 0 ? phase + twoPi : phase;
 }
 
 // Hecht, Optics: Fraunhofer double slit, I = cos²(π d sinθ / λ) sinc²(π a sinθ / λ),
@@ -435,6 +419,43 @@ describe("free fall export", () => {
         expect(Math.abs(Number(raw[raw.length - 1].velocity))).toBeLessThan(Math.abs(terminal));
         expectFallColumns(raw, drag);
     });
+
+    it("converges to the vacuum drop through the first-order drag correction as c → 0", async () => {
+        // Independent of the engine's expm1 form: y ≈ y_vacuum − γ (v0 t²/2 − g t³/6).
+        // At c = 1e-6 the cancelled closed form is already off by ~0.2 mm.
+        const params: Fall = { h0: 80, v0: 0, g: 9.81, m: 1, c: 1e-6 };
+        const raw = await exportFall(params);
+        expectBothExports(raw, FREE_FALL_COLUMNS, (rows, header, timeAt) => {
+            const gamma = params.c / params.m;
+            const yOf = (t: number) => {
+                const vacuum = params.h0 + params.v0 * t - 0.5 * params.g * t * t;
+                return vacuum - gamma * ((params.v0 * t * t) / 2 - (params.g * t * t * t) / 6);
+            };
+            const vOf = (t: number) => {
+                const vacuum = params.v0 - params.g * t;
+                return vacuum - gamma * (params.v0 * t - (params.g * t * t) / 2);
+            };
+            expect(columnMisses(rows, header, "position", (row) => yOf(timeAt(row)))).toEqual([]);
+            expect(columnMisses(rows, header, "velocity", (row) => vOf(timeAt(row)))).toEqual([]);
+        });
+    });
+
+    it("matches a throw from the ground, h0 = 0", async () => {
+        const params: Fall = { h0: 0, v0: 10, g: 10, m: 1, c: 0 };
+        const raw = await exportFall(params);
+        expect(raw[0].position).toEqual({ y: 0 });
+        expect(raw.at(-1)?.time).toBeCloseTo(2, 8);
+        expect(raw.at(-1)?.velocity).toBeCloseTo(-10, 6);
+        expectFallColumns(raw, params);
+    });
+
+    it("matches an upward throw with linear drag", async () => {
+        const params: Fall = { h0: 5, v0: 12, g: 10, m: 1, c: 0.4 };
+        const raw = await exportFall(params);
+        expect(Number(raw[1].velocity)).toBeGreaterThan(0);
+        expect(raw.at(-1)?.shouldStop).toBe(true);
+        expectFallColumns(raw, params);
+    });
 });
 
 describe("harmonic oscillator export", () => {
@@ -483,36 +504,33 @@ describe("harmonic oscillator export", () => {
         const raw = await exportSho(underdamped);
         expectShoColumns(raw, underdamped);
     });
+
+    it("matches critical damping x = (A + Bt) e^{−γt}", async () => {
+        // c = 2√(km) = 4, so γ = ω0 = 2.
+        const params: Sho = { m: 1, k: 4, c: 4, x0: 1, v0: 0.5 };
+        const raw = await exportSho(params);
+        expectShoColumns(raw, params);
+    });
+
+    it("matches the overdamped solution x = C1 e^{r1 t} + C2 e^{r2 t}", async () => {
+        const params: Sho = { m: 1, k: 4, c: 8, x0: 1, v0: 0 };
+        const raw = await exportSho(params);
+        expectShoColumns(raw, params);
+    });
+
+    it("stays at rest when x0 = v0 = 0", async () => {
+        const params: Sho = { m: 1, k: 4, c: 0, x0: 0, v0: 0 };
+        const raw = await exportSho(params);
+        expect(raw.every((point) => point.position === 0 && point.velocity === 0)).toBe(true);
+        expectShoColumns(raw, params);
+    });
 });
 
 describe("quantum tunneling export", () => {
-    // The wave is referenced 50 µm left of the origin, the same place the picture starts.
-    const initialXMetres = -50 * 1e-6;
     const aboveBarrier = { v: 0.01, m: 5.11, V0: 1, L: 0.005, randomSeed: 0.25 };
     // E = ½ (0.5×10⁵ eV/c²) (0.01c)² = 2.5 eV under a 10 eV barrier 0.2 nm wide.
     // κL ≈ 0.88, so T is about 0.43, and v = 0.01c still reaches the detector within 10 s.
     const tunneling = { v: 0.01, m: 0.5, V0: 10, L: 0.0002, randomSeed: 0.25 };
-
-    it("reduces a moderate phase the same way double arithmetic does", () => {
-        const moderate = textbookPhase(1, 1e-8, 1, 0);
-        const mass = 1 * ELEMENTARY / (LIGHT * LIGHT);
-        const speed = 1e-8 * LIGHT;
-        const energy = 0.5 * mass * speed * speed;
-        let naive = (energy / HBAR) * 1;
-        naive %= 2 * Math.PI;
-        if (naive < 0) naive += 2 * Math.PI;
-        expect(Math.abs(moderate - naive)).toBeLessThan(1e-9);
-
-        const at = (t: number) => textbookPhase(5.11e5, 0.01, t, initialXMetres);
-        const wrap = (value: number) => {
-            const twoPi = 2 * Math.PI;
-            const turned = value % twoPi;
-            return turned < 0 ? turned + twoPi : turned;
-        };
-        expect(at(0)).toBeGreaterThanOrEqual(0);
-        expect(at(0)).toBeLessThan(2 * Math.PI);
-        expect(wrap(at(2) - at(1))).toBeCloseTo(wrap(at(1) - at(0)), 8);
-    });
 
     async function exportTunnel(params: typeof aboveBarrier) {
         const maxTime = EXPERIMENT_REGISTRY.quantumTunneling.defaultMaxTime ?? 0;
@@ -527,19 +545,10 @@ describe("quantum tunneling export", () => {
         const transmission = barrierTransmission(params.v, params.m, params.V0, params.L);
         expect(transmission).toBeGreaterThan(0);
         expect(transmission).toBeLessThanOrEqual(1);
-        const massEv = params.m * 1e5;
         expectBothExports(raw, TUNNEL_COLUMNS, (rows, header, timeAt) => {
             expect(columnMisses(rows, header, "time", timeAt)).toEqual([]);
             expect(columnMisses(rows, header, "position", (row) => scenePosition(params.v, timeAt(row)))).toEqual([]);
-            expect(
-                columnMisses(
-                    rows,
-                    header,
-                    "phase",
-                    (row) => textbookPhase(massEv, params.v, timeAt(row), initialXMetres),
-                    phaseDelta,
-                ),
-            ).toEqual([]);
+            expect(phaseAnchorMisses(rows, header, params.v, params.m)).toEqual([]);
             expect(columnMisses(rows, header, "transmission", () => transmission)).toEqual([]);
             expect(columnMisses(rows, header, "reflection", () => 1 - transmission)).toEqual([]);
             expect(
@@ -572,6 +581,51 @@ describe("quantum tunneling export", () => {
         expect(transmission).toBeLessThan(0.7);
         const raw = await exportTunnel(tunneling);
         expectTunnelColumns(raw, tunneling);
+    });
+
+    it("matches the E = V0 limit", async () => {
+        // ½ (5.11×10^5 eV/c²) v² = 1 eV ⇒ v = √(2/5.11e5).
+        const speed = Math.sqrt(2 / (5.11 * 1e5));
+        const params = { v: speed, m: 5.11, V0: 1, L: 0.001, randomSeed: 0.25 };
+        const raw = await exportTunnel(params);
+        expect(barrierTransmission(params.v, params.m, params.V0, params.L)).toBeGreaterThan(0.01);
+        expect(barrierTransmission(params.v, params.m, params.V0, params.L)).toBeLessThan(0.99);
+        expectTunnelColumns(raw, params);
+    });
+
+    it("exports T = 1 at a transmission resonance k2 L = π", async () => {
+        const speed = 0.002;
+        const massUi = 5.11;
+        const barrier = 1;
+        const mass = massUi * 1e5 * ELEMENTARY / (LIGHT * LIGHT);
+        const energy = 0.5 * mass * (speed * LIGHT) ** 2;
+        const height = barrier * ELEMENTARY;
+        const k2 = Math.sqrt(2 * mass * (energy - height)) / HBAR;
+        const widthUm = (Math.PI / k2) * 1e6;
+        const params = { v: speed, m: massUi, V0: barrier, L: widthUm, randomSeed: 0.25 };
+        const raw = await exportTunnel(params);
+        expect(barrierTransmission(params.v, params.m, params.V0, params.L)).toBeCloseTo(1, 6);
+        expectTunnelColumns(raw, params);
+    });
+
+    it("matches ln T ≈ −2κL + ln(16 E (V0−E) / V0²) for a thick barrier", async () => {
+        // 2 nm barrier, electron at 0.002c, V0 = 10 eV. κL ≈ 31, T ≈ 3×10^−27,
+        // which toFixed(6) would have written as 0.000000.
+        const params = { v: 0.002, m: 5.11, V0: 10, L: 0.002, randomSeed: 0.25 };
+        const raw = await exportTunnel(params);
+        const mass = params.m * 1e5 * ELEMENTARY / (LIGHT * LIGHT);
+        const energy = 0.5 * mass * (params.v * LIGHT) ** 2;
+        const height = params.V0 * ELEMENTARY;
+        const width = params.L * 1e-6;
+        const kappaL = Math.sqrt(2 * mass * (height - energy)) / HBAR * width;
+        const logExpected = -2 * kappaL + Math.log((16 * energy * (height - energy)) / (height * height));
+        expect(kappaL).toBeGreaterThan(20);
+        const csv = exportWorkspaceCsv(raw);
+        const transmission = Number(csv.split("\n")[1]?.split(",")[3]);
+        expect(transmission).toBeGreaterThan(0);
+        expect(csv.split("\n")[1]).toContain("e-");
+        expect(Math.abs(Math.log(transmission) - logExpected)).toBeLessThan(1e-4);
+        expectTunnelColumns(raw, params);
     });
 });
 

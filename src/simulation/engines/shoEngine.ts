@@ -6,13 +6,8 @@
 /**
  * חישוב צעד בודד בסימולציה
  */
-import type { EngineParameters, ParameterValue } from './types';
-
-/** A missing or non-numeric input uses `fallback`; a real zero does not. */
-function finiteOr(value: ParameterValue, fallback: number): number {
-    const parsed = parseFloat(String(value));
-    return Number.isFinite(parsed) ? parsed : fallback;
-}
+import type { EngineParameters } from './types';
+import { finiteOr } from './finiteNumber';
 
 export function calculateStep(t: number, parameters?: EngineParameters | null) {
     const { 
@@ -24,25 +19,31 @@ export function calculateStep(t: number, parameters?: EngineParameters | null) {
         damping = 0
     } = parameters || {};
 
-    // המרה למספרים
-    const m_num = parseFloat(String(m)) || 1;
-    const k_num = parseFloat(String(k)) || 10;
+    // m = 0 is not a harmonic oscillator (ω0 divides by the mass). k = 0 is a free particle.
+    const parsedMass = finiteOr(m, 1);
+    const m_num = parsedMass > 0 ? parsedMass : 1;
+    const k_num = finiteOr(k, 10);
     // x0 = 0 is equilibrium, not a missing value. `parseFloat("0") || 1` would replace it with 1 m.
     const x0_num = finiteOr(x0, 1);
-    const v0_num = parseFloat(String(v0)) || 0;
+    const v0_num = finiteOr(v0, 0);
     
     // תמיכה בשני שמות לפרמטר הדעיכה: c או damping
     const damping_num = parseFloat((c || damping)?.toString() || '0') || 0;
 
-    // חישוב תדר זוויתי טבעי
-    const omega0 = Math.sqrt(k_num / m_num);
-    const period = 2 * Math.PI / omega0;
+    // חישוב תדר זוויתי טבעי. k = 0 has no oscillation, so the period is infinite.
+    const omega0 = k_num > 0 ? Math.sqrt(k_num / m_num) : 0;
+    const period = omega0 > 0 ? (2 * Math.PI) / omega0 : Number.POSITIVE_INFINITY;
 
     let position;
     let velocity;
     let acceleration;
 
-    if (damping_num === 0) {
+    if (omega0 === 0 && damping_num === 0) {
+        // No spring and no drag: uniform motion.
+        position = x0_num + v0_num * t;
+        velocity = v0_num;
+        acceleration = 0;
+    } else if (damping_num === 0) {
         // תנודה הרמונית פשוטה ללא דעיכה
         const A = Math.sqrt(x0_num * x0_num + (v0_num / omega0) * (v0_num / omega0));
         const phi = Math.atan2(-v0_num / omega0, x0_num);

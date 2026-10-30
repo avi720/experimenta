@@ -1,4 +1,5 @@
 import type { EngineParameters } from './types';
+import { finiteOr } from './finiteNumber';
 import { freeParticlePhase } from './principalPhase';
 
 /**
@@ -32,10 +33,12 @@ export const DETECTOR_X_POSITION = 25;
  * @returns {{transmission: number, reflection: number}} Transmission and reflection probabilities.
  */
 export function calculateTransmissionReflection(E_si: number, V0_si: number, L_si: number, m_si: number) {
-    // Ensure we have valid physical parameters
-    if (E_si <= 0 || V0_si <= 0 || L_si <= 0 || m_si <= 0) {
-        return { transmission: 0, reflection: 1 };
-    }
+    // A negative mass, barrier, or width is not a rectangular barrier we solve.
+    // V0 = 0 or L = 0 is no barrier, so the wave is transmitted in full.
+    // E = 0 against a real barrier does not transmit.
+    if (!(m_si > 0) || V0_si < 0 || L_si < 0) return { transmission: 0, reflection: 1 };
+    if (V0_si === 0 || L_si === 0) return { transmission: 1, reflection: 0 };
+    if (!(E_si > 0)) return { transmission: 0, reflection: 1 };
 
     let transmission = 0;
     
@@ -43,12 +46,13 @@ export function calculateTransmissionReflection(E_si: number, V0_si: number, L_s
         // Case E < V0: Quantum tunneling through the barrier
         const kappa_squared = (2 * m_si * (V0_si - E_si)) / (H_BAR * H_BAR);
         const kappa = Math.sqrt(kappa_squared);
-        
-        // Avoid numerical overflow for very large kappa*L
         const kappaL = kappa * L_si;
-        if (kappaL > 50) {
-            // For very thick/high barriers, transmission is essentially zero
-            transmission = 0;
+        // sinh(κL) overflows near κL ≈ 350. Past that, sinh(κL) ≈ exp(κL)/2 and
+        // T ≈ 16 E (V0 − E) / V0² · exp(−2κL). Cutting the tail off at 50 made
+        // a 10^−67 probability look like exactly zero.
+        if (kappaL > 300) {
+            const logT = -2 * kappaL + Math.log((16 * E_si * (V0_si - E_si)) / (V0_si * V0_si));
+            transmission = logT >= -745 ? Math.exp(logT) : 0;
         } else {
             const sinh_kappaL = Math.sinh(kappaL);
             // Standard tunneling formula for rectangular barrier
@@ -93,11 +97,13 @@ export function calculateQuantumTunnelingStep(t: number, parameters: EngineParam
         randomSeed,
     } = parameters || {};
 
-    // Convert to numbers to handle string inputs from UI
-    const v_num = parseFloat(String(v)) || 0.01;
-    const m_num_ui_unit = parseFloat(String(m)) || 5.11;
-    const V0_num = parseFloat(String(V0)) || 1.0;
-    const L_num = parseFloat(String(L)) || 0.005;
+    // A zero speed, barrier, or width is physical (rest, no barrier, no thickness).
+    // A zero mass is not: the wave number and kinetic energy would be undefined.
+    const v_num = finiteOr(v, 0.01);
+    const parsedMass = finiteOr(m, 5.11);
+    const m_num_ui_unit = parsedMass > 0 ? parsedMass : 5.11;
+    const V0_num = finiteOr(V0, 1.0);
+    const L_num = finiteOr(L, 0.005);
 
     // --- Convert user-friendly units to SI units for physics calculations ---
     
