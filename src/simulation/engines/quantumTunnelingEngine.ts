@@ -1,4 +1,5 @@
 import type { EngineParameters } from './types';
+import { freeParticlePhase } from './principalPhase';
 
 /**
  * Quantum tunneling simulation engine with time evolution.
@@ -156,20 +157,11 @@ export function calculateQuantumTunnelingStep(t: number, parameters: EngineParam
         ? (rawRandom < transmission ? 'transmitted' : 'reflected')
         : null;
 
-    // --- Phase Calculation ---
-    const k_si = m_si * v_si / H_BAR; // Wavenumber
-    const omega_si = E_si / H_BAR;    // Angular frequency
-    
-    // Physical position for wave function calculation
-    const initial_physical_x_m = -50 * UM_TO_METER; // Using µm scale for consistency
-    const physical_x_meter = initial_physical_x_m + v_si * t;
-    
-    // Phase: kx - ωt
-    let phase = k_si * physical_x_meter - omega_si * t;
-    phase = phase % (2 * Math.PI);
-    if (phase < 0) {
-        phase += 2 * Math.PI;
-    }
+    // φ = kx − ωt, folded into [0, 2π). ω is ~10^16 rad/s, so a double modulo
+    // drops the fractional part; freeParticlePhase reduces the exact ratio instead.
+    // The wave starts 50 µm left of the origin, where the picture starts too.
+    const initial_physical_x_m = -50 * UM_TO_METER;
+    const phase = freeParticlePhase(m_eV_c2, v_num, t, initial_physical_x_m);
     
     // The quantum tunneling simulation should stop when the particle has passed the barrier.
     const shouldStop = position >= 50;

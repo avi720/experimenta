@@ -144,6 +144,22 @@ describe('calculateQuantumTunnelingStep', () => {
         expect(collapsedReflected.measurementResult).toBe('reflected');
     });
 
+    it('keeps a uniform de Broglie phase after a double can no longer hold ωt', () => {
+        const params = { v: 0.01, m: 5.11, V0: 1, L: 0.005 };
+        const phase = (t: number) => calculateQuantumTunnelingStep(t, params).phase;
+        const twoPi = 2 * Math.PI;
+        const wrap = (value: number) => {
+            const turned = value % twoPi;
+            return turned < 0 ? turned + twoPi : turned;
+        };
+        expect(phase(0)).toBeGreaterThanOrEqual(0);
+        expect(phase(0)).toBeLessThan(twoPi);
+        // ω ≈ 4×10^16 rad/s. The advance over equal intervals stays the same angle.
+        const step = wrap(phase(1) - phase(0));
+        expect(wrap(phase(2) - phase(1))).toBeCloseTo(step, 6);
+        expect(step).toBeGreaterThan(0.1);
+    });
+
     it('does not collapse if randomSeed is not provided (legacy runs) (T49)', () => {
         const baseParams = { v: 0.002, m: 5.11, V0: 1, L: 0.001 };
         const legacy = calculateQuantumTunnelingStep(25, baseParams);
