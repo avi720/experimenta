@@ -60,7 +60,10 @@ export default function Layout({ children, currentPageName }: { children: ReactN
 
   // The standard site chrome: header, main content, footer.
   const withSiteChrome = (content: ReactNode) => (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50" dir={dir}>
+    <div
+      className="min-h-screen flex flex-col bg-space text-star"
+      dir={dir}
+    >
       <AppHeader
         isRTL={isRTL}
         user={user}
@@ -92,7 +95,7 @@ export default function Layout({ children, currentPageName }: { children: ReactN
         resetKey={location.pathname}
         fallback={(props: ErrorFallbackProps) => withSiteChrome(pageErrorFallback(props))}
       >
-        <main className="h-screen bg-slate-50">
+        <main className="h-screen bg-space text-star">
           {profileErrorBanner}
           {children}
         </main>

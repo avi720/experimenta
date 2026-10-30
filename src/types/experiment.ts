@@ -35,6 +35,14 @@ export type Parameter = {
   i18n_labels?: Partial<Bilingual>;
   tooltip?: Partial<Bilingual>;
   is_active?: boolean;
+  /** Shows (and validates) the parameter only while another parameter has a given value. */
+  visible_when?: ParameterCondition;
+};
+
+/** `visible_when` on a parameter: visible while `values[key] === equals`. */
+export type ParameterCondition = {
+  key: string;
+  equals: string | number | boolean;
 };
 
 /** Current parameter values, keyed by `Parameter.key`. */

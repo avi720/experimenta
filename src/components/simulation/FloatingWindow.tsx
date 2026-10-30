@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, type MouseEvent as ReactMouseEvent, t
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { X, Minimize2 } from 'lucide-react';
+import { ghostIconButtonClass } from './workspace/workspaceStyles';
 
 type Position = { x: number; y: number };
 type Size = { width: number; height: number };
@@ -132,12 +133,12 @@ export default function FloatingWindow({
   }, [isDragging, isResizing, handleMouseMove, handleMouseUp]);
 
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} style={{ left: position.x, top: position.y, width: windowSize.width, height: isMinimized ? 'auto' : windowSize.height }} className="absolute bg-white/95 backdrop-blur-lg rounded-lg shadow-2xl border border-white/20 z-50 flex flex-col">
-      <div className={`flex items-center justify-between p-3 border-b border-slate-200 bg-slate-50/80 rounded-t-lg select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`} onMouseDown={handleMouseDown}>
-        <h4 className="font-semibold text-sm pointer-events-none">{title}</h4>
-        <div className="window-controls flex space-x-1 rtl:space-x-reverse">
-          <Button size="sm" variant="ghost" onClick={handleMinimize} aria-label="Minimize" className="h-6 w-6 p-0"><Minimize2 className="w-3 h-3" /></Button>
-          <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close" className="h-6 w-6 p-0"><X className="w-3 h-3" /></Button>
+    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} style={{ left: position.x, top: position.y, width: windowSize.width, height: isMinimized ? 'auto' : windowSize.height }} className="absolute bg-space-raised/90 backdrop-blur-md rounded-md shadow-2xl shadow-hole/50 border border-line text-star z-50 flex flex-col">
+      <div className={`flex items-center justify-between px-3 py-2 border-b border-line select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`} onMouseDown={handleMouseDown}>
+        <h4 className="font-medium text-[13px] text-dust pointer-events-none">{title}</h4>
+        <div className="window-controls flex gap-1">
+          <Button size="sm" variant="ghost" onClick={handleMinimize} aria-label="Minimize" className={`h-6 w-6 p-0 ${ghostIconButtonClass}`}><Minimize2 className="w-3 h-3" /></Button>
+          <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close" className={`h-6 w-6 p-0 ${ghostIconButtonClass}`}><X className="w-3 h-3" /></Button>
         </div>
       </div>
       {!isMinimized && <div className="flex-1 overflow-auto p-4">{children}</div>}

@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles } from "lucide-react";
 import { useTranslation } from "@/i18n";
+import { panelHeadingClass } from "./workspace/workspaceStyles";
 import ParameterInput from "./parameters/ParameterInput";
 import PresetsDropdown from "./parameters/PresetsDropdown";
 import type { ExperimentTemplateData, Parameter, ParameterValues } from "@/types/experiment";
@@ -40,42 +40,34 @@ export default function ParameterControls({
 
     if (!parameters || parameters.length === 0) {
         return (
-            <Card className="border-slate-200">
-                <CardContent className="pt-6 text-center text-slate-500">
-                    {t("workspace.noParametersAvailable")}
-                </CardContent>
-            </Card>
+            <div className="border border-dashed border-line rounded-md p-6 text-center text-sm text-dust">
+                {t("workspace.noParametersAvailable")}
+            </div>
         );
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-5">
             {experiment?.presets && experiment.presets.length > 0 && (
-                <Card className="border-slate-200 bg-gradient-to-br from-purple-50 to-blue-50">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-purple-600" />
-                            {t("workspace.presetsCardTitle")}
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <PresetsDropdown
-                            presets={experiment.presets}
-                            selectedPreset={selectedPreset}
-                            onApplyPreset={onApplyPreset}
-                            isRTL={isRTL}
-                        />
-                    </CardContent>
-                </Card>
+                <section className="space-y-3 pb-5 border-b border-line">
+                    <h3 className={`${panelHeadingClass} flex items-center gap-2`}>
+                        <Sparkles className="w-4 h-4 text-blueshift" aria-hidden="true" />
+                        {t("workspace.presetsCardTitle")}
+                    </h3>
+                    <PresetsDropdown
+                        presets={experiment.presets}
+                        selectedPreset={selectedPreset}
+                        onApplyPreset={onApplyPreset}
+                        isRTL={isRTL}
+                    />
+                </section>
             )}
 
-            <Card className="border-slate-200">
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-semibold text-slate-700">
-                        {t("workspace.parameterSettingsTitle")}
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+            <section className="space-y-4">
+                <h3 className={panelHeadingClass}>
+                    {t("workspace.parameterSettingsTitle")}
+                </h3>
+                <div className="space-y-5">
                     {parameters.map((param) => (
                         <ParameterInput
                             key={param.key}
@@ -87,8 +79,8 @@ export default function ParameterControls({
                             isRTL={isRTL}
                         />
                     ))}
-                </CardContent>
-            </Card>
+                </div>
+            </section>
         </div>
     );
 }

@@ -1,7 +1,7 @@
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
 import { useTranslation } from "@/i18n";
+import { ghostIconButtonClass, panelHeadingClass } from "./workspace/workspaceStyles";
 import SimulationControls from "./SimulationConsoleComp/SimulationControls";
 import SimulationTimeDisplay from "./SimulationConsoleComp/SimulationTimeDisplay";
 import CurrentValuesDisplay from "./SimulationConsoleComp/CurrentValuesDisplay";
@@ -67,9 +67,9 @@ export default function SimulationConsole({
     const isValid = validationState?.isAllValid !== false;
 
     return (
-        <Card className="p-4">
+        <div className="text-star">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-slate-900">
+                <h3 className={panelHeadingClass}>
                     {t("workspace.simulationConsoleTitle")}
                 </h3>
                 {onFloat && (
@@ -78,14 +78,14 @@ export default function SimulationConsole({
                         size="icon"
                         onClick={onFloat}
                         aria-label={t("workspace.floatSimulationConsole")}
-                        className="text-slate-500 hover:text-slate-700"
+                        className={ghostIconButtonClass}
                     >
                         <ExternalLink className="w-4 h-4" />
                     </Button>
                 )}
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
                 {/* פקדי סימולציה */}
                 <SimulationControls
                     simulationState={simulationState}
@@ -117,6 +117,6 @@ export default function SimulationConsole({
                     isRTL={isRTL}
                 />
             </div>
-        </Card>
+        </div>
     );
 }

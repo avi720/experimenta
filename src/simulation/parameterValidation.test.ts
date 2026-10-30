@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+    isParameterVisible,
     validateParameterValue,
     validateExperimentParameters,
 } from "./parameterValidation";
@@ -76,5 +77,23 @@ describe("parameterValidation (T28)", () => {
         );
         expect(validState.isAllValid).toBe(true);
         expect(validState.errors).toEqual({});
+    });
+});
+
+describe("visible_when", () => {
+    const source = { key: "source", type: "select", options: [{ value: "light" }, { value: "electron" }] };
+    const wavelength = { key: "wavelength", type: "float", min: 380, max: 750, visible_when: { key: "source", equals: "light" } };
+
+    it("shows a conditional parameter only while its condition holds", () => {
+        expect(isParameterVisible(wavelength, { source: "light" })).toBe(true);
+        expect(isParameterVisible(wavelength, { source: "electron" })).toBe(false);
+        expect(isParameterVisible(source, {})).toBe(true);
+        expect(isParameterVisible({ ...source, is_active: false }, {})).toBe(false);
+    });
+
+    it("skips validation of hidden parameters", () => {
+        const values = { source: "electron", wavelength: 5 };
+        expect(validateExperimentParameters([source, wavelength], values).isAllValid).toBe(true);
+        expect(validateExperimentParameters([source, wavelength], { ...values, source: "light" }).isAllValid).toBe(false);
     });
 });

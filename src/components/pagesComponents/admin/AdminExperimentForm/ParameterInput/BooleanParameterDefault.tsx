@@ -1,5 +1,6 @@
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { fieldLabelClass } from '../../adminStyles';
 import { useTranslation } from '@/i18n';
 import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { Parameter } from '@/types/experiment';
@@ -9,21 +10,21 @@ type BooleanParameterDefaultProps = Pick<ExperimentFormHandlers, 'handleDynamicA
   index: number;
 };
 
-export default function BooleanParameterDefault({ 
-  param, 
-  index, 
-  handleDynamicArrayChange 
+export default function BooleanParameterDefault({
+  param,
+  index,
+  handleDynamicArrayChange
 }: BooleanParameterDefaultProps) {
   const { t } = useTranslation();
 
   return (
-    <div>
-      <Label>{t('admin.form.parameters.defaultValueLabel')}</Label>
+    <div className="max-w-xs">
+      <Label className={fieldLabelClass}>{t('admin.form.parameters.defaultValueLabel')}</Label>
       <Select
         value={String(param.default)}
         onValueChange={val => handleDynamicArrayChange('parameters', index, 'default', val)}
       >
-        <SelectTrigger>
+        <SelectTrigger aria-label={t('admin.form.parameters.defaultValueLabel')}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

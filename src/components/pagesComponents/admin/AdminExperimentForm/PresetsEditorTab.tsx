@@ -1,10 +1,19 @@
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
+import FormSection from './FormSection';
+import {
+  dangerIconButtonClass,
+  fieldErrorClass,
+  fieldHintClass,
+  fieldLabelClass,
+  inputErrorClass,
+  panelClass,
+  secondaryButtonClass,
+} from '../adminStyles';
 import { useTranslation } from '@/i18n';
 import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { FormErrors, PresetTextValues } from '@/types/admin';
@@ -29,14 +38,12 @@ export default function PresetsEditorTab({
   const { t } = useTranslation();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('admin.form.presets.cardTitle')}</CardTitle>
-        <CardDescription>
-          {t('admin.form.presets.cardDescription')}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <FormSection
+      title={t('admin.form.presets.cardTitle')}
+      description={t('admin.form.presets.cardDescription')}
+      aside={<span className="font-mono text-sm tabular-nums text-dust">{experiment.presets?.length || 0}</span>}
+    >
+      <div className="space-y-4">
         {experiment.presets?.map((preset, index) => {
           const rawValue =
             index in presetTextValues
@@ -58,66 +65,80 @@ export default function PresetsEditorTab({
           }
 
           const errorMessage = errors[`preset_${index}_values`] || liveParseError;
+          const jsonId = `preset-${index}-values`;
 
           return (
             <motion.div
               key={index}
               layout
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-6 border rounded-lg space-y-4 bg-green-50 relative"
+              className={panelClass}
             >
-              <div className="flex justify-between items-center">
-                <h4 className="text-lg font-semibold">
+              <div className="flex items-center gap-3 border-b border-line px-4 py-3 sm:px-5">
+                <h3 className="min-w-0 flex-1 truncate text-[15px] font-medium text-star">
                   {t('admin.form.presets.presetItemTitle', { index: index + 1 })}
-                </h4>
+                </h3>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
+                  className={dangerIconButtonClass}
                   onClick={() => removeFromArray('presets', index)}
+                  aria-label={`${t('admin.form.removePreset')} ${index + 1}`}
                 >
-                  <Trash2 className="h-4 w-4 text-red-500" />
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>{t('admin.form.presets.nameHeLabel')}</Label>
-                  <Input
-                    value={preset.name_he || ''}
-                    onChange={e => handleDynamicArrayChange('presets', index, 'name_he', e.target.value)}
-                    placeholder={t('admin.form.presets.nameHePlaceholder')}
-                  />
+              <div className="space-y-5 px-4 py-5 sm:px-5">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <Label htmlFor={`preset-${index}-name-he`} className={fieldLabelClass}>{t('admin.form.presets.nameHeLabel')}</Label>
+                    <Input
+                      id={`preset-${index}-name-he`}
+                      dir="rtl"
+                      lang="he"
+                      value={preset.name_he || ''}
+                      onChange={e => handleDynamicArrayChange('presets', index, 'name_he', e.target.value)}
+                      placeholder={t('admin.form.presets.nameHePlaceholder')}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`preset-${index}-name-en`} className={fieldLabelClass}>{t('admin.form.presets.nameEnLabel')}</Label>
+                    <Input
+                      id={`preset-${index}-name-en`}
+                      dir="ltr"
+                      lang="en"
+                      value={preset.name_en || ''}
+                      onChange={e => handleDynamicArrayChange('presets', index, 'name_en', e.target.value)}
+                      placeholder={t('admin.form.presets.nameEnPlaceholder')}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label>{t('admin.form.presets.nameEnLabel')}</Label>
-                  <Input
-                    value={preset.name_en || ''}
-                    onChange={e => handleDynamicArrayChange('presets', index, 'name_en', e.target.value)}
-                    placeholder={t('admin.form.presets.nameEnPlaceholder')}
-                  />
-                </div>
-              </div>
 
-              <div>
-                <Label>{t('admin.form.presets.valuesJsonLabel')}</Label>
-                <Textarea
-                  value={rawValue}
-                  onChange={e => handlePresetValuesChange(index, e.target.value)}
-                  placeholder='{"h0": 50, "g": 9.81, "m": 1}'
-                  rows={4}
-                  aria-invalid={Boolean(errorMessage)}
-                  className={`font-mono text-sm ${errorMessage ? 'border-red-500' : ''}`}
-                />
-                <p className="text-xs text-slate-500 mt-1">
-                  {t('admin.form.presets.valuesJsonHint')}
-                </p>
-                {errorMessage && (
-                  <p className="text-xs text-red-500 mt-1" role="alert">
-                    {errorMessage}
+                <div>
+                  <Label htmlFor={jsonId} className={fieldLabelClass}>{t('admin.form.presets.valuesJsonLabel')}</Label>
+                  <Textarea
+                    id={jsonId}
+                    dir="ltr"
+                    spellCheck={false}
+                    value={rawValue}
+                    onChange={e => handlePresetValuesChange(index, e.target.value)}
+                    placeholder='{"h0": 50, "g": 9.81, "m": 1}'
+                    rows={4}
+                    aria-invalid={Boolean(errorMessage)}
+                    className={`bg-hole/50 font-mono text-[13px] leading-relaxed text-star ${errorMessage ? inputErrorClass : ''}`}
+                  />
+                  <p className={fieldHintClass}>
+                    {t('admin.form.presets.valuesJsonHint')}
                   </p>
-                )}
+                  {errorMessage && (
+                    <p className={fieldErrorClass} role="alert">
+                      {errorMessage}
+                    </p>
+                  )}
+                </div>
               </div>
             </motion.div>
           );
@@ -131,12 +152,12 @@ export default function PresetsEditorTab({
             name_en: '',
             values: {}
           })}
-          className="w-full h-16 text-lg"
+          className={`${secondaryButtonClass} h-12 w-full border-dashed`}
         >
-          <PlusCircle className="me-2 h-5 w-5" />
+          <Plus className="h-4 w-4" />
           {t('admin.form.presets.addPreset')}
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </FormSection>
   );
 }

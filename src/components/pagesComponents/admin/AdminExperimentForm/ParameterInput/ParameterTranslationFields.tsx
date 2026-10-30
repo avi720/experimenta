@@ -1,5 +1,6 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { fieldLabelClass } from '../../adminStyles';
 import { useTranslation } from '@/i18n';
 import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { Parameter } from '@/types/experiment';
@@ -9,52 +10,39 @@ type ParameterTranslationFieldsProps = Pick<ExperimentFormHandlers, 'handleNeste
   index: number;
 };
 
-export default function ParameterTranslationFields({ 
-  param, 
-  index, 
-  handleNestedDynamicChange 
+export default function ParameterTranslationFields({
+  param,
+  index,
+  handleNestedDynamicChange
 }: ParameterTranslationFieldsProps) {
   const { t } = useTranslation();
 
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label>{t('admin.form.parameters.labelHeRequired')}</Label>
-          <Input
-            value={param.i18n_labels?.he || ''}
-            onChange={e => handleNestedDynamicChange('parameters', index, 'i18n_labels', null, 'he', e.target.value)}
-            placeholder={t('admin.form.parameters.labelHePlaceholder')}
-          />
-        </div>
-        <div>
-          <Label>{t('admin.form.parameters.labelEnRequired')}</Label>
-          <Input
-            value={param.i18n_labels?.en || ''}
-            onChange={e => handleNestedDynamicChange('parameters', index, 'i18n_labels', null, 'en', e.target.value)}
-            placeholder={t('admin.form.parameters.labelEnPlaceholder')}
-          />
-        </div>
-      </div>
+  // Hebrew inputs read right-to-left and English left-to-right, whatever the UI language.
+  const fields = [
+    { group: 'i18n_labels', locale: 'he', labelKey: 'admin.form.parameters.labelHeRequired', placeholderKey: 'admin.form.parameters.labelHePlaceholder' },
+    { group: 'i18n_labels', locale: 'en', labelKey: 'admin.form.parameters.labelEnRequired', placeholderKey: 'admin.form.parameters.labelEnPlaceholder' },
+    { group: 'tooltip', locale: 'he', labelKey: 'admin.form.parameters.tooltipHeLabel', placeholderKey: 'admin.form.parameters.tooltipHePlaceholder' },
+    { group: 'tooltip', locale: 'en', labelKey: 'admin.form.parameters.tooltipEnLabel', placeholderKey: 'admin.form.parameters.tooltipEnPlaceholder' },
+  ] as const;
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label>{t('admin.form.parameters.tooltipHeLabel')}</Label>
-          <Input
-            value={param.tooltip?.he || ''}
-            onChange={e => handleNestedDynamicChange('parameters', index, 'tooltip', null, 'he', e.target.value)}
-            placeholder={t('admin.form.parameters.tooltipHePlaceholder')}
-          />
-        </div>
-        <div>
-          <Label>{t('admin.form.parameters.tooltipEnLabel')}</Label>
-          <Input
-            value={param.tooltip?.en || ''}
-            onChange={e => handleNestedDynamicChange('parameters', index, 'tooltip', null, 'en', e.target.value)}
-            placeholder={t('admin.form.parameters.tooltipEnPlaceholder')}
-          />
-        </div>
-      </div>
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      {fields.map(({ group, locale, labelKey, placeholderKey }) => {
+        const id = `param-${index}-${group}-${locale}`;
+        return (
+          <div key={id}>
+            <Label htmlFor={id} className={fieldLabelClass}>{t(labelKey)}</Label>
+            <Input
+              id={id}
+              dir={locale === 'he' ? 'rtl' : 'ltr'}
+              lang={locale}
+              value={param[group]?.[locale] || ''}
+              onChange={e => handleNestedDynamicChange('parameters', index, group, null, locale, e.target.value)}
+              placeholder={t(placeholderKey)}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }

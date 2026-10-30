@@ -1,5 +1,6 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { fieldErrorClass, fieldLabelClass, inputErrorClass } from '../../adminStyles';
 import { useTranslation } from '@/i18n';
 import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
 import type { FormErrors } from '@/types/admin';
@@ -14,67 +15,52 @@ type NumericParameterFieldsProps = Pick<ExperimentFormHandlers, 'handleDynamicAr
   errors: FormErrors;
 };
 
-export default function NumericParameterFields({ 
-  param, 
-  index, 
-  handleDynamicArrayChange, 
-  errors 
+const numericFields = [
+  { field: 'default', labelKey: 'admin.form.parameters.defaultValueRequired' },
+  { field: 'min', labelKey: 'admin.form.parameters.minLabel' },
+  { field: 'max', labelKey: 'admin.form.parameters.maxLabel' },
+  { field: 'step', labelKey: 'admin.form.parameters.stepLabel' },
+] as const;
+
+export default function NumericParameterFields({
+  param,
+  index,
+  handleDynamicArrayChange,
+  errors
 }: NumericParameterFieldsProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div>
-        <Label>{t('admin.form.parameters.defaultValueRequired')}</Label>
-        <Input
-          type="text"
-          value={inputValue(param.default)}
-          onChange={e => handleDynamicArrayChange('parameters', index, 'default', e.target.value)}
-          className={errors[`param_${index}_default`] ? 'border-red-500' : ''}
-        />
-        {errors[`param_${index}_default`] && (
-          <p className="text-red-500 text-xs mt-1">{errors[`param_${index}_default`]}</p>
-        )}
-      </div>
-
-      <div>
-        <Label>{t('admin.form.parameters.minLabel')}</Label>
-        <Input
-          type="text"
-          value={inputValue(param.min)}
-          onChange={e => handleDynamicArrayChange('parameters', index, 'min', e.target.value)}
-          className={errors[`param_${index}_min`] ? 'border-red-500' : ''}
-        />
-        {errors[`param_${index}_min`] && (
-          <p className="text-red-500 text-xs mt-1">{errors[`param_${index}_min`]}</p>
-        )}
-      </div>
-
-      <div>
-        <Label>{t('admin.form.parameters.maxLabel')}</Label>
-        <Input
-          type="text"
-          value={inputValue(param.max)}
-          onChange={e => handleDynamicArrayChange('parameters', index, 'max', e.target.value)}
-          className={errors[`param_${index}_max`] ? 'border-red-500' : ''}
-        />
-        {errors[`param_${index}_max`] && (
-          <p className="text-red-500 text-xs mt-1">{errors[`param_${index}_max`]}</p>
-        )}
-      </div>
-
-      <div>
-        <Label>{t('admin.form.parameters.stepLabel')}</Label>
-        <Input
-          type="text"
-          value={inputValue(param.step)}
-          onChange={e => handleDynamicArrayChange('parameters', index, 'step', e.target.value)}
-          className={errors[`param_${index}_step`] ? 'border-red-500' : ''}
-        />
-        {errors[`param_${index}_step`] && (
-          <p className="text-red-500 text-xs mt-1">{errors[`param_${index}_step`]}</p>
-        )}
-      </div>
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      {numericFields.map(({ field, labelKey }) => {
+        const id = `param-${index}-${field}`;
+        const error = errors[`param_${index}_${field}`];
+        return (
+          <div key={field}>
+            <Label htmlFor={id} className={fieldLabelClass}>{t(labelKey)}</Label>
+            <div className="relative">
+              <Input
+                id={id}
+                type="text"
+                inputMode="decimal"
+                dir="ltr"
+                value={inputValue(param[field])}
+                onChange={e => handleDynamicArrayChange('parameters', index, field, e.target.value)}
+                className={`font-mono tabular-nums ${param.unit ? 'pe-12' : ''} ${error ? inputErrorClass : ''}`}
+                aria-invalid={error ? true : undefined}
+              />
+              {param.unit && (
+                <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 font-mono text-xs text-dust" dir="ltr" aria-hidden="true">
+                  {param.unit}
+                </span>
+              )}
+            </div>
+            {error && (
+              <p className={fieldErrorClass}>{error}</p>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

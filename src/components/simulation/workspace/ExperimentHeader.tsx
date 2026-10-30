@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowLeft, Settings, Save, Download, User, LogOut, Home, ChevronDown, Beaker
+  ArrowLeft, SlidersHorizontal, Save, Download, User, LogOut, Home, ChevronDown
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -12,6 +12,8 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { createPageUrl } from "@/utils";
+import { cn } from "@/lib/utils";
+import BlackHoleMark from "@/components/brand/BlackHoleMark";
 import {
   categoryNames,
   getExperimentPageUrl,
@@ -21,6 +23,7 @@ import { useTranslation } from "@/i18n";
 import type { Bilingual, ExperimentTemplateData, LocalizedTexts } from "@/types/experiment";
 import type { AppUser, ExperimentTemplate } from "@/types/models";
 import type { IsRTLProps } from "@/types/props";
+import { ghostIconButtonClass, plasmaButtonClass, quietButtonClass } from "./workspaceStyles";
 
 /** The fields the experiments menu reads; raw template rows and typed templates both fit. */
 export type ExperimentMenuItem = Pick<ExperimentTemplate, "id" | "slug" | "category" | "i18n_texts">;
@@ -68,31 +71,30 @@ export default function ExperimentHeader({
     };
 
     return (
-        <header className="bg-white/90 backdrop-blur-lg border-b border-slate-200/80 sticky top-0 z-50 flex-shrink-0">
+        <header className="bg-space/80 backdrop-blur-md border-b border-line sticky top-0 z-50 flex-shrink-0 text-star">
             <div className="max-w-full mx-auto px-2 sm:px-4">
-                <div className="flex justify-between items-center h-14 sm:h-16 gap-1 sm:gap-2">
-                    {/* Left Section - Back button and experiment name */}
-                    <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                <div className="flex justify-between items-center h-14 gap-1 sm:gap-2">
+                    {/* Start section - back button, mark and experiment name */}
+                    <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
                         <Button
                             variant="ghost"
                             size="icon"
                             aria-label={t("common.backToLab")}
                             onClick={() => navigate(createPageUrl("Lab"))}
+                            className={ghostIconButtonClass}
                         >
-                            <ArrowLeft className="w-5 h-5" />
+                            <ArrowLeft className="w-5 h-5 rtl:rotate-180" />
                         </Button>
-                        <span className="w-px h-6 bg-slate-300 hidden sm:block"></span>
-                        <div className="flex items-center gap-2 min-w-0">
-                           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                               <Beaker className="w-5 h-5 text-white" />
-                           </div>
-                           <h1 className="text-lg font-semibold text-slate-800 hidden sm:block truncate">
+                        <span className="w-px h-6 bg-line hidden sm:block" aria-hidden="true"></span>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                           <BlackHoleMark className="h-7 w-7 flex-shrink-0" />
+                           <h1 className="text-[17px] font-medium text-star hidden sm:block truncate">
                                {pick<LocalizedTexts>(experiment?.i18n_texts)?.title}
                            </h1>
                         </div>
                     </div>
 
-                    {/* Middle Section - Save and Export buttons */}
+                    {/* Middle section - export (secondary) and save (the one primary action) */}
                     <div className="flex items-center gap-1.5 sm:gap-2">
                         <Button
                             variant="outline"
@@ -100,54 +102,53 @@ export default function ExperimentHeader({
                             onClick={onExport}
                             disabled={!canExport}
                             aria-label={t("common.export")}
-                            className="px-2 sm:px-3"
+                            className={cn("px-2 sm:px-3", quietButtonClass)}
                         >
-                           <Download className="w-4 h-4 sm:me-2" />
+                           <Download className="w-4 h-4" />
                            <span className="hidden sm:inline">{t("common.export")}</span>
                         </Button>
                         <Button
-                            variant="outline"
                             size="sm"
                             onClick={onSave}
                             disabled={!canSave}
                             aria-label={t("common.save")}
-                            className="px-2 sm:px-3"
+                            className={cn("px-2 sm:px-3", plasmaButtonClass)}
                         >
-                           <Save className="w-4 h-4 sm:me-2" />
+                           <Save className="w-4 h-4" />
                            <span className="hidden sm:inline">{t("common.save")}</span>
                         </Button>
                     </div>
 
-                    {/* Right Section - Experiments dropdown, user menu, settings */}
+                    {/* End section - experiments menu, user menu, panel toggle */}
                     <div className="flex items-center gap-1.5 sm:gap-2">
                          <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="flex items-center px-2.5 sm:px-3">
+                                <Button variant="outline" size="sm" className={cn("flex items-center px-2.5 sm:px-3", quietButtonClass)}>
                                     <span>{t("common.experiments")}</span>
-                                    <ChevronDown className="w-4 h-4 ms-1.5" />
+                                    <ChevronDown className="w-4 h-4" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-64 max-w-[calc(100vw-2rem)]" align={menuAlignEnd}>
-                                <DropdownMenuLabel>{t("common.categories")}</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
+                            <DropdownMenuContent className="w-64 max-w-[calc(100vw-2rem)] bg-space-raised border-line" align={menuAlignEnd}>
+                                <DropdownMenuLabel className="text-dust font-medium">{t("common.categories")}</DropdownMenuLabel>
+                                <DropdownMenuSeparator className="bg-line" />
                                 {Object.keys(groupedExperiments).length > 0 ? (
                                     Object.entries(groupedExperiments).map(([category, exps]) => (
                                         <div key={category}>
                                             <DropdownMenuItem
                                                 onClick={() => navigate(createPageUrl(`Lab?category=${category}`))}
                                             >
-                                                <div className="flex justify-between w-full font-medium">
+                                                <div className="flex justify-between w-full font-medium text-star">
                                                     <span>{pick(categoryLabels[category], category)}</span>
-                                                    <span className="text-xs text-slate-400">({exps.length})</span>
+                                                    <span className="text-xs font-mono tabular-nums text-dust">({exps.length})</span>
                                                 </div>
                                             </DropdownMenuItem>
                                             {exps.map((exp) => (
                                                 <DropdownMenuItem
                                                     key={exp.id || exp.slug}
                                                     onClick={() => navigate(getExperimentPageUrl(exp.slug), { state: { experiment: exp } })}
-                                                    className="ps-6 text-xs text-slate-600"
+                                                    className="ps-6 text-xs text-dust focus:text-star"
                                                 >
-                                                    <Beaker className="w-3 h-3 me-2 text-blue-500 flex-shrink-0" />
+                                                    <span className="w-1 h-1 rounded-full bg-blueshift me-2 flex-shrink-0" aria-hidden="true" />
                                                     <span className="truncate">{pick<LocalizedTexts>(exp.i18n_texts)?.title || exp.slug}</span>
                                                 </DropdownMenuItem>
                                             ))}
@@ -161,24 +162,24 @@ export default function ExperimentHeader({
                             </DropdownMenuContent>
                         </DropdownMenu>
 
-                        <div className="w-px h-6 bg-slate-300 hidden sm:block"></div>
+                        <div className="w-px h-6 bg-line hidden sm:block" aria-hidden="true"></div>
 
                         {user && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="rounded-full" aria-label={t("workspace.userMenu")}>
+                                    <Button variant="ghost" size="icon" className={cn("rounded-full", ghostIconButtonClass)} aria-label={t("workspace.userMenu")}>
                                         <User className="w-5 h-5" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align={menuAlignEnd}>
-                                    <DropdownMenuLabel>{user.full_name || user.email}</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
+                                <DropdownMenuContent align={menuAlignEnd} className="bg-space-raised border-line">
+                                    <DropdownMenuLabel className="text-dust font-medium">{user.full_name || user.email}</DropdownMenuLabel>
+                                    <DropdownMenuSeparator className="bg-line" />
                                     <DropdownMenuItem onClick={() => navigate(createPageUrl("Dashboard"))}>
-                                        <Home className="w-4 h-4 me-2" />
+                                        <Home className="w-4 h-4 me-2 text-dust" />
                                         <span>{t("common.home")}</span>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={onLogout}>
-                                        <LogOut className="w-4 h-4 me-2" />
+                                        <LogOut className="w-4 h-4 me-2 text-dust" />
                                         <span>{t("common.logout")}</span>
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -186,12 +187,17 @@ export default function ExperimentHeader({
                         )}
 
                         <Button
-                            variant={isRightPanelOpen ? "secondary" : "outline"}
+                            variant="outline"
                             size="icon"
                             aria-label={t("workspace.toggleSidePanel")}
+                            aria-pressed={!!isRightPanelOpen}
                             onClick={handleToggleClick}
+                            className={cn(
+                                quietButtonClass,
+                                isRightPanelOpen && "border-blueshift/60 bg-blueshift/10 text-blueshift"
+                            )}
                         >
-                            <Settings className="w-5 h-5" />
+                            <SlidersHorizontal className="w-5 h-5" />
                         </Button>
                     </div>
                 </div>

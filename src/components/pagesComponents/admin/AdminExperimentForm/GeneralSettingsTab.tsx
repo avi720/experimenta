@@ -1,9 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import FormSection from './FormSection';
 import { accessLevelOptions } from './adminFormConstants';
+import { fieldErrorClass, fieldHintClass, fieldLabelClass, inputErrorClass } from '../adminStyles';
 import { categoryNames } from '@/components/pagesComponents/lab/labConstants';
 import { useTranslation } from '@/i18n';
 import type { ExperimentFormHandlers } from '@/hooks/experimentForm/useExperimentFormHandlers';
@@ -19,30 +20,28 @@ export default function GeneralSettingsTab({ experiment, handleInputChange, erro
   const { t, pick } = useTranslation();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('admin.form.general.cardTitle')}</CardTitle>
-        <CardDescription>{t('admin.form.general.cardDescription')}</CardDescription>
-      </CardHeader>
-      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <FormSection title={t('admin.form.general.cardTitle')} description={t('admin.form.general.cardDescription')}>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
-          <Label className="text-base font-medium">{t('admin.form.general.slugLabel')}</Label>
+          <Label htmlFor="exp-slug" className={fieldLabelClass}>{t('admin.form.general.slugLabel')}</Label>
           <Input
+            id="exp-slug"
+            dir="ltr"
             value={experiment.slug}
             onChange={e => handleInputChange('slug', e.target.value)}
             placeholder="free-fall, sho, quantum-tunneling"
-            className={errors.slug ? 'border-red-500' : ''}
+            className={`font-mono ${errors.slug ? inputErrorClass : ''}`}
           />
-          {errors.slug && <p className="text-red-500 text-sm mt-1" role="alert">{errors.slug}</p>}
-          <p className="text-xs text-slate-500 mt-1">
+          {errors.slug && <p className={fieldErrorClass} role="alert">{errors.slug}</p>}
+          <p className={fieldHintClass}>
             {t('admin.form.general.slugHint')}
           </p>
         </div>
 
         <div>
-          <Label className="text-base font-medium">{t('admin.form.general.categoryLabel')}</Label>
+          <Label className={fieldLabelClass}>{t('admin.form.general.categoryLabel')}</Label>
           <Select value={experiment.category ?? ''} onValueChange={val => handleInputChange('category', val)}>
-            <SelectTrigger>
+            <SelectTrigger aria-label={t('admin.form.general.categoryLabel')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -56,9 +55,9 @@ export default function GeneralSettingsTab({ experiment, handleInputChange, erro
         </div>
 
         <div>
-          <Label className="text-base font-medium">{t('admin.form.general.visualizationTypeLabel')}</Label>
+          <Label className={fieldLabelClass}>{t('admin.form.general.visualizationTypeLabel')}</Label>
           <Select value={experiment.visualization_type ?? ''} onValueChange={val => handleInputChange('visualization_type', val)}>
-            <SelectTrigger>
+            <SelectTrigger aria-label={t('admin.form.general.visualizationTypeLabel')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -69,12 +68,12 @@ export default function GeneralSettingsTab({ experiment, handleInputChange, erro
         </div>
 
         <div>
-          <Label className="text-base font-medium">{t('admin.form.general.accessLevelLabel')}</Label>
+          <Label className={fieldLabelClass}>{t('admin.form.general.accessLevelLabel')}</Label>
           <Select
             value={experiment.access_level || 'public'}
             onValueChange={val => handleInputChange('access_level', val)}
           >
-            <SelectTrigger>
+            <SelectTrigger aria-label={t('admin.form.general.accessLevelLabel')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -87,14 +86,18 @@ export default function GeneralSettingsTab({ experiment, handleInputChange, erro
           </Select>
         </div>
 
-        <div className="flex items-center space-x-3 rtl:space-x-reverse">
+        <div className="flex items-center gap-3 rounded-md border border-line bg-space-raised/50 px-4 py-3 md:col-span-2">
           <Switch
+            id="exp-active"
             checked={experiment.is_active}
             onCheckedChange={val => handleInputChange('is_active', val)}
           />
-          <Label className="text-base font-medium">{t('admin.form.general.activeExperimentLabel')}</Label>
+          <Label htmlFor="exp-active" className="text-sm font-medium text-star">{t('admin.form.general.activeExperimentLabel')}</Label>
+          <span className={`ms-auto text-xs ${experiment.is_active ? 'text-emerald-300' : 'text-amber-300'}`}>
+            {experiment.is_active ? t('admin.list.activeStat') : t('admin.list.inactiveStat')}
+          </span>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </FormSection>
   );
 }

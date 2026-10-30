@@ -28,16 +28,16 @@ export default function PresetsDropdown({
     return (
         <div className="space-y-2">
             <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-slate-500" />
-                <span className="text-sm font-medium text-slate-700">
+                <Sparkles className="w-4 h-4 text-dust" aria-hidden="true" />
+                <span className="text-sm text-dust">
                     {t("workspace.presetsLabel")}
                 </span>
             </div>
             <Select value={selectedPreset} onValueChange={onApplyPreset}>
-                <SelectTrigger>
+                <SelectTrigger className="focus-ring bg-space/60 border-line text-star hover:border-blueshift/60">
                     <SelectValue placeholder={t("workspace.selectPresetPlaceholder")} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-space-raised border-line">
                     {presets.map((preset, index) => (
                         <SelectItem key={index} value={index.toString()}>
                             {pick(preset)}

@@ -1,8 +1,12 @@
 import * as THREE from 'three';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { createCameraControls } from './controls/cameraControls';
 
 const MAX_PIXEL_RATIO = 2;
+
+/** The brand's `space` colour (docs/BRAND.md); fog fades distant geometry into it. */
+export const SPACE_COLOR = 0x0b0912;
 
 /** Scene-graph node fields read during disposal; most nodes have none of them. */
 type DisposableNode = THREE.Object3D & {
@@ -99,17 +103,19 @@ export type StandardLightOptions = {
 };
 
 /**
- * Adds the standard light rig to `scene`: one ambient light and one directional light.
+ * Adds the standard light rig to `scene`: a cool hemisphere fill (space above, dark floor below),
+ * a warm key light that casts the shadows, and a violet rim light from behind that separates
+ * objects from the dark background.
  * @param {THREE.Scene} scene
  * @param {object} [options]
- * @param {number} [options.ambientIntensity=0.7]
- * @param {number} [options.directionalIntensity=0.8]
- * @param {number[]} [options.directionalPosition=[50, 80, 30]]
+ * @param {number} [options.ambientIntensity=0.7] - Hemisphere fill intensity.
+ * @param {number} [options.directionalIntensity=0.8] - Key light intensity; the rim is 60% of it.
+ * @param {number[]} [options.directionalPosition=[50, 80, 30]] - Key light position; the rim mirrors it in X/Z.
  * @param {boolean} [options.castShadow=true]
  * @param {number} [options.shadowMapSize=2048]
  * @param {{near?: number, far?: number, left?: number, right?: number, top?: number, bottom?: number}} [options.shadowCamera]
- *   Overrides for the directional light's shadow camera; unset fields keep three's defaults.
- * @returns {{ambientLight: THREE.AmbientLight, directionalLight: THREE.DirectionalLight}}
+ *   Overrides for the key light's shadow camera; unset fields keep three's defaults.
+ * @returns {{ambientLight: THREE.HemisphereLight, directionalLight: THREE.DirectionalLight, rimLight: THREE.DirectionalLight}}
  */
 export function addStandardLights(scene: THREE.Scene, options: StandardLightOptions = {}) {
     const {
@@ -121,13 +127,14 @@ export function addStandardLights(scene: THREE.Scene, options: StandardLightOpti
         shadowCamera = {},
     } = options;
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, ambientIntensity);
+    const ambientLight = new THREE.HemisphereLight(0xc9d6ff, 0x1a1426, ambientIntensity);
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, directionalIntensity);
+    const directionalLight = new THREE.DirectionalLight(0xfff1e0, directionalIntensity);
     directionalLight.position.fromArray(directionalPosition);
     directionalLight.castShadow = castShadow;
     directionalLight.shadow.mapSize.set(shadowMapSize, shadowMapSize);
+    directionalLight.shadow.bias = -0.0005;
     SHADOW_CAMERA_KEYS.forEach((key) => {
         const value = shadowCamera[key];
         if (value !== undefined) {
@@ -137,7 +144,12 @@ export function addStandardLights(scene: THREE.Scene, options: StandardLightOpti
     directionalLight.shadow.camera.updateProjectionMatrix();
     scene.add(directionalLight);
 
-    return { ambientLight, directionalLight };
+    const [kx = 0, ky = 0, kz = 0] = directionalPosition;
+    const rimLight = new THREE.DirectionalLight(0xb48cff, directionalIntensity * 0.6);
+    rimLight.position.set(-kx, ky * 0.6, -kz);
+    scene.add(rimLight);
+
+    return { ambientLight, directionalLight, rimLight };
 }
 
 /**
@@ -158,7 +170,9 @@ export function createGroundPlane(width: number, depth: number, material: THREE.
 }
 
 export type SceneSetupOptions = {
-    background?: number;
+    background?: number | null;
+    fog?: { near: number; far: number };
+    environment?: boolean;
     fov?: number;
     near?: number;
     far?: number;
@@ -174,6 +188,7 @@ export type SceneSetup = {
     camera: THREE.PerspectiveCamera;
     renderer: THREE.WebGLRenderer;
     controls: OrbitControls;
+    lights: ReturnType<typeof addStandardLights>;
     start: (onFrame?: (time: number) => void) => void;
     dispose: () => void;
 };
@@ -186,8 +201,15 @@ export type SceneSetup = {
  * panel opens or closes, not only on window resize.
  *
  * @param {HTMLElement} mountElement - The DOM element to attach the renderer canvas to.
+ * Scenes render on a transparent canvas by default, so the workspace's space backdrop shows
+ * through; fog fades distant geometry into the same space colour. A studio environment map
+ * (RoomEnvironment) gives metals real reflections, and ACES tone mapping keeps emissive
+ * highlights from clipping.
+ *
  * @param {object} [options]
- * @param {number} [options.background=0x87ceeb]
+ * @param {number | null} [options.background=null] - Solid colour, or null for a transparent canvas.
+ * @param {{near: number, far: number}} [options.fog] - Linear fog in the brand's space colour.
+ * @param {boolean} [options.environment=true] - Studio reflections for physically based materials.
  * @param {number} [options.fov=75]
  * @param {number} [options.near=0.1]
  * @param {number} [options.far=1000]
@@ -197,7 +219,7 @@ export type SceneSetup = {
  * @param {object} [options.lights] - Passed to addStandardLights.
  * @param {{minDistance?: number, maxDistance?: number, maxPolarAngle?: number}} [options.controls]
  * @returns {{scene: THREE.Scene, camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer,
- *   controls: object, start: (onFrame?: (time: number) => void) => void, dispose: () => void}}
+ *   controls: object, lights: ReturnType<typeof addStandardLights>, start: (onFrame?: (time: number) => void) => void, dispose: () => void}}
  *   `start` runs the rAF loop: controls.update() (damping), then `onFrame`, then render.
  *   `dispose` cancels the loop, disconnects the observer, disposes the controls, every
  *   geometry/material/texture in the scene (including objects the caller added), the renderer,
@@ -205,7 +227,9 @@ export type SceneSetup = {
  */
 export function setupScene(mountElement: HTMLElement, options: SceneSetupOptions = {}): SceneSetup {
     const {
-        background = 0x87ceeb,
+        background = null,
+        fog,
+        environment = true,
         fov = 75,
         near = 0.1,
         far = 1000,
@@ -220,13 +244,23 @@ export function setupScene(mountElement: HTMLElement, options: SceneSetupOptions
     const height = mountElement.clientHeight;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(background);
+    if (background !== null) {
+        scene.background = new THREE.Color(background);
+    }
+    if (fog) {
+        scene.fog = new THREE.Fog(SPACE_COLOR, fog.near, fog.far);
+    }
 
     const camera = new THREE.PerspectiveCamera(fov, height > 0 ? width / height : 1, near, far);
     camera.position.fromArray(cameraPosition);
     camera.lookAt(new THREE.Vector3().fromArray(target));
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: background === null });
+    if (background === null) {
+        renderer.setClearColor(0x000000, 0);
+    }
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
     renderer.setSize(width, height, false);
     if (shadows) {
@@ -241,7 +275,18 @@ export function setupScene(mountElement: HTMLElement, options: SceneSetupOptions
     canvas.style.height = '100%';
     mountElement.appendChild(canvas);
 
-    addStandardLights(scene, lights);
+    const lightRig = addStandardLights(scene, lights);
+
+    let environmentMap: THREE.Texture | null = null;
+    if (environment) {
+        const pmrem = new THREE.PMREMGenerator(renderer);
+        const room = new RoomEnvironment();
+        environmentMap = pmrem.fromScene(room, 0.04).texture;
+        room.dispose();
+        pmrem.dispose();
+        scene.environment = environmentMap;
+        scene.environmentIntensity = 0.55;
+    }
 
     const controls = createCameraControls(camera, canvas, {
         ...controlOptions,
@@ -285,9 +330,10 @@ export function setupScene(mountElement: HTMLElement, options: SceneSetupOptions
         resizeObserver.disconnect();
         controls.dispose();
         disposeObject3D(scene);
+        environmentMap?.dispose();
         scene.clear();
         disposeRenderer(renderer, mountElement);
     };
 
-    return { scene, camera, renderer, controls, start, dispose };
+    return { scene, camera, renderer, controls, lights: lightRig, start, dispose };
 }

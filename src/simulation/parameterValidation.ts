@@ -13,6 +13,20 @@ function parseOptionalBound(bound: Parameter["min"]): number | undefined {
     return Number.isNaN(parsed) ? undefined : parsed;
 }
 
+/**
+ * Whether a parameter applies to the current values: active, and its `visible_when` condition
+ * (if any) holds. Hidden parameters are neither shown nor validated.
+ */
+export function isParameterVisible(
+    parameter: Parameter | null | undefined,
+    paramValues: ParameterValues | null | undefined
+): boolean {
+    if (!parameter || !parameter.key || parameter.is_active === false) return false;
+    const condition = parameter.visible_when;
+    if (!condition || !condition.key) return true;
+    return String(paramValues?.[condition.key]) === String(condition.equals);
+}
+
 export function validateParameterValue(
     parameter: Parameter | null | undefined,
     value: unknown,
@@ -95,7 +109,7 @@ export function validateExperimentParameters(
 
     if (Array.isArray(parameters)) {
         parameters.forEach((param) => {
-            if (!param || !param.key || param.is_active === false) {
+            if (!param || !isParameterVisible(param, paramValues)) {
                 return;
             }
             const result = validateParameterValue(

@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home } from 'lucide-react';
 import { useAppData } from '@/hooks/useAppData';
 import { useTranslation } from '@/i18n';
+import { primaryActionClass } from '@/components/pagesComponents/dashboard/actionStyles';
 
 export default function PageNotFound() {
     const location = useLocation();
@@ -10,40 +10,32 @@ export default function PageNotFound() {
     const { t, dir } = useTranslation(isRTL);
 
     return (
-        <div
-            className="min-h-[70vh] flex items-center justify-center p-6"
-            dir={dir}
-        >
-            <div className="max-w-md w-full">
-                <div className="text-center space-y-6">
-                    {/* 404 Error Code */}
-                    <div className="space-y-2">
-                        <h1 className="text-7xl font-light text-slate-300">404</h1>
-                        <div className="h-0.5 w-16 bg-slate-200 mx-auto"></div>
-                    </div>
+        <div className="min-h-[70vh] flex items-center justify-center px-4 sm:px-6 py-20" dir={dir}>
+            <div className="max-w-xl w-full text-center">
+                {/* A still event horizon: the hole's shadow inside its photon ring, with the 404 lost inside it. */}
+                <div
+                    aria-hidden="true"
+                    className="mx-auto flex h-36 w-36 items-center justify-center rounded-full bg-hole shadow-[0_0_0_1.5px_rgb(var(--plasma-hi)/0.9),0_-2px_24px_3px_rgb(var(--plasma)/0.45),0_-8px_80px_20px_rgb(255_120_60/0.16),-60px_-10px_80px_-20px_rgb(var(--blueshift)/0.2)]"
+                >
+                    <span className="font-mono text-[15px] text-dust/70">404</span>
+                </div>
 
-                    {/* Main Message */}
-                    <div className="space-y-3">
-                        <h2 className="text-2xl font-medium text-slate-800">
-                            {t('errors.notFoundTitle')}
-                        </h2>
-                        <p className="text-slate-600 leading-relaxed">
-                            {t('errors.notFoundPrefix')}{' '}
-                            <span className="font-medium text-slate-700" dir="ltr">&quot;{pageName}&quot;</span>{' '}
-                            {t('errors.notFoundSuffix')}
-                        </p>
-                    </div>
+                <h1 className="mt-14 text-[clamp(2rem,4.5vw,3rem)] font-light leading-[1.1] tracking-[-0.01em] text-star">
+                    {t('errors.notFoundHorizonTitle')}
+                </h1>
+                <p className="mx-auto mt-5 max-w-[34rem] text-[17px] leading-[1.7] text-dust">
+                    {t('errors.notFoundHorizonBody')}
+                </p>
+                <p className="mx-auto mt-3 max-w-[34rem] text-[15px] leading-[1.6] text-dust/80">
+                    {t('errors.notFoundPrefix')}{' '}
+                    <span className="font-mono text-[14px] text-star" dir="ltr">/{pageName}</span>{' '}
+                    {t('errors.notFoundSuffix')}
+                </p>
 
-                    {/* Action Button */}
-                    <div className="pt-4">
-                        <Link
-                            to="/"
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500"
-                        >
-                            <Home className="w-4 h-4" />
-                            {t('common.backToHome')}
-                        </Link>
-                    </div>
+                <div className="mt-10">
+                    <Link to="/" className={primaryActionClass}>
+                        {t('common.backToHome')}
+                    </Link>
                 </div>
             </div>
         </div>
