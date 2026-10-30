@@ -73,7 +73,7 @@ describe("QuantumTunnelingScene measurement badge", () => {
     it("shows the waiting state until a collapse result exists", () => {
         const { rerender, container } = renderScene("he", null);
         expect(screen.getByText("הגלאי ממתין למדידה")).toBeTruthy();
-        expect(statusDot(container).className).toContain("bg-slate-500");
+        expect(statusDot(container).className).toContain("bg-dust");
 
         rerender(
             <I18nContext.Provider value={{ locale: "he", isRTL: true, dir: "rtl" }}>
@@ -98,7 +98,7 @@ describe("QuantumTunnelingScene measurement badge", () => {
             point({ hasCollapsed: true, measurementResult: "transmitted" })
         );
         expect(screen.getByText("Measured: particle passed")).toBeTruthy();
-        expect(statusDot(container).className).toContain("bg-green-600");
+        expect(statusDot(container).className).toContain("bg-emerald-300");
 
         rerender(
             <I18nContext.Provider value={{ locale: "en", isRTL: false, dir: "ltr" }}>
@@ -108,7 +108,7 @@ describe("QuantumTunnelingScene measurement badge", () => {
             </I18nContext.Provider>
         );
         expect(screen.getByText("Measured: particle reflected")).toBeTruthy();
-        expect(statusDot(container).className).toContain("bg-orange-500");
+        expect(statusDot(container).className).toContain("bg-plasma");
 
         rerender(
             <I18nContext.Provider value={{ locale: "en", isRTL: false, dir: "ltr" }}>
@@ -122,7 +122,7 @@ describe("QuantumTunnelingScene measurement badge", () => {
             </I18nContext.Provider>
         );
         expect(screen.getByText("Detector waiting for measurement")).toBeTruthy();
-        expect(statusDot(container).className).toContain("bg-slate-500");
+        expect(statusDot(container).className).toContain("bg-dust");
     });
 
     it("keeps the badge outside the WebGL mount and uses logical positioning", () => {
