@@ -57,7 +57,7 @@ export default function ExperimentSidePanel({
     showConsole = true,
     challenge
 }: ExperimentSidePanelProps) {
-    const { t, locale } = useTranslation(isRTL);
+    const { t, locale, dir } = useTranslation(isRTL);
     // The panel sits at the inline start: the right edge in Hebrew, the left in English.
     const slideOffset = locale === "he" ? 400 : -400;
 
@@ -72,7 +72,8 @@ export default function ExperimentSidePanel({
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className={cn("absolute top-0 start-0 border-e h-full w-[calc(100%-1.5rem)] sm:w-96 shadow-2xl shadow-hole/60 z-30 flex flex-col", instrumentSurfaceClass)}
         >
-            <Tabs value={activeTab} onValueChange={onTabChange} className="flex-1 flex flex-col overflow-hidden">
+            {/* Radix Tabs defaults to dir="ltr", which would turn the whole panel left-to-right in Hebrew. */}
+            <Tabs dir={dir} value={activeTab} onValueChange={onTabChange} className="flex-1 flex flex-col overflow-hidden">
                 <div className="border-b border-line px-4 flex-shrink-0">
                     <TabsList className="grid w-full grid-cols-2 h-11 rounded-none bg-transparent p-0">
                         <TabsTrigger value="parameters" className={tabTriggerClass}>

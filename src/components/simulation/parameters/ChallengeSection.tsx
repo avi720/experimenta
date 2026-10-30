@@ -113,11 +113,17 @@ export default function ChallengeSection({ challenge, isRTL }: ChallengeSectionP
                                         handleCheck();
                                     }}
                                 >
-                                    <label htmlFor="challenge-guess" className="block text-xs text-dust">
+                                    <label htmlFor="challenge-guess" className="block text-start text-xs text-dust">
                                         {t("workspace.challenge.guessLabel", { label: label(active.parameter) })}
+                                        {active.parameter.unit && (
+                                            <>
+                                                {" "}
+                                                <span className="font-mono whitespace-nowrap" dir="ltr">({active.parameter.unit})</span>
+                                            </>
+                                        )}
                                     </label>
                                     <div className="flex items-center gap-2">
-                                        <div className="relative flex-1">
+                                        <div className="flex-1">
                                             <Input
                                                 id="challenge-guess"
                                                 type="number"
@@ -126,16 +132,8 @@ export default function ChallengeSection({ challenge, isRTL }: ChallengeSectionP
                                                 value={guess}
                                                 aria-invalid={guessError}
                                                 onChange={(e) => setGuess(e.target.value)}
-                                                className={cn(
-                                                    "bg-space/60 border-line font-mono tabular-nums text-star hover:border-blueshift/60 focus-visible:ring-blueshift",
-                                                    active.parameter.unit && "pe-16"
-                                                )}
+                                                className="bg-space/60 border-line font-mono tabular-nums text-star hover:border-blueshift/60 focus-visible:ring-blueshift"
                                             />
-                                            {active.parameter.unit && (
-                                                <span className="pointer-events-none absolute inset-y-0 end-3 flex items-center font-mono text-xs text-dust" dir="ltr" aria-hidden="true">
-                                                    {active.parameter.unit}
-                                                </span>
-                                            )}
                                         </div>
                                         <Button type="submit" size="sm" className={plasmaButtonClass}>
                                             {t("workspace.challenge.check")}
