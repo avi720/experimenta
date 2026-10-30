@@ -18,3 +18,7 @@ export const plasmaButtonClass =
 
 /** A section title inside an instrument panel. */
 export const panelHeadingClass = 'text-[13px] font-medium text-dust';
+
+/** A toggle chip (pressed = horizon), e.g. chart series and unknown pickers. */
+export const toggleChipClass =
+    'focus-ring inline-flex h-8 items-center gap-1.5 rounded-full border border-line px-3 text-[13px] text-dust transition-colors hover:border-blueshift/60 hover:text-star aria-pressed:border-horizon aria-pressed:bg-horizon/10 aria-pressed:text-star disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:border-line disabled:hover:text-dust';

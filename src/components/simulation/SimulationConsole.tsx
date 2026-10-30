@@ -6,10 +6,13 @@ import SimulationControls from "./SimulationConsoleComp/SimulationControls";
 import SimulationTimeDisplay from "./SimulationConsoleComp/SimulationTimeDisplay";
 import CurrentValuesDisplay from "./SimulationConsoleComp/CurrentValuesDisplay";
 import type { IsRTLProps } from "@/types/props";
+import type { ExperimentGuide } from "@/simulation/guides";
 import type { SimulationConsoleHandlers, SimulationDataPoint } from "@/types/simulation";
 
 type SimulationConsoleProps = SimulationConsoleHandlers & IsRTLProps & {
     onFloat?: () => void;
+    guide?: ExperimentGuide | null;
+    hiddenKeys?: ReadonlyArray<string>;
 };
 
 function findClosestDataPoint(
@@ -51,7 +54,9 @@ export default function SimulationConsole({
     simulationData = [],
     isRTL,
     onFloat,
-    validationState
+    validationState,
+    guide,
+    hiddenKeys
 }: SimulationConsoleProps) {
     const { t } = useTranslation(isRTL);
 
@@ -114,6 +119,8 @@ export default function SimulationConsole({
                 <CurrentValuesDisplay
                     displayedDataPoint={currentDataPoint}
                     dataPoint={currentDataPoint}
+                    guide={guide}
+                    hiddenKeys={hiddenKeys}
                     isRTL={isRTL}
                 />
             </div>

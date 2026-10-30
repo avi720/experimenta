@@ -40,6 +40,7 @@ export type Database = {
       }
       experiment_runs: {
         Row: {
+          challenge: Json | null
           created_by: string
           created_date: string
           experiment_slug: string | null
@@ -51,6 +52,7 @@ export type Database = {
           updated_date: string
         }
         Insert: {
+          challenge?: Json | null
           created_by?: string
           created_date?: string
           experiment_slug?: string | null
@@ -62,6 +64,7 @@ export type Database = {
           updated_date?: string
         }
         Update: {
+          challenge?: Json | null
           created_by?: string
           created_date?: string
           experiment_slug?: string | null

@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowLeft, SlidersHorizontal, Save, Download, User, LogOut, Home, ChevronDown
+  ArrowLeft, SlidersHorizontal, Save, Download, User, LogOut, Home, ChevronDown, Info, Sigma
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,6 +25,8 @@ import type { Bilingual, ExperimentTemplateData, LocalizedTexts } from "@/types/
 import type { AppUser, ExperimentTemplate } from "@/types/models";
 import type { IsRTLProps } from "@/types/props";
 import { ghostIconButtonClass, plasmaButtonClass, quietButtonClass } from "./workspaceStyles";
+import { ExperimentFormulasDialog, ExperimentInfoDialog } from "../guide/ExperimentGuideDialogs";
+import type { ExperimentGuide, UnknownSpec } from "@/simulation/guides";
 
 /** The fields the experiments menu reads; raw template rows and typed templates both fit. */
 export type ExperimentMenuItem = Pick<ExperimentTemplate, "id" | "slug" | "category" | "i18n_texts">;
@@ -40,6 +43,9 @@ type ExperimentHeaderProps = IsRTLProps & {
     onLogout?: () => void;
     canSave?: boolean;
     canExport?: boolean;
+    guide?: ExperimentGuide | null;
+    /** The parameter hidden in "find the unknown" mode, highlighted in the equations. */
+    unknown?: { spec: UnknownSpec; label: string } | null;
 };
 
 const categoryLabels: Readonly<Record<string, Partial<Bilingual> | undefined>> = categoryNames;
@@ -56,10 +62,15 @@ export default function ExperimentHeader({
     onExport,
     onLogout,
     canSave = false,
-    canExport = false
+    canExport = false,
+    guide = null,
+    unknown = null
 }: ExperimentHeaderProps) {
     const navigate = useNavigate();
     const { t, pick, menuAlignEnd } = useTranslation(isRTL);
+    const [isInfoOpen, setIsInfoOpen] = useState(false);
+    const [isFormulasOpen, setIsFormulasOpen] = useState(false);
+    const title = pick<LocalizedTexts>(experiment?.i18n_texts)?.title || "";
     const groupedExperiments = groupExperimentsByCategory<ExperimentMenuItem>(
         experimentsByCategory ?? experiments ?? []
     );
@@ -89,9 +100,32 @@ export default function ExperimentHeader({
                         <div className="flex items-center gap-2.5 min-w-0">
                            <BlackHoleMark className="h-7 w-7 flex-shrink-0" />
                            <h1 className="text-[17px] font-medium text-star hidden sm:block truncate">
-                               {pick<LocalizedTexts>(experiment?.i18n_texts)?.title}
+                               {title}
                            </h1>
                         </div>
+                        {/* About the experiment, and the equations behind it */}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsInfoOpen(true)}
+                            aria-label={t("workspace.info.button")}
+                            aria-haspopup="dialog"
+                            className={cn("px-2 sm:px-3", quietButtonClass)}
+                        >
+                            <Info className="w-4 h-4" />
+                            <span className="hidden lg:inline">{t("workspace.info.button")}</span>
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsFormulasOpen(true)}
+                            aria-label={t("workspace.formulas.button")}
+                            aria-haspopup="dialog"
+                            className={cn("px-2 sm:px-3", quietButtonClass)}
+                        >
+                            <Sigma className="w-4 h-4" />
+                            <span className="hidden lg:inline">{t("workspace.formulas.button")}</span>
+                        </Button>
                     </div>
 
                     {/* Middle section - export (secondary) and save (the one primary action) */}
@@ -202,6 +236,14 @@ export default function ExperimentHeader({
                     </div>
                 </div>
             </div>
+            <ExperimentInfoDialog open={isInfoOpen} onOpenChange={setIsInfoOpen} texts={experiment?.i18n_texts} />
+            <ExperimentFormulasDialog
+                open={isFormulasOpen}
+                onOpenChange={setIsFormulasOpen}
+                title={title}
+                guide={guide}
+                unknown={unknown}
+            />
         </header>
     );
 }

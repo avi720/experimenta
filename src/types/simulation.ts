@@ -49,6 +49,8 @@ export type SimulationSceneProps = {
   parameters?: ParameterValues;
   paramValues?: ParameterValues;
   dataPointToRender?: SimulationDataPoint | null;
+  /** Parameter keys hidden as the unknown; a scene must not print their values. */
+  hiddenParameters?: string[];
 };
 
 type RegistryEntryBase = {

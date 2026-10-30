@@ -10,6 +10,7 @@ import type { ExperimentTemplateData, Parameter, ParameterValues } from "@/types
 import type { AppSettings, AppUser } from "@/types/models";
 import type { ChildrenProps, IsRTLProps } from "@/types/props";
 import type { SimulationConsoleHandlers, SimulationDataPoint } from "@/types/simulation";
+import type { ExperimentChallenge } from "@/hooks/simulation/useExperimentChallenge";
 
 type WorkspaceShellProps = ChildrenProps &
     IsRTLProps &
@@ -33,6 +34,8 @@ type WorkspaceShellProps = ChildrenProps &
         settings?: AppSettings | null;
         /** Passed by the workspace page; not used by the shell. */
         maxSimulationTime?: number;
+        /** "Find the unknown" state, with the experiment's guide (equations, quantities). */
+        challenge?: ExperimentChallenge;
     };
 
 export default function WorkspaceShell({
@@ -64,9 +67,18 @@ export default function WorkspaceShell({
     onExport,
     canSave = false,
     canExport = false,
-    handleLogout
+    handleLogout,
+    challenge
 }: WorkspaceShellProps) {
-    const { dir } = useTranslation(isRTL);
+    const { dir, pick } = useTranslation(isRTL);
+    const guide = challenge?.guide ?? null;
+    const hiddenKeys = challenge?.hiddenKeys ?? [];
+    const hiddenOption = challenge?.isHiding
+        ? challenge.options.find((o) => o.spec.key === challenge.state?.key)
+        : undefined;
+    const unknown = hiddenOption
+        ? { spec: hiddenOption.spec, label: pick(hiddenOption.parameter.i18n_labels, hiddenOption.parameter.key) }
+        : null;
     const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
     const [activeTab, setActiveTab] = useState("parameters");
     const [floatingWindows, setFloatingWindows] = useState({
@@ -159,6 +171,8 @@ export default function WorkspaceShell({
                 onLogout={handleLogout}
                 canSave={canSave}
                 canExport={canExport}
+                guide={guide}
+                unknown={unknown}
             />
 
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -166,7 +180,8 @@ export default function WorkspaceShell({
                 <div className="flex-1 relative overflow-hidden">
                     {/* Space backdrop: a decorative animation behind the transparent scene canvas */}
                     <div className="absolute inset-0 bg-space">
-                        <BlackHoleBackdrop dir={dir} />
+                        {/* The panel sits at the inline start, so the hole goes to the end side. */}
+                        <BlackHoleBackdrop side={dir === "rtl" ? "left" : "right"} />
                     </div>
 
                     {/* Canvas - always full width and height */}
@@ -202,6 +217,7 @@ export default function WorkspaceShell({
                                 validationState={validationState}
                                 onFloatConsole={handleFloatConsole}
                                 showConsole={!floatingWindows.console}
+                                challenge={challenge}
                             />
                         )}
                     </AnimatePresence>
@@ -227,6 +243,8 @@ export default function WorkspaceShell({
                             onToggleConsole={handleCloseFloatingConsole}
                             onToggleCharts={handleCloseFloatingCharts}
                             validationState={validationState}
+                            guide={guide}
+                            hiddenKeys={hiddenKeys}
                         />
                     )}
                 </div>
@@ -238,6 +256,8 @@ export default function WorkspaceShell({
                     isRTL={isRTL}
                     isOpen={isChartsOpen}
                     onToggle={handleToggleCharts}
+                    guide={guide}
+                    hiddenKeys={hiddenKeys}
                 />
             </div>
         </div>

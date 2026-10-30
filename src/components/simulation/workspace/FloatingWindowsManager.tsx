@@ -5,12 +5,15 @@ import SimulationCharts from "../charts/SimulationCharts";
 import type { ExperimentTemplateData } from "@/types/experiment";
 import type { IsRTLProps } from "@/types/props";
 import type { SimulationConsoleHandlers } from "@/types/simulation";
+import type { ExperimentGuide } from "@/simulation/guides";
 
 type FloatingWindowsManagerProps = IsRTLProps & SimulationConsoleHandlers & {
     experiment?: ExperimentTemplateData | null;
     floatingWindows?: { console?: boolean; charts?: boolean };
     onToggleConsole?: () => void;
     onToggleCharts?: () => void;
+    guide?: ExperimentGuide | null;
+    hiddenKeys?: ReadonlyArray<string>;
 };
 
 export default function FloatingWindowsManager({
@@ -31,7 +34,9 @@ export default function FloatingWindowsManager({
     simulationData,
     validationState,
     onToggleConsole,
-    onToggleCharts
+    onToggleCharts,
+    guide,
+    hiddenKeys
 }: FloatingWindowsManagerProps) {
     const { t } = useTranslation(isRTL);
 
@@ -59,6 +64,8 @@ export default function FloatingWindowsManager({
                         simulationData={simulationData}
                         isRTL={isRTL}
                         validationState={validationState}
+                        guide={guide}
+                        hiddenKeys={hiddenKeys}
                     />
                 </FloatingWindow>
             )}
@@ -74,6 +81,8 @@ export default function FloatingWindowsManager({
                         simulationData={simulationData}
                         experiment={experiment}
                         isRTL={isRTL}
+                        guide={guide}
+                        hiddenKeys={hiddenKeys}
                     />
                 </FloatingWindow>
             )}
