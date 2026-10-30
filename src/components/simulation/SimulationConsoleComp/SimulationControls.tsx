@@ -58,8 +58,9 @@ export default function SimulationControls({
 
     return (
         <div className="flex flex-col gap-4">
-            {/* כפתורי בקרה */}
-            <div className="flex items-center justify-center gap-2">
+            {/* כפתורי בקרה. Left to right in both languages, like the time bar below (a Radix slider,
+                which stays ltr): "forward" must point the way the bar moves. */}
+            <div className="flex items-center justify-center gap-2" dir="ltr">
                 <Button
                     variant="ghost"
                     size="icon"
@@ -68,7 +69,7 @@ export default function SimulationControls({
                     aria-label={t("workspace.stepBackward")}
                     className={cn("flex-shrink-0", ghostIconButtonClass)}
                 >
-                    <SkipBack className="w-4 h-4 rtl:-scale-x-100" />
+                    <SkipBack className="w-4 h-4" />
                 </Button>
 
                 {isIdle ? (
@@ -109,7 +110,7 @@ export default function SimulationControls({
                     aria-label={t("workspace.stepForward")}
                     className={cn("flex-shrink-0", ghostIconButtonClass)}
                 >
-                    <SkipForward className="w-4 h-4 rtl:-scale-x-100" />
+                    <SkipForward className="w-4 h-4" />
                 </Button>
 
                 <Button
@@ -132,6 +133,7 @@ export default function SimulationControls({
 
             {/* בר הזמן - מוצג תמיד, מושבת כשאין נתונים */}
             <Slider
+                dir="ltr"
                 value={[playbackTime]}
                 onValueChange={([value]) => onScrub(value)}
                 max={sliderMax}
