@@ -108,12 +108,12 @@ function paintStars(width: number, height: number, seed: number) {
 }
 
 type BlackHoleBackdropProps = {
-    /** The hole sits on the start side, away from end-side panels. */
-    dir?: "rtl" | "ltr";
+    /** The side of the screen the hole sits on, away from the workspace side panel. */
+    side?: "left" | "right";
     className?: string;
 };
 
-export default function BlackHoleBackdrop({ dir = "ltr", className = "" }: BlackHoleBackdropProps) {
+export default function BlackHoleBackdrop({ side = "left", className = "" }: BlackHoleBackdropProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
@@ -140,7 +140,7 @@ export default function BlackHoleBackdrop({ dir = "ltr", className = "" }: Black
             canvas.width = width;
             canvas.height = height;
             radius = Math.max(14, Math.min(width, height) * 0.055);
-            cx = (dir === "rtl" ? 0.76 : 0.24) * width;
+            cx = (side === "right" ? 0.76 : 0.24) * width;
             cy = 0.24 * height;
             stars = paintStars(width, height, 7);
             annuli = ANNULI.map((a, i) => paintAnnulus(radius, a, 11 + i));
@@ -264,7 +264,7 @@ export default function BlackHoleBackdrop({ dir = "ltr", className = "" }: Black
             document.removeEventListener("visibilitychange", onVisibility);
             resizeObserver.disconnect();
         };
-    }, [dir]);
+    }, [side]);
 
     return <canvas ref={canvasRef} aria-hidden="true" className={`pointer-events-none block h-full w-full ${className}`} />;
 }

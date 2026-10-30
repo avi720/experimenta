@@ -4,6 +4,7 @@ import { validateExperimentParameters } from "@/simulation/parameterValidation";
 import { useExperimentParameters } from "./useExperimentParameters";
 import { useSimulationManager } from "./useSimulationManager";
 import { useExperimentPersistence } from "./useExperimentPersistence";
+import { useExperimentChallenge, type ExperimentChallenge } from "./useExperimentChallenge";
 import type { LocaleInput } from "@/i18n";
 import type { ExperimentTemplateData, ParameterValues, Preset } from "@/types/experiment";
 import type { AppUser } from "@/types/models";
@@ -28,6 +29,7 @@ export type ExperimentSimulation = {
     simulationData: SimulationDataPoint[];
     currentTime: number;
     playbackTime: number;
+    playedUntil: number;
     displayedDataPoint: SimulationDataPoint | null;
     validationState: ParameterValidationState;
     maxSimulationTime: number;
@@ -40,6 +42,7 @@ export type ExperimentSimulation = {
     scrubTime: (time: number) => void;
     saveRun: () => Promise<void>;
     exportData: () => void;
+    challenge: ExperimentChallenge;
 };
 
 /**
@@ -165,11 +168,15 @@ export function useExperimentSimulation(
         ? staticDisplayedPoint
         : timeDisplayedDataPoint;
 
+    const challenge = useExperimentChallenge(experiment, parameters, setParameters);
+
     const { saveRun, exportData } = useExperimentPersistence(
         experiment,
         user,
         parameters,
-        simulationData
+        simulationData,
+        challenge.runChallenge,
+        challenge.hiddenKeys
     );
 
     const noop = useCallback(() => {}, []);
@@ -186,6 +193,7 @@ export function useExperimentSimulation(
             simulationData,
             currentTime: 0,
             playbackTime: 0,
+            playedUntil: 0,
             displayedDataPoint,
             validationState,
             maxSimulationTime: 0,
@@ -198,6 +206,7 @@ export function useExperimentSimulation(
             scrubTime: noop,
             saveRun,
             exportData,
+            challenge,
         };
     }
 
@@ -212,6 +221,7 @@ export function useExperimentSimulation(
         simulationData: manager.simulationData,
         currentTime: manager.playbackTime,
         playbackTime: manager.playbackTime,
+        playedUntil: manager.playedUntil,
         displayedDataPoint,
         validationState,
         maxSimulationTime,
@@ -224,5 +234,6 @@ export function useExperimentSimulation(
         scrubTime: manager.scrubSimulation,
         saveRun,
         exportData,
+        challenge,
     };
 }

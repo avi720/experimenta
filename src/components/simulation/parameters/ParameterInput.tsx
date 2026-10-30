@@ -115,12 +115,21 @@ export default function ParameterInput({
 
     return (
         <div className="space-y-2">
-            <Label htmlFor={parameter.key} className="text-sm font-normal text-dust flex items-center gap-2">
-                {label}
-                {parameter.unit && <span className="sr-only">({parameter.unit})</span>}
+            {/* The unit sits beside the label, not inside the field, where the number spinner
+                would cover long units such as "10⁵ eV/c²". */}
+            <Label htmlFor={parameter.key} className="text-sm font-normal text-dust flex items-center justify-start gap-2 text-start">
+                <span>
+                    {label}
+                    {parameter.unit && (
+                        <>
+                            {" "}
+                            <span className="font-mono text-xs whitespace-nowrap" dir="ltr">({parameter.unit})</span>
+                        </>
+                    )}
+                </span>
                 {!isValid && <AlertCircle className="w-4 h-4 text-danger" />}
             </Label>
-            <div className="relative">
+            <div>
                 <Input
                     id={parameter.key}
                     type="number"
@@ -145,19 +154,9 @@ export default function ParameterInput({
                     className={cn(
                         fieldClass,
                         "font-mono tabular-nums",
-                        parameter.unit && "pe-14",
                         !isValid && invalidFieldClass
                     )}
                 />
-                {parameter.unit && (
-                    <span
-                        className="pointer-events-none absolute inset-y-0 end-3 flex items-center font-mono text-xs text-dust"
-                        dir="ltr"
-                        aria-hidden="true"
-                    >
-                        {parameter.unit}
-                    </span>
-                )}
             </div>
             {tooltip && <p className="text-xs text-dust/80 leading-relaxed">{tooltip}</p>}
             {!isValid && errorMessage && (

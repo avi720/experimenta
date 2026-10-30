@@ -166,6 +166,77 @@ describe("useSimulationManager & useSimulationEngineLogic (T23)", () => {
         setIntervalSpy.mockRestore();
     });
 
+    it("can pause a run that ended early (shouldStop, e.g. Free Fall landing) while it plays back", async () => {
+        // The body lands at t = 0.5 s, well before t_max: the engine stops there.
+        const stepFn = (t: number) => ({ time: Number(t.toFixed(3)), position: 1 - t, shouldStop: t >= 0.5 });
+
+        const h = mountHook(() =>
+            useSimulationManager({
+                calculateStepFn: stepFn,
+                parameters: {},
+                maxSimulationTime: 10,
+                playbackSpeed: 1.0,
+            })
+        );
+
+        h.current.startSimulation();
+        await vi.advanceTimersByTimeAsync(5);
+        // Playing back, so it is running (not completed) and the console offers Pause.
+        expect(h.current.isPlaying).toBe(true);
+        expect(h.current.simulationStatus).toBe("running");
+
+        await vi.advanceTimersByTimeAsync(16 * 5);
+        h.current.pauseSimulation();
+        await vi.advanceTimersByTimeAsync(0);
+        expect(h.current.simulationStatus).toBe("paused");
+        const pausedAt = h.current.playbackTime;
+        expect(pausedAt).toBeGreaterThan(0);
+        expect(pausedAt).toBeLessThan(0.5);
+
+        // Continuing plays to the landing and only then completes, without computing past it.
+        h.current.continueSimulation();
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(h.current.simulationStatus).toBe("completed");
+        expect(h.current.playbackTime).toBeCloseTo(0.5, 3);
+    });
+
+    it("after a pause, stepping and scrubbing forward stop where playback reached", async () => {
+        const stepFn = (t: number) => ({ time: Number(t.toFixed(3)), position: t, shouldStop: false });
+        const h = mountHook(() =>
+            useSimulationManager({ calculateStepFn: stepFn, parameters: {}, maxSimulationTime: 2, playbackSpeed: 1.0 })
+        );
+
+        h.current.startSimulation();
+        await vi.advanceTimersByTimeAsync(5);
+        await vi.advanceTimersByTimeAsync(16 * 10);
+        h.current.pauseSimulation();
+        await vi.advanceTimersByTimeAsync(0);
+        const reached = h.current.playedUntil;
+        expect(reached).toBeGreaterThan(0);
+        expect(reached).toBeLessThan(2); // the whole 2 s run is computed, but not yet played
+        expect(h.current.playbackTime).toBeCloseTo(reached, 6);
+
+        // Forward from the pause point goes nowhere: that time has not been played yet.
+        h.current.stepForward();
+        await vi.advanceTimersByTimeAsync(0);
+        expect(h.current.playbackTime).toBeCloseTo(reached, 6);
+
+        // Back, then forward again: forward returns at most to the furthest played time.
+        h.current.stepBackward();
+        h.current.stepBackward();
+        await vi.advanceTimersByTimeAsync(0);
+        h.current.stepForward();
+        h.current.stepForward();
+        h.current.stepForward();
+        await vi.advanceTimersByTimeAsync(0);
+        expect(h.current.playbackTime).toBeCloseTo(reached, 6);
+
+        // Scrubbing to the end of the computed run is clamped the same way.
+        h.current.scrubSimulation(2);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(h.current.playbackTime).toBeCloseTo(reached, 6);
+    });
+
     it("pressing Reset mid-calculation cancels runEngine and leaves status idle with empty data", async () => {
         // 2.5 seconds = 2500 steps -> yields twice at 1000-step boundaries
         const stepFn = (t: number) => ({

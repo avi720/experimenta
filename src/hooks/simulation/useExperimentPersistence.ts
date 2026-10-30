@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useTranslation } from '@/i18n';
 import { downloadCsv } from '@/lib/csv';
 import { exportWorkspaceCsv, serializeSimulationSamples } from '@/lib/simulationExport';
+import { omitKeys, type RunChallenge } from '@/simulation/challenge';
 import type { ExperimentTemplateData, ParameterValues } from '@/types/experiment';
 import type { AppUser } from '@/types/models';
 import type { SimulationDataPoint } from '@/types/simulation';
@@ -28,7 +29,9 @@ export function useExperimentPersistence(
     experiment: Pick<ExperimentTemplateData, 'slug'> | null | undefined,
     _user: AppUser | null | undefined,
     parameters: ParameterValues | null | undefined,
-    simulationData: SimulationDataPoint[] | null | undefined
+    simulationData: SimulationDataPoint[] | null | undefined,
+    challenge: RunChallenge | null = null,
+    hiddenKeys: ReadonlyArray<string> = []
 ) {
     const { isAuthenticated, navigateToLogin } = useAuth();
     const { createRun } = useExperimentRunMutations();
@@ -57,7 +60,9 @@ export function useExperimentPersistence(
                 parameters_json: parameters || {},
                 samples_count: storedSamples.length,
                 results_url: JSON.stringify(storedSamples),
-                notes: ''
+                notes: '',
+                // Sent only for challenge runs, so ordinary saves never depend on the column.
+                ...(challenge ? { challenge } : {}),
             };
 
             await createRun(runData);
@@ -66,7 +71,7 @@ export function useExperimentPersistence(
             console.error('Error saving run:', error);
             toast.error(t('workspace.saveErrorPrefix') + errorMessage(error));
         }
-    }, [experiment, parameters, simulationData, isAuthenticated, navigateToLogin, createRun, t]);
+    }, [experiment, parameters, simulationData, challenge, isAuthenticated, navigateToLogin, createRun, t]);
 
     // ייצוא נתונים ל-CSV
     const exportData = useCallback(() => {
@@ -76,8 +81,9 @@ export function useExperimentPersistence(
         }
 
         try {
+            // Quantities that give away a hidden unknown stay out of the file until it is revealed.
             downloadCsv(
-                exportWorkspaceCsv(simulationData),
+                exportWorkspaceCsv(omitKeys(simulationData, hiddenKeys)),
                 `${experiment?.slug || 'simulation'}_data_${Date.now()}.csv`
             );
             toast.success(t('workspace.dataExportedToast'));
@@ -85,7 +91,7 @@ export function useExperimentPersistence(
             console.error('Error exporting data:', error);
             toast.error(t('workspace.exportErrorPrefix') + errorMessage(error));
         }
-    }, [simulationData, experiment, t]);
+    }, [simulationData, experiment, hiddenKeys, t]);
 
     return {
         saveRun,
