@@ -28,6 +28,16 @@ describe("SHO engine (T45)", () => {
         expect(calculateStep(0, params).period).toBeCloseTo(2 * Math.PI / omega0, 10);
     });
 
+    it("keeps x0 = 0 instead of replacing equilibrium with the default displacement", () => {
+        // Released from equilibrium with a push: x = (v0/ω0) sin(ω0 t), not x0 = 1 m.
+        const omega0 = 2;
+        const params = { m: 1, k: 4, x0: 0, v0: 2, c: 0 };
+        const atRest = calculateStep(0, params);
+        expect(atRest.position).toBeCloseTo(0, 12);
+        expect(atRest.velocity).toBeCloseTo(2, 12);
+        expect(calculateStep(0.3, params).position).toBeCloseTo(Math.sin(omega0 * 0.3), 10);
+    });
+
     it("respects the initial conditions in every damping regime", () => {
         for (const c of [0, 0.5, 20]) {
             const p = calculateStep(0, { m: 1, k: 10, x0: 1, v0: 2, c });

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle } from "lucide-react";
 import { useTranslation } from "@/i18n";
-import { downloadCsv, samplesToCsv } from "@/lib/csv";
+import { downloadCsv } from "@/lib/csv";
+import { exportStoredSamplesCsv } from "@/lib/simulationExport";
 import { formatRunDate } from "./resultsDomain";
 import { errorBannerClass, panelClass } from "./resultsStyles";
 import OverviewTab from "./OverviewTab";
@@ -57,7 +58,7 @@ export default function RunDetails({ analysis }: { analysis: RunAnalysis }) {
 
   const exportCsv = () => {
     if (!samples.length) return;
-    downloadCsv(samplesToCsv(samples), `${selectedRun.experiment_slug}_${selectedRun.id}.csv`);
+    downloadCsv(exportStoredSamplesCsv(samples), `${selectedRun.experiment_slug}_${selectedRun.id}.csv`);
   };
 
   return (
