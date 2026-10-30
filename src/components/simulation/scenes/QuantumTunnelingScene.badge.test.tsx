@@ -98,7 +98,7 @@ describe("QuantumTunnelingScene measurement badge", () => {
             point({ hasCollapsed: true, measurementResult: "transmitted" })
         );
         expect(screen.getByText("Measured: particle passed")).toBeTruthy();
-        expect(statusDot(container).className).toContain("bg-emerald-300");
+        expect(statusDot(container).className).toContain("bg-success");
 
         rerender(
             <I18nContext.Provider value={{ locale: "en", isRTL: false, dir: "ltr" }}>

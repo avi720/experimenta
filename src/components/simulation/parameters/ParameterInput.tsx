@@ -15,7 +15,7 @@ type ParameterValue = ParameterValues[string];
 // Instrument fields: a dark well with a hairline that turns blueshift on hover/focus.
 const fieldClass =
     "bg-space/60 border-line text-star placeholder:text-dust/60 hover:border-blueshift/60 focus-visible:ring-blueshift";
-const invalidFieldClass = "border-red-500/70 hover:border-red-500/70 focus-visible:ring-red-400";
+const invalidFieldClass = "border-danger/70 hover:border-danger/70 focus-visible:ring-danger";
 
 type ParameterInputProps = IsRTLProps & {
     parameter: Parameter | null | undefined;
@@ -81,7 +81,7 @@ export default function ParameterInput({
             <div className="space-y-2">
                 <Label htmlFor={parameter.key} className="text-sm font-normal text-dust flex items-center gap-2">
                     {label}
-                    {!isValid && <AlertCircle className="w-4 h-4 text-red-400" />}
+                    {!isValid && <AlertCircle className="w-4 h-4 text-danger" />}
                 </Label>
                 <Select value={value?.toString()} onValueChange={(val) => onChange(val)}>
                     <SelectTrigger
@@ -100,7 +100,7 @@ export default function ParameterInput({
                 </Select>
                 {tooltip && <p className="text-xs text-dust/80 leading-relaxed">{tooltip}</p>}
                 {!isValid && errorMessage && (
-                    <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-md px-2 py-1.5 flex items-center gap-1.5" role="alert">
+                    <p className="text-xs text-danger bg-danger/10 border border-danger/30 rounded-md px-2 py-1.5 flex items-center gap-1.5" role="alert">
                         <AlertCircle className="w-3 h-3 flex-shrink-0" />
                         {errorMessage}
                     </p>
@@ -118,7 +118,7 @@ export default function ParameterInput({
             <Label htmlFor={parameter.key} className="text-sm font-normal text-dust flex items-center gap-2">
                 {label}
                 {parameter.unit && <span className="sr-only">({parameter.unit})</span>}
-                {!isValid && <AlertCircle className="w-4 h-4 text-red-400" />}
+                {!isValid && <AlertCircle className="w-4 h-4 text-danger" />}
             </Label>
             <div className="relative">
                 <Input
@@ -161,7 +161,7 @@ export default function ParameterInput({
             </div>
             {tooltip && <p className="text-xs text-dust/80 leading-relaxed">{tooltip}</p>}
             {!isValid && errorMessage && (
-                <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-md px-2 py-1.5 flex items-center gap-1.5" role="alert">
+                <p className="text-xs text-danger bg-danger/10 border border-danger/30 rounded-md px-2 py-1.5 flex items-center gap-1.5" role="alert">
                     <AlertCircle className="w-3 h-3 flex-shrink-0" />
                     {errorMessage}
                 </p>

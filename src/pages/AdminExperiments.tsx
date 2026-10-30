@@ -51,7 +51,7 @@ export default function AdminExperiments() {
   // Readouts: a hairline-separated row of measured counts, coloured only where the state matters.
   const statItems = [
     { key: 'total', value: stats.total, label: t('admin.list.totalStat'), valueClass: 'text-star' },
-    { key: 'active', value: stats.active, label: t('admin.list.activeStat'), valueClass: 'text-emerald-300' },
+    { key: 'active', value: stats.active, label: t('admin.list.activeStat'), valueClass: 'text-success' },
     { key: 'inactive', value: stats.inactive, label: t('admin.list.inactiveStat'), valueClass: 'text-amber-300' },
   ];
 

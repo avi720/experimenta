@@ -44,8 +44,8 @@ const ProfileLoadErrorFallback = ({ onRetry }: { onRetry: () => void }) => {
   const { t, dir } = useTranslation();
   return (
     <div className="max-w-lg mx-auto px-4 py-16 text-center space-y-4" dir={dir}>
-      <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-        <AlertTriangle className="w-6 h-6 text-red-600" />
+      <div className="mx-auto w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center">
+        <AlertTriangle className="w-6 h-6 text-danger" />
       </div>
       <h2 className="text-2xl font-bold text-slate-900">
         {t('errors.profileLoadFailedTitle')}

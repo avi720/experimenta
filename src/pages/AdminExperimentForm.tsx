@@ -65,8 +65,8 @@ export default function AdminExperimentForm() {
     return (
       <div className="min-h-screen bg-space px-4 py-24" dir={dir}>
         <div className="mx-auto max-w-xl border-y border-line py-14 text-center">
-          <div className="mx-auto mb-5 flex h-11 w-11 items-center justify-center rounded-full border border-red-400/30 bg-red-400/10">
-            <AlertTriangle className="h-5 w-5 text-red-300" />
+          <div className="mx-auto mb-5 flex h-11 w-11 items-center justify-center rounded-full border border-danger/30 bg-danger/10">
+            <AlertTriangle className="h-5 w-5 text-danger" />
           </div>
           <h1 className="text-[26px] font-light text-star">{t('admin.form.notFoundTitle')}</h1>
           <p className="mx-auto mt-3 max-w-[30rem] text-[15px] leading-relaxed text-dust">

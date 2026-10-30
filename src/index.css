@@ -15,6 +15,9 @@
     --plasma-hi: 255 226 184;
     --blueshift: 157 187 255;
     --horizon: 180 140 255;
+    /* Status colours, tuned for text on space. */
+    --success: 110 231 183;
+    --danger: 252 165 165;
 
     /* shadcn tokens (HSL) mapped onto the brand: the whole site renders on space. */
     color-scheme: dark;

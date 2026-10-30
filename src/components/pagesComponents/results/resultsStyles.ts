@@ -20,7 +20,7 @@ export const primaryButtonClass =
   "focus-ring inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md bg-plasma text-[#1C0F04] text-sm font-medium transition-colors hover:bg-plasma-hi disabled:pointer-events-none disabled:opacity-50";
 
 /** Inline status banners that stay legible on dark. */
-export const errorBannerClass = "border border-red-400/30 bg-red-500/10 text-red-300";
+export const errorBannerClass = "border border-danger/30 bg-danger/10 text-danger";
 
 // Recharts takes raw colour strings; read them from the brand's CSS variables.
 export const chartColors = {

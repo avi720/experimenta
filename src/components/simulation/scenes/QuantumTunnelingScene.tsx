@@ -365,7 +365,7 @@ export default function QuantumTunnelingScene({ parameters, dataPointToRender }:
                         aria-hidden="true"
                         className={cn(
                             'h-2.5 w-2.5 shrink-0 rounded-full',
-                            result === 'transmitted' ? 'bg-emerald-300' : result === 'reflected' ? 'bg-plasma' : 'bg-dust'
+                            result === 'transmitted' ? 'bg-success' : result === 'reflected' ? 'bg-plasma' : 'bg-dust'
                         )}
                     />
                     <span className="text-sm text-star" aria-live="polite">

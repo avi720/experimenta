@@ -78,7 +78,7 @@ export default function RunDetails({ analysis }: { analysis: RunAnalysis }) {
             <h5 className="font-medium leading-none">
               {t('results.corruptedParamsTitle')}
             </h5>
-            <p className="mt-1.5 text-sm text-red-300/80">
+            <p className="mt-1.5 text-sm text-danger/80">
               {t('results.corruptedParamsDescription')}
             </p>
           </div>

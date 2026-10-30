@@ -41,7 +41,7 @@ export default function OverviewTab({ run, samples, paramState }: OverviewTabPro
       <section>
         <h3 className={panelTitleClass}>{t('results.experimentParametersTitle')}</h3>
         {paramState.error ? (
-          <p className="mt-4 text-sm text-red-300">
+          <p className="mt-4 text-sm text-danger">
             {t('results.corruptedParamsInline')}
           </p>
         ) : parameterEntries.length === 0 ? (

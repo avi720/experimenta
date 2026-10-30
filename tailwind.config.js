@@ -29,6 +29,8 @@ module.exports = {
         },
         blueshift: 'rgb(var(--blueshift) / <alpha-value>)',
         horizon: 'rgb(var(--horizon) / <alpha-value>)',
+        success: 'rgb(var(--success) / <alpha-value>)',
+        danger: 'rgb(var(--danger) / <alpha-value>)',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

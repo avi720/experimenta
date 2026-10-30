@@ -25,7 +25,7 @@ export default function RunsList({ runs, showLoadFailure, selectedRunId, onSelec
   if (showLoadFailure) {
     content = (
       <div className="px-5 py-10 text-center space-y-4">
-        <p className="text-red-300 text-sm">
+        <p className="text-danger text-sm">
           {t('results.loadingRunsFailedShort')}
         </p>
         <button type="button" onClick={onRetry} className={secondaryButtonClass}>
@@ -90,7 +90,7 @@ export default function RunsList({ runs, showLoadFailure, selectedRunId, onSelec
                   <button
                     type="button"
                     aria-label={t('results.deleteRunAria')}
-                    className={`${iconButtonClass} hover:bg-red-500/10 hover:text-red-300`}
+                    className={`${iconButtonClass} hover:bg-danger/10 hover:text-danger`}
                     onClick={(e) => {
                       e.stopPropagation();
                       onRequestDelete(run);

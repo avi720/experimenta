@@ -1,8 +1,7 @@
 # Experimenta brand guidelines
 
-The product line every page moves toward. The home page, header and footer are the first
-surfaces built on it; Lab, Workspace, Results and the admin pages still use the older
-slate/blue look and should be migrated page by page using the tokens below.
+The product line of the whole site: every page, the experiment workspace and the admin area
+are built on it.
 The approved prototype lives in `prototypes/home-blackhole.html`.
 
 ## Concept: an accretion disk seen from outside
@@ -33,6 +32,11 @@ Tokens are CSS custom properties in `src/index.css` (`:root`) and Tailwind color
 | `--plasma-hi` | `plasma-hi` | `#FFE2B8` | Photon ring; primary button hover |
 | `--blueshift` | `blueshift` | `#9DBBFF` | The approaching side. Links, data traces, focus ring |
 | `--horizon` | `horizon` | `#B48CFF` | Beyond the horizon. The cool far edge of the disk; a rare accent in illustration and data |
+| `--success` | `success` | `#6EE7B7` | Something worked or passed. Active status, a particle that got through |
+| `--danger` | `danger` | `#FCA5A5` | Errors and destructive actions, tuned to stay readable as text on `space` |
+
+**Dark only, on purpose.** There is no light mode: the concept is a black hole against space,
+and the live scenes and backdrop are built for a dark sky.
 
 Rules:
 - Color carries meaning. **Plasma** means "act here" (one primary per view). **Blueshift**
@@ -47,6 +51,20 @@ The logo mark is a black shadow inside its photon ring, with the accretion disk 
 behind and in front of it; the disk runs from blueshifted white to deep red, the Doppler
 asymmetry of a real disk (`src/components/brand/BlackHoleMark.tsx`). It sits before the
 wordmark "Experimenta" in Plex Sans Hebrew, weight 500. Don't recolor or animate it.
+
+### Logo and icon files
+
+| File | Use |
+| --- | --- |
+| `public/brand/logo-mark.svg` | The mark alone |
+| `public/brand/logo-full.svg` | Mark and wordmark on dark backgrounds |
+| `public/brand/logo-full-on-light.svg` | Mark and wordmark for print and documents on white |
+| `public/favicon.svg`, `favicon.ico`, `favicon-32.png` | Browser tabs. A heavier cut of the mark, legible at 16 px |
+| `public/apple-touch-icon.png`, `icon-192.png`, `icon-512.png` | Phone home screens (`public/site.webmanifest`) |
+| `public/og-image.png` | The 1200×630 image shown when a link is shared; source in `docs/brand/og-image.source.svg` |
+
+The wordmark in the SVG files is outlined, so they need no font. Keep clear space of at least
+half the mark's height around the logo, and don't use the full logo below 96 px wide.
 
 ## Typography
 
@@ -75,6 +93,10 @@ arrows appended to button text.
   boxed, shadowed, rounded cards. Radius: 6 px for controls, full for pills, 0 for surfaces.
 - Numbered markers only for real sequences (the "how it works" steps, drawn as bodies on
   one infall path that ends in a small horizon).
+- Spacing follows Tailwind's 4 px scale: 8–12 px inside a control, 16–24 px between related
+  items, `py-20 md:py-28` between sections. Prefer these steps to one-off values.
+- Radius is one token: `--radius` (8 px) gives `rounded-md` = 6 px for controls and
+  `rounded-lg` = 8 px for floating panels.
 - Every layout must work in RTL; use logical utilities (`ms-`, `pe-`, `start-`).
 
 ## Motion
@@ -102,6 +124,17 @@ arrows appended to button text.
 - **shadcn primitives**: the shadcn HSL tokens in `:root` (`src/index.css`) are mapped onto
   the brand, so every page, dialog and menu renders on `space` with no extra class. Prefer
   the brand utilities (`bg-space-raised`, `border-line`, `text-dust`) over raw `slate`/`white`.
+
+## States
+
+- **Loading**: a quiet spinner in `line` with a `blueshift` arc, or a short line of text. Never
+  block the full screen when part of the page can already show.
+- **Empty**: say what is missing and offer the next action.
+- **Error**: `danger` text with an icon, saying what went wrong and how to fix it. Field errors
+  sit under the field and use `role="alert"`.
+- **Success**: `success` for lasting status, a `sonner` toast for a finished action.
+- **Disabled**: 50% opacity and no hover change. Keep the label readable.
+- Status is never colour alone: pair it with text or an icon.
 
 ## Voice
 

@@ -123,7 +123,7 @@ export default function SimulationControls({
             </div>
 
             {!isValid && (
-                <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-md px-2 py-1.5 text-center" role="alert">
+                <p className="text-xs text-danger bg-danger/10 border border-danger/30 rounded-md px-2 py-1.5 text-center" role="alert">
                     {t("workspace.fixParameterErrors")}
                 </p>
             )}

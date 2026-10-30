@@ -41,7 +41,7 @@ export default function DeleteRunDialog({ open, isDeleting, onCancel, onConfirm 
             {t('common.cancel')}
           </AlertDialogCancel>
           <AlertDialogAction
-            className="border border-red-400/40 bg-red-500/15 text-red-300 hover:bg-red-500/25 focus-visible:ring-red-400"
+            className="border border-danger/40 bg-danger/15 text-danger hover:bg-danger/25 focus-visible:ring-danger"
             disabled={isDeleting}
             onClick={onConfirm}
           >
