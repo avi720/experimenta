@@ -1,5 +1,11 @@
 import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
+import { Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+import { ghostIconButtonClass, instrumentSurfaceClass } from '@/components/simulation/workspace/workspaceStyles';
 import type { ParameterValues } from '@/types/experiment';
 import type { SimulationDataPoint, SimulationSceneProps } from '@/types/simulation';
 import { DETECTOR_X_POSITION } from '@/simulation/engines/quantumTunnelingEngine';
@@ -197,6 +203,13 @@ function setDetectorState(lens: QuantumTunnelingObjects['detectorLens'], result:
 
 export default function QuantumTunnelingScene({ parameters, dataPointToRender }: SimulationSceneProps) {
     const mountRef = useRef<HTMLDivElement>(null);
+    const { t, dir } = useTranslation();
+    const collapsed = Boolean(dataPointToRender?.hasCollapsed && dataPointToRender?.measurementResult);
+    const result = collapsed ? dataPointToRender!.measurementResult : null;
+    const statusKey =
+        result === 'transmitted' ? 'workspace.quantumCollapse.statusTransmitted'
+        : result === 'reflected' ? 'workspace.quantumCollapse.statusReflected'
+        : 'workspace.quantumCollapse.statusWaiting';
 
     // Particle Refs
     const incomingParticleRef = useRef<QuantumTunnelingObjects['incomingParticle'] | null>(null);
@@ -339,5 +352,63 @@ export default function QuantumTunnelingScene({ parameters, dataPointToRender }:
         }
     }, [dataPointToRender, parameters]);
 
-    return <div ref={mountRef} className="w-full h-full" />;
+    return (
+        <div className="relative w-full h-full">
+            <div ref={mountRef} className="w-full h-full" />
+
+            {/* Inline-start corner. The side panel is at end-0, so this stays clear on desktop.
+                Sibling of the WebGL mount so badge clicks never reach OrbitControls. */}
+            <div className="pointer-events-none absolute top-3 start-3 z-10">
+                <div className={cn('pointer-events-auto flex items-center gap-2 rounded-md border ps-3 pe-1 py-1 shadow-lg shadow-hole/40', instrumentSurfaceClass)}>
+                    {/* Same colours as the particles in the scene: emerald passed, plasma reflected. */}
+                    <span
+                        aria-hidden="true"
+                        className={cn(
+                            'h-2.5 w-2.5 shrink-0 rounded-full',
+                            result === 'transmitted' ? 'bg-emerald-300' : result === 'reflected' ? 'bg-plasma' : 'bg-dust'
+                        )}
+                    />
+                    <span className="text-sm text-star" aria-live="polite">
+                        {t(statusKey)}
+                    </span>
+
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label={t('workspace.quantumCollapse.infoButtonLabel')}
+                                className={cn('h-9 w-9 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11', ghostIconButtonClass)}
+                            >
+                                <Info className="h-4 w-4" aria-hidden="true" />
+                            </Button>
+                        </PopoverTrigger>
+                        {/* align="start" is logical. Floating UI flips start/end when this
+                            content's direction is rtl, so menuAlignStart ("end" in Hebrew)
+                            would flip a second time. On a 360px screen the collision
+                            middleware slides the 20rem panel inward so it stays fully visible. */}
+                        <PopoverContent
+                            side="bottom"
+                            align="start"
+                            sideOffset={6}
+                            collisionPadding={12}
+                            dir={dir}
+                            aria-labelledby="quantum-collapse-title"
+                            className="w-80 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto space-y-2 text-start border-line bg-space-raised text-star shadow-lg shadow-hole/50"
+                        >
+                            <h4 id="quantum-collapse-title" className="text-sm font-medium text-star">
+                                {t('workspace.quantumCollapse.title')}
+                            </h4>
+                            <p className="text-sm leading-relaxed text-dust">
+                                {t('workspace.quantumCollapse.intro')}
+                            </p>
+                            <p className="text-sm leading-relaxed text-dust">
+                                {t('workspace.quantumCollapse.body')}
+                            </p>
+                        </PopoverContent>
+                    </Popover>
+                </div>
+            </div>
+        </div>
+    );
 }

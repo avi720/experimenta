@@ -217,6 +217,15 @@ const en = {
       maxBound: 'Value must be at most {{max}}',
       invalidOption: 'Please select a valid option',
     },
+    quantumCollapse: {
+      title: 'What is wave-function collapse?',
+      infoButtonLabel: 'Explain wave-function collapse',
+      statusWaiting: 'Detector waiting for measurement',
+      statusTransmitted: 'Measured: particle passed',
+      statusReflected: 'Measured: particle reflected',
+      intro: "A wave function is the mathematical description of a quantum particle: it does not say where the particle is, only how likely each result is. So a 70% chance of passing and 30% of bouncing back does not mean the particle already went one way and we just don't know which. Until it is measured, both possibilities exist together, each with its own probability. Sometimes the two are equal, 50% each, and sometimes one is almost certain.",
+      body: 'Before it is measured, the particle has no definite side: at the barrier its wave function splits into a part that passes through and a part that bounces back, and each part\'s brightness shows its probability (T and R). When the wave reaches the detector, a measurement happens and the wave function "collapses": the outcome is random, "passed" with probability T or "reflected" with probability R, and only that part remains. A new run may give a different result, but over many runs the share of "passed" results approaches T.',
+    },
   },
   auth: {
     welcomeTitle: 'Welcome to Experimenta',
