@@ -106,7 +106,7 @@ export default function AdminExperimentForm() {
         <ExperimentFormProgressIndicator currentTab={currentTab} />
 
         {/* Main Tabs */}
-        <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-8">
+        <Tabs dir={dir} value={currentTab} onValueChange={setCurrentTab} className="space-y-8">
           <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
             <TabsList className="flex h-auto w-max min-w-full justify-start gap-6 rounded-none border-b border-line bg-transparent p-0">
               <TabsTrigger value="general" className={tabTriggerClass}>
