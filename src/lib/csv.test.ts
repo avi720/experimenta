@@ -4,6 +4,8 @@ import { samplesToCsv, serializeCsvCell } from "./csv";
 describe("csv utility (T22)", () => {
   it("serializes cells consistently", () => {
     expect(serializeCsvCell(1.5)).toBe("1.500000");
+    expect(serializeCsvCell(3.2e-7)).toBe("3.200000e-7");
+    expect(serializeCsvCell(0)).toBe("0.000000");
     expect(serializeCsvCell(Number.NaN)).toBe("");
     expect(serializeCsvCell({ x: 1, y: 2 })).toBe("2.000000");
     expect(serializeCsvCell({ a: 1 })).toBe('"{""a"":1}"');

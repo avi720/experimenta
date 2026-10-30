@@ -28,6 +28,16 @@ describe("SHO engine (T45)", () => {
         expect(calculateStep(0, params).period).toBeCloseTo(2 * Math.PI / omega0, 10);
     });
 
+    it("keeps x0 = 0 instead of replacing equilibrium with the default displacement", () => {
+        // Released from equilibrium with a push: x = (v0/ω0) sin(ω0 t), not x0 = 1 m.
+        const omega0 = 2;
+        const params = { m: 1, k: 4, x0: 0, v0: 2, c: 0 };
+        const atRest = calculateStep(0, params);
+        expect(atRest.position).toBeCloseTo(0, 12);
+        expect(atRest.velocity).toBeCloseTo(2, 12);
+        expect(calculateStep(0.3, params).position).toBeCloseTo(Math.sin(omega0 * 0.3), 10);
+    });
+
     it("respects the initial conditions in every damping regime", () => {
         for (const c of [0, 0.5, 20]) {
             const p = calculateStep(0, { m: 1, k: 10, x0: 1, v0: 2, c });
@@ -58,6 +68,16 @@ describe("SHO engine (T45)", () => {
             expect(calculateStep(t, criticalExact).position).toBeCloseTo(expectedX, 6);
             expect(calculateStep(t, criticalTolerance).position).toBeCloseTo(expectedX, 6);
         }
+    });
+
+    it("keeps k = 0 as uniform motion and does not accept a zero mass", () => {
+        const free = calculateStep(0.5, { m: 1, k: 0, x0: 1, v0: 2, c: 0 });
+        expect(free.position).toBeCloseTo(2, 12);
+        expect(free.velocity).toBeCloseTo(2, 12);
+        expect(free.acceleration).toBe(0);
+        const massless = calculateStep(0, { m: 0, k: 10, x0: 0.5, v0: 0, c: 0 });
+        expect(massless.position).toBeCloseTo(0.5, 12);
+        expect(massless.angular_frequency).toBeCloseTo(Math.sqrt(10), 10);
     });
 
     it("falls back to defaults instead of throwing on null parameters", () => {

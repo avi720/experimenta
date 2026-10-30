@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle } from "lucide-react";
 import { useTranslation } from "@/i18n";
-import { downloadCsv, samplesToCsv } from "@/lib/csv";
+import { downloadCsv } from "@/lib/csv";
+import { exportStoredSamplesCsv } from "@/lib/simulationExport";
 import { formatRunDate } from "./resultsDomain";
 import { errorBannerClass, panelClass } from "./resultsStyles";
 import OverviewTab from "./OverviewTab";
@@ -33,7 +34,7 @@ function EmptyTraceFigure() {
 
 /** Right-hand panel: empty state, or the four tabs for the selected run. */
 export default function RunDetails({ analysis }: { analysis: RunAnalysis }) {
-  const { t } = useTranslation();
+  const { t, dir } = useTranslation();
   const [currentTab, setCurrentTab] = useState("overview");
   const { selectedRun, paramState, samples, chartConfig } = analysis;
 
@@ -57,7 +58,7 @@ export default function RunDetails({ analysis }: { analysis: RunAnalysis }) {
 
   const exportCsv = () => {
     if (!samples.length) return;
-    downloadCsv(samplesToCsv(samples), `${selectedRun.experiment_slug}_${selectedRun.id}.csv`);
+    downloadCsv(exportStoredSamplesCsv(samples), `${selectedRun.experiment_slug}_${selectedRun.id}.csv`);
   };
 
   return (
@@ -85,7 +86,7 @@ export default function RunDetails({ analysis }: { analysis: RunAnalysis }) {
         </div>
       )}
 
-      <Tabs value={currentTab} onValueChange={setCurrentTab} className="mt-2">
+      <Tabs dir={dir} value={currentTab} onValueChange={setCurrentTab} className="mt-2">
         <TabsList className="flex h-auto w-full justify-start gap-6 sm:gap-8 overflow-x-auto rounded-none border-b border-line bg-transparent p-0 px-5 sm:px-6 text-dust">
           <TabsTrigger value="overview" className={tabTriggerClass}>{t('results.overviewTab')}</TabsTrigger>
           <TabsTrigger value="data" className={tabTriggerClass}>{t('results.dataTab')}</TabsTrigger>
