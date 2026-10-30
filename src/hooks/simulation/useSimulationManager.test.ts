@@ -166,6 +166,40 @@ describe("useSimulationManager & useSimulationEngineLogic (T23)", () => {
         setIntervalSpy.mockRestore();
     });
 
+    it("can pause a run that ended early (shouldStop, e.g. Free Fall landing) while it plays back", async () => {
+        // The body lands at t = 0.5 s, well before t_max: the engine stops there.
+        const stepFn = (t: number) => ({ time: Number(t.toFixed(3)), position: 1 - t, shouldStop: t >= 0.5 });
+
+        const h = mountHook(() =>
+            useSimulationManager({
+                calculateStepFn: stepFn,
+                parameters: {},
+                maxSimulationTime: 10,
+                playbackSpeed: 1.0,
+            })
+        );
+
+        h.current.startSimulation();
+        await vi.advanceTimersByTimeAsync(5);
+        // Playing back, so it is running (not completed) and the console offers Pause.
+        expect(h.current.isPlaying).toBe(true);
+        expect(h.current.simulationStatus).toBe("running");
+
+        await vi.advanceTimersByTimeAsync(16 * 5);
+        h.current.pauseSimulation();
+        await vi.advanceTimersByTimeAsync(0);
+        expect(h.current.simulationStatus).toBe("paused");
+        const pausedAt = h.current.playbackTime;
+        expect(pausedAt).toBeGreaterThan(0);
+        expect(pausedAt).toBeLessThan(0.5);
+
+        // Continuing plays to the landing and only then completes, without computing past it.
+        h.current.continueSimulation();
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(h.current.simulationStatus).toBe("completed");
+        expect(h.current.playbackTime).toBeCloseTo(0.5, 3);
+    });
+
     it("pressing Reset mid-calculation cancels runEngine and leaves status idle with empty data", async () => {
         // 2.5 seconds = 2500 steps -> yields twice at 1000-step boundaries
         const stepFn = (t: number) => ({

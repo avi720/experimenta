@@ -38,16 +38,13 @@ export function useSimulationManager({
     const handleEngineComplete = useCallback((data: TimeSample[]) => {
         if (!isMountedRef.current) return;
         if (data && data.length > 0) {
-            const lastPoint = data[data.length - 1];
             playbackTimeRef.current = 0;
             setPlaybackTime(0);
-            if (lastPoint.shouldStop) {
-                setSimulationStatus('completed');
-                setIsPlaying(true);
-            } else {
-                setSimulationStatus('running');
-                setIsPlaying(true);
-            }
+            // Playback starts now either way, so the run is "running" (and can be paused) until the
+            // playback loop reaches the end. A run that ended early (shouldStop, e.g. Free Fall
+            // hitting the ground) used to be marked "completed" here, which hid the pause button.
+            setSimulationStatus('running');
+            setIsPlaying(true);
         } else {
             setSimulationStatus('idle');
             setIsPlaying(false);
