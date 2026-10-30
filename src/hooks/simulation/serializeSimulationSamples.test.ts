@@ -21,4 +21,15 @@ describe("serializeSimulationSamples with non-object points", () => {
         ]);
         expect(serialized.every((sample) => typeof sample === "object" && sample !== null)).toBe(true);
     });
+
+    it("keeps a null measurement so the column exists before the wave collapses", () => {
+        const serialized = serializeSimulationSamples([
+            { time: 0, transmission: 0.4, hasCollapsed: false, measurementResult: null },
+            { time: 1, transmission: 0.4, hasCollapsed: true, measurementResult: "transmitted" },
+        ]);
+
+        expect(serialized[0].measurementResult).toBeNull();
+        expect(Object.keys(serialized[0])).toContain("measurementResult");
+        expect(serialized[1].measurementResult).toBe("transmitted");
+    });
 });

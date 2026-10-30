@@ -58,7 +58,9 @@ export function serializeSimulationSamples(
                 clean.position = roundNumeric(val.y);
             } else if (typeof val === 'number') {
                 clean[key] = roundNumeric(val);
-            } else if (val !== undefined && typeof val !== 'object') {
+            } else if (val === null || (val !== undefined && typeof val !== 'object')) {
+                // null is an object in JS. Keep it so a column that starts empty
+                // (measurement still to come) is present on the first saved row.
                 clean[key] = val;
             }
         }
