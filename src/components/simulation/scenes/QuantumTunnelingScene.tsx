@@ -394,11 +394,14 @@ export default function QuantumTunnelingScene({ parameters, dataPointToRender }:
                             collisionPadding={12}
                             dir={dir}
                             aria-labelledby="quantum-collapse-title"
-                            className="w-80 max-w-[calc(100vw-2rem)] space-y-2 text-start border-line bg-space-raised text-star shadow-lg shadow-hole/50"
+                            className="w-80 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto space-y-2 text-start border-line bg-space-raised text-star shadow-lg shadow-hole/50"
                         >
                             <h4 id="quantum-collapse-title" className="text-sm font-medium text-star">
                                 {t('workspace.quantumCollapse.title')}
                             </h4>
+                            <p className="text-sm leading-relaxed text-dust">
+                                {t('workspace.quantumCollapse.intro')}
+                            </p>
                             <p className="text-sm leading-relaxed text-dust">
                                 {t('workspace.quantumCollapse.body')}
                             </p>
