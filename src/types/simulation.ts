@@ -49,6 +49,8 @@ export type SimulationSceneProps = {
   parameters?: ParameterValues;
   paramValues?: ParameterValues;
   dataPointToRender?: SimulationDataPoint | null;
+  /** Parameter keys hidden as the unknown; a scene must not print their values. */
+  hiddenParameters?: string[];
 };
 
 type RegistryEntryBase = {
@@ -75,6 +77,8 @@ export type SimulationConsoleHandlers = {
   onScrub: (time: number) => void;
   currentTime?: number;
   playbackTime: number;
+  /** The furthest time this run has played to; stepping and scrubbing stop there. */
+  playedUntil?: number;
   displayedDataPoint?: SimulationDataPoint | null;
   simulationData?: SimulationDataPoint[];
   validationState?: ParameterValidationState;

@@ -10,6 +10,7 @@ import type { ExperimentTemplateData, Parameter, ParameterValues } from "@/types
 import type { IsRTLProps } from "@/types/props";
 import type { SimulationConsoleHandlers } from "@/types/simulation";
 import { instrumentSurfaceClass } from "./workspaceStyles";
+import type { ExperimentChallenge } from "@/hooks/simulation/useExperimentChallenge";
 
 // Underlined tabs: dust at rest, star with a plasma line when active (the brand nav idiom).
 const tabTriggerClass =
@@ -26,6 +27,7 @@ type ExperimentSidePanelProps = IsRTLProps & SimulationConsoleHandlers & {
     onApplyPreset: (value: string) => void;
     onFloatConsole?: () => void;
     showConsole?: boolean;
+    challenge?: ExperimentChallenge;
 };
 
 export default function ExperimentSidePanel({
@@ -48,14 +50,17 @@ export default function ExperimentSidePanel({
     onScrub,
     currentTime,
     playbackTime,
+    playedUntil,
     displayedDataPoint,
     simulationData,
     validationState,
     onFloatConsole,
-    showConsole = true
+    showConsole = true,
+    challenge
 }: ExperimentSidePanelProps) {
-    const { t, locale } = useTranslation(isRTL);
-    const slideOffset = locale === "he" ? -400 : 400;
+    const { t, locale, dir } = useTranslation(isRTL);
+    // The panel sits at the inline start: the right edge in Hebrew, the left in English.
+    const slideOffset = locale === "he" ? 400 : -400;
 
     // Only active parameters whose `visible_when` condition holds for the current values.
     const activeParameters = (parameters || []).filter((param) => isParameterVisible(param, paramValues));
@@ -66,9 +71,10 @@ export default function ExperimentSidePanel({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: slideOffset, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className={cn("absolute top-0 end-0 border-s h-full w-full sm:w-96 shadow-2xl shadow-hole/60 z-30 flex flex-col", instrumentSurfaceClass)}
+            className={cn("absolute top-0 start-0 border-e h-full w-[calc(100%-1.5rem)] sm:w-96 shadow-2xl shadow-hole/60 z-30 flex flex-col", instrumentSurfaceClass)}
         >
-            <Tabs value={activeTab} onValueChange={onTabChange} className="flex-1 flex flex-col overflow-hidden">
+            {/* Radix Tabs defaults to dir="ltr", which would turn the whole panel left-to-right in Hebrew. */}
+            <Tabs dir={dir} value={activeTab} onValueChange={onTabChange} className="flex-1 flex flex-col overflow-hidden">
                 <div className="border-b border-line px-4 flex-shrink-0">
                     <TabsList className="grid w-full grid-cols-2 h-11 rounded-none bg-transparent p-0">
                         <TabsTrigger value="parameters" className={tabTriggerClass}>
@@ -92,6 +98,7 @@ export default function ExperimentSidePanel({
                             selectedPreset={selectedPreset}
                             onApplyPreset={onApplyPreset}
                             validationState={validationState}
+                            challenge={challenge}
                             isRTL={isRTL}
                         />
                     </TabsContent>
@@ -109,11 +116,14 @@ export default function ExperimentSidePanel({
                                 onScrub={onScrub}
                                 currentTime={currentTime}
                                 playbackTime={playbackTime}
+                                playedUntil={playedUntil}
                                 displayedDataPoint={displayedDataPoint}
                                 simulationData={simulationData}
                                 isRTL={isRTL}
                                 onFloat={onFloatConsole}
                                 validationState={validationState}
+                                guide={challenge?.guide}
+                                hiddenKeys={challenge?.hiddenKeys}
                             />
                         ) : (
                             <div className="border border-dashed border-line rounded-md p-6 text-center">

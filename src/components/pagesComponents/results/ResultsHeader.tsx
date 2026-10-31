@@ -39,7 +39,7 @@ export default function ResultsHeader({ hasLoadError, onRefresh }: ResultsHeader
               <h5 className="font-medium leading-none">
                 {t('results.loadErrorTitle')}
               </h5>
-              <p className="mt-1.5 text-sm text-red-300/80">
+              <p className="mt-1.5 text-sm text-danger/80">
                 {t('results.loadErrorDescription')}
               </p>
             </div>

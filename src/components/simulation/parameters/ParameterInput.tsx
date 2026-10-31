@@ -15,7 +15,7 @@ type ParameterValue = ParameterValues[string];
 // Instrument fields: a dark well with a hairline that turns blueshift on hover/focus.
 const fieldClass =
     "bg-space/60 border-line text-star placeholder:text-dust/60 hover:border-blueshift/60 focus-visible:ring-blueshift";
-const invalidFieldClass = "border-red-500/70 hover:border-red-500/70 focus-visible:ring-red-400";
+const invalidFieldClass = "border-danger/70 hover:border-danger/70 focus-visible:ring-danger";
 
 type ParameterInputProps = IsRTLProps & {
     parameter: Parameter | null | undefined;
@@ -81,7 +81,7 @@ export default function ParameterInput({
             <div className="space-y-2">
                 <Label htmlFor={parameter.key} className="text-sm font-normal text-dust flex items-center gap-2">
                     {label}
-                    {!isValid && <AlertCircle className="w-4 h-4 text-red-400" />}
+                    {!isValid && <AlertCircle className="w-4 h-4 text-danger" />}
                 </Label>
                 <Select value={value?.toString()} onValueChange={(val) => onChange(val)}>
                     <SelectTrigger
@@ -100,7 +100,7 @@ export default function ParameterInput({
                 </Select>
                 {tooltip && <p className="text-xs text-dust/80 leading-relaxed">{tooltip}</p>}
                 {!isValid && errorMessage && (
-                    <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-md px-2 py-1.5 flex items-center gap-1.5" role="alert">
+                    <p className="text-xs text-danger bg-danger/10 border border-danger/30 rounded-md px-2 py-1.5 flex items-center gap-1.5" role="alert">
                         <AlertCircle className="w-3 h-3 flex-shrink-0" />
                         {errorMessage}
                     </p>
@@ -115,12 +115,21 @@ export default function ParameterInput({
 
     return (
         <div className="space-y-2">
-            <Label htmlFor={parameter.key} className="text-sm font-normal text-dust flex items-center gap-2">
-                {label}
-                {parameter.unit && <span className="sr-only">({parameter.unit})</span>}
-                {!isValid && <AlertCircle className="w-4 h-4 text-red-400" />}
+            {/* The unit sits beside the label, not inside the field, where the number spinner
+                would cover long units such as "10⁵ eV/c²". */}
+            <Label htmlFor={parameter.key} className="text-sm font-normal text-dust flex items-center justify-start gap-2 text-start">
+                <span>
+                    {label}
+                    {parameter.unit && (
+                        <>
+                            {" "}
+                            <span className="font-mono text-xs whitespace-nowrap" dir="ltr">({parameter.unit})</span>
+                        </>
+                    )}
+                </span>
+                {!isValid && <AlertCircle className="w-4 h-4 text-danger" />}
             </Label>
-            <div className="relative">
+            <div>
                 <Input
                     id={parameter.key}
                     type="number"
@@ -145,23 +154,13 @@ export default function ParameterInput({
                     className={cn(
                         fieldClass,
                         "font-mono tabular-nums",
-                        parameter.unit && "pe-14",
                         !isValid && invalidFieldClass
                     )}
                 />
-                {parameter.unit && (
-                    <span
-                        className="pointer-events-none absolute inset-y-0 end-3 flex items-center font-mono text-xs text-dust"
-                        dir="ltr"
-                        aria-hidden="true"
-                    >
-                        {parameter.unit}
-                    </span>
-                )}
             </div>
             {tooltip && <p className="text-xs text-dust/80 leading-relaxed">{tooltip}</p>}
             {!isValid && errorMessage && (
-                <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-md px-2 py-1.5 flex items-center gap-1.5" role="alert">
+                <p className="text-xs text-danger bg-danger/10 border border-danger/30 rounded-md px-2 py-1.5 flex items-center gap-1.5" role="alert">
                     <AlertCircle className="w-3 h-3 flex-shrink-0" />
                     {errorMessage}
                 </p>

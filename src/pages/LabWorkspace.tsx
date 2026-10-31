@@ -70,6 +70,7 @@ export default function LabWorkspace({ forcedSlug = null }: { forcedSlug?: strin
         simulationData,
         currentTime,
         playbackTime,
+        playedUntil,
         displayedDataPoint,
         validationState,
         maxSimulationTime,
@@ -82,6 +83,7 @@ export default function LabWorkspace({ forcedSlug = null }: { forcedSlug?: strin
         scrubTime,
         saveRun,
         exportData,
+        challenge,
     } = useExperimentSimulation(experiment, user, isRTL);
 
     const handleParamChange = useCallback(
@@ -167,6 +169,7 @@ export default function LabWorkspace({ forcedSlug = null }: { forcedSlug?: strin
             onScrub={scrubTime}
             currentTime={currentTime}
             playbackTime={playbackTime}
+            playedUntil={playedUntil}
             displayedDataPoint={displayedDataPoint}
             simulationData={simulationData}
             onSave={saveRun}
@@ -175,6 +178,7 @@ export default function LabWorkspace({ forcedSlug = null }: { forcedSlug?: strin
             canExport={hasCompletedSamples}
             handleLogout={handleLogout}
             maxSimulationTime={maxSimulationTime}
+            challenge={challenge}
         >
             {SceneComponent ? (
                 <Suspense fallback={<AppLoadingSpinner />}>
@@ -182,6 +186,7 @@ export default function LabWorkspace({ forcedSlug = null }: { forcedSlug?: strin
                         parameters={parameters}
                         paramValues={parameters}
                         dataPointToRender={displayedDataPoint}
+                        hiddenParameters={challenge.isHiding && challenge.state ? [challenge.state.key] : undefined}
                     />
                 </Suspense>
             ) : null}

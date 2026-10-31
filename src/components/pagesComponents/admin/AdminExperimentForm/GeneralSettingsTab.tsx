@@ -93,7 +93,7 @@ export default function GeneralSettingsTab({ experiment, handleInputChange, erro
             onCheckedChange={val => handleInputChange('is_active', val)}
           />
           <Label htmlFor="exp-active" className="text-sm font-medium text-star">{t('admin.form.general.activeExperimentLabel')}</Label>
-          <span className={`ms-auto text-xs ${experiment.is_active ? 'text-emerald-300' : 'text-amber-300'}`}>
+          <span className={`ms-auto text-xs ${experiment.is_active ? 'text-success' : 'text-amber-300'}`}>
             {experiment.is_active ? t('admin.list.activeStat') : t('admin.list.inactiveStat')}
           </span>
         </div>

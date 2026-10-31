@@ -356,16 +356,16 @@ export default function QuantumTunnelingScene({ parameters, dataPointToRender }:
         <div className="relative w-full h-full">
             <div ref={mountRef} className="w-full h-full" />
 
-            {/* Inline-start corner. The side panel is at end-0, so this stays clear on desktop.
+            {/* Inline-end corner. The side panel is at start-0, so this stays clear on desktop.
                 Sibling of the WebGL mount so badge clicks never reach OrbitControls. */}
-            <div className="pointer-events-none absolute top-3 start-3 z-10">
+            <div className="pointer-events-none absolute top-3 end-3 z-10">
                 <div className={cn('pointer-events-auto flex items-center gap-2 rounded-md border ps-3 pe-1 py-1 shadow-lg shadow-hole/40', instrumentSurfaceClass)}>
                     {/* Same colours as the particles in the scene: emerald passed, plasma reflected. */}
                     <span
                         aria-hidden="true"
                         className={cn(
                             'h-2.5 w-2.5 shrink-0 rounded-full',
-                            result === 'transmitted' ? 'bg-emerald-300' : result === 'reflected' ? 'bg-plasma' : 'bg-dust'
+                            result === 'transmitted' ? 'bg-success' : result === 'reflected' ? 'bg-plasma' : 'bg-dust'
                         )}
                     />
                     <span className="text-sm text-star" aria-live="polite">
@@ -383,13 +383,14 @@ export default function QuantumTunnelingScene({ parameters, dataPointToRender }:
                                 <Info className="h-4 w-4" aria-hidden="true" />
                             </Button>
                         </PopoverTrigger>
-                        {/* align="start" is logical. Floating UI flips start/end when this
-                            content's direction is rtl, so menuAlignStart ("end" in Hebrew)
-                            would flip a second time. On a 360px screen the collision
-                            middleware slides the 20rem panel inward so it stays fully visible. */}
+                        {/* align="end" is logical: the badge sits in the inline-end corner, so the
+                            popover grows back towards the middle. Floating UI flips start/end when
+                            this content's direction is rtl, so menuAlignEnd would flip a second
+                            time. On a 360px screen the collision middleware slides the 20rem panel
+                            inward so it stays fully visible. */}
                         <PopoverContent
                             side="bottom"
-                            align="start"
+                            align="end"
                             sideOffset={6}
                             collisionPadding={12}
                             dir={dir}

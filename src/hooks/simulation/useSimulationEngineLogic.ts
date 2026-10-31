@@ -22,6 +22,63 @@ export function getSampleDt(maxTime: number): number {
 /** Time of grid step `step`, with float noise removed (0.1 * 3 → 0.3). */
 const stepTime = (step: number, sampleDt: number): number => Number((step * sampleDt).toPrecision(12));
 
+/**
+ * Fills `samples` with the series the workspace runs and then exports.
+ * A continued run drops a previous off-grid end point so indices stay `time / sampleDt`.
+ * Returns `cancelled` when `control.isCancelled` fires, leaving a partial series in `samples`.
+ */
+export async function collectSimulationSamples(
+    calculateStepFn: SimulationStepFn,
+    parameters: EngineInput,
+    maxSimulationTime: number,
+    sampleDt: number,
+    samples: TimeSample[],
+    control?: {
+        isCancelled?: () => boolean;
+        yieldEvery?: number;
+        onYield?: () => Promise<void>;
+    },
+): Promise<'complete' | 'cancelled'> {
+    const previousLast = samples[samples.length - 1];
+    if (previousLast && Math.abs(previousLast.time / sampleDt - (samples.length - 1)) > 1e-6) {
+        samples.pop();
+    }
+
+    const lastStep = Math.floor(maxSimulationTime / sampleDt + 1e-9);
+    let currentStep = samples.length;
+    let yieldCounter = 0;
+    const yieldEvery = control?.yieldEvery ?? 0;
+    const cancelled = () => control?.isCancelled?.() ?? false;
+    let stopped = false;
+
+    while (currentStep <= lastStep && !cancelled()) {
+        const dataPoint = calculateStepFn(stepTime(currentStep, sampleDt), parameters);
+        samples.push(dataPoint);
+        currentStep++;
+
+        if (dataPoint.shouldStop) {
+            stopped = true;
+            break;
+        }
+
+        if (yieldEvery > 0 && ++yieldCounter >= yieldEvery) {
+            await control?.onYield?.();
+            if (cancelled()) return 'cancelled';
+            yieldCounter = 0;
+        }
+    }
+
+    if (cancelled()) return 'cancelled';
+
+    // End exactly on t_max when it is not a multiple of the sampling interval.
+    const lastTime = samples[samples.length - 1]?.time ?? -Infinity;
+    if (!stopped && maxSimulationTime - lastTime > 1e-9) {
+        samples.push(calculateStepFn(maxSimulationTime, parameters));
+    }
+
+    return cancelled() ? 'cancelled' : 'complete';
+}
+
 /** O(1) lookup of the sample nearest to `time` on a grid with spacing `sampleDt`. */
 export function sampleIndexAtTime(time: number, sampleDt: number, length: number): number {
     if (length === 0) return -1;
@@ -65,17 +122,7 @@ export function useSimulationEngineLogic({ calculateStepFn, onSimulationComplete
         const currentRunId = ++runIdRef.current;
         shouldStopRef.current = false;
         const tempSimulationData: TimeSample[] = Array.isArray(initialData) ? [...initialData] : [];
-
         const sampleDt = sampleDtRef.current;
-        const lastStep = Math.floor(maxSimulationTime / sampleDt + 1e-9);
-        // A continued run drops the previous off-grid t_max point so indices stay time / sampleDt.
-        const previousLast = tempSimulationData[tempSimulationData.length - 1];
-        if (previousLast && Math.abs(previousLast.time / sampleDt - (tempSimulationData.length - 1)) > 1e-6) {
-            tempSimulationData.pop();
-        }
-        let currentStep = tempSimulationData.length;
-        let yieldCounter = 0;
-        const YIELD_EVERY_N_STEPS = 1000;
 
         const isCancelled = () =>
             shouldStopRef.current ||
@@ -83,33 +130,20 @@ export function useSimulationEngineLogic({ calculateStepFn, onSimulationComplete
             runIdRef.current !== currentRunId;
 
         try {
-            let stopped = false;
-            while (currentStep <= lastStep && !isCancelled()) {
-                const dataPoint = calculateStepFn(stepTime(currentStep, sampleDt), parameters);
-                tempSimulationData.push(dataPoint);
-                currentStep++;
+            const outcome = await collectSimulationSamples(
+                calculateStepFn,
+                parameters,
+                maxSimulationTime,
+                sampleDt,
+                tempSimulationData,
+                {
+                    isCancelled,
+                    yieldEvery: 1000,
+                    onYield: () => new Promise((resolve) => setTimeout(resolve, 0)),
+                },
+            );
 
-                if (dataPoint.shouldStop) {
-                    stopped = true;
-                    break;
-                }
-
-                if (++yieldCounter >= YIELD_EVERY_N_STEPS) {
-                    await new Promise(resolve => setTimeout(resolve, 0));
-                    if (isCancelled()) {
-                        return;
-                    }
-                    yieldCounter = 0;
-                }
-            }
-
-            // End exactly on t_max when it is not a multiple of the sampling interval.
-            const lastTime = tempSimulationData[tempSimulationData.length - 1]?.time ?? -Infinity;
-            if (!stopped && !isCancelled() && maxSimulationTime - lastTime > 1e-9) {
-                tempSimulationData.push(calculateStepFn(maxSimulationTime, parameters));
-            }
-
-            if (isCancelled()) {
+            if (outcome === 'cancelled' || isCancelled()) {
                 return;
             }
 

@@ -1,4 +1,6 @@
 import { useTranslation } from "@/i18n";
+import { parseRunChallenge } from "@/simulation/challenge";
+import { getExperimentGuide } from "@/simulation/guides";
 import { formatDisplayValue, formatRunDate } from "./resultsDomain";
 import { fieldLabelClass, panelTitleClass, valueClass } from "./resultsStyles";
 import type { ExperimentRun } from "@/types/models";
@@ -14,6 +16,17 @@ export default function OverviewTab({ run, samples, paramState }: OverviewTabPro
   const { t } = useTranslation();
   const lastTime = samples[samples.length - 1]?.time;
   const parameterEntries = Object.entries(paramState.parameters);
+  const challenge = parseRunChallenge(run.challenge);
+  const unknownSymbol = getExperimentGuide(run.experiment_slug)?.unknowns.find((u) => u.key === challenge?.unknown_key)?.symbol;
+  const challengeDetails = challenge
+    ? [
+        { label: t('results.challengeUnknown'), value: unknownSymbol ? `${unknownSymbol} (${challenge.unknown_key})` : challenge.unknown_key },
+        { label: t('results.challengeTrueValue'), value: formatDisplayValue(challenge.true_value, 4) },
+        { label: t('results.challengeGuess'), value: challenge.guess === null ? t('results.challengeNoGuess') : formatDisplayValue(challenge.guess, 4) },
+        { label: t('results.challengeError'), value: challenge.error_percent === null ? '—' : `${challenge.error_percent.toFixed(1)}%` },
+        { label: t('results.challengeAttempts'), value: challenge.attempts },
+      ]
+    : [];
 
   const details = [
     { label: t('results.experimentTypeLabel'), value: run.experiment_slug, mono: false },
@@ -41,7 +54,7 @@ export default function OverviewTab({ run, samples, paramState }: OverviewTabPro
       <section>
         <h3 className={panelTitleClass}>{t('results.experimentParametersTitle')}</h3>
         {paramState.error ? (
-          <p className="mt-4 text-sm text-red-300">
+          <p className="mt-4 text-sm text-danger">
             {t('results.corruptedParamsInline')}
           </p>
         ) : parameterEntries.length === 0 ? (
@@ -59,6 +72,21 @@ export default function OverviewTab({ run, samples, paramState }: OverviewTabPro
           </dl>
         )}
       </section>
+
+      {challenge && (
+        <section>
+          <h3 className={panelTitleClass}>{t('results.challengeTitle')}</h3>
+          <dl className="mt-4 grid grid-cols-2 md:grid-cols-5 border-t border-line">
+            {challengeDetails.map(({ label, value }) => (
+              <div key={label} className="border-b border-line py-4 pe-4">
+                <dt className={fieldLabelClass}>{label}</dt>
+                <dd className={`mt-1.5 break-all ${valueClass} text-[15px]`} dir="ltr">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          {challenge.revealed && <p className="mt-3 text-sm text-dust">{t('results.challengeRevealedNote')}</p>}
+        </section>
+      )}
     </>
   );
 }

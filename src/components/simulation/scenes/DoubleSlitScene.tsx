@@ -235,17 +235,20 @@ function lightColor(nm: number): THREE.Color {
     return new THREE.Color().setRGB(r, g, b, THREE.SRGBColorSpace);
 }
 
-const DoubleSlitScene = ({ paramValues, dataPointToRender }: SimulationSceneProps) => {
+const DoubleSlitScene = ({ paramValues, dataPointToRender, hiddenParameters }: SimulationSceneProps) => {
     const mountRef = useRef<HTMLDivElement>(null);
     const paramsRef = useRef(paramValues);
     const dataRef = useRef(dataPointToRender);
+    const hideWavelengthRef = useRef(false);
     const applyRef = useRef<(() => void) | null>(null);
+    const hideWavelength = !!hiddenParameters?.includes('wavelength');
 
     useEffect(() => {
         paramsRef.current = paramValues;
         dataRef.current = dataPointToRender;
+        hideWavelengthRef.current = hideWavelength;
         applyRef.current?.();
-    }, [paramValues, dataPointToRender]);
+    }, [paramValues, dataPointToRender, hideWavelength]);
 
     useEffect(() => {
         const mount = mountRef.current;
@@ -578,8 +581,9 @@ const DoubleSlitScene = ({ paramValues, dataPointToRender }: SimulationSceneProp
             }
 
             const lambda = sourceWavelength(engineParams);
-            setWavelengthLabel(formatWavelength(lambda));
             const isElectron = source === 'electron';
+            // While λ is the student's unknown the readout must not print it.
+            setWavelengthLabel(hideWavelengthRef.current && !isElectron ? 'λ = ?' : formatWavelength(lambda));
             laser.visible = !isElectron;
             gun.visible = isElectron;
             const color = isElectron ? ELECTRON_COLOR : lightColor(lambda * 1e9);

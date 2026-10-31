@@ -129,7 +129,7 @@ export default function AdminExperimentCard({ experiment, index, handleDelete, h
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-line" />
             <DropdownMenuItem
-              className="text-red-300 focus:text-red-200 focus:bg-red-500/10"
+              className="text-danger focus:text-red-200 focus:bg-danger/10"
               onClick={() => setIsDeleteDialogOpen(true)}
             >
               <Trash2 className="w-4 h-4 me-2" />

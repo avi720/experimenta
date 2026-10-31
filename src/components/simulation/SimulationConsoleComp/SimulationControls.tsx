@@ -19,6 +19,7 @@ type SimulationControlsProps = IsRTLProps &
         | "onStepBackward"
         | "onScrub"
         | "playbackTime"
+        | "playedUntil"
         | "simulationData"
     > & {
         maxAvailableTime: number;
@@ -35,6 +36,7 @@ export default function SimulationControls({
     onStepBackward,
     onScrub,
     playbackTime,
+    playedUntil,
     maxAvailableTime,
     simulationData,
     isRTL,
@@ -51,13 +53,16 @@ export default function SimulationControls({
     // כפתורי step מושבתים כשאין נתונים או בזמן חישוב/ריצה; כפתור reset זמין גם בזמן חישוב/ריצה (T23)
     const disableStep = !hasData || isCalculating || isRunning;
     const disableReset = isIdle && !hasData;
-    const sliderMax = hasData ? maxAvailableTime : 0;
+    // Never a zero-width range: with min = max = 0 (after a reset clears the data) Radix keeps the
+    // previous thumb position, so the bar would stay full. A positive max draws 0 at the start.
+    const sliderMax = hasData ? maxAvailableTime : 1;
     const mainButtonClass = "flex-grow h-10 flex items-center justify-center gap-2";
 
     return (
         <div className="flex flex-col gap-4">
-            {/* כפתורי בקרה */}
-            <div className="flex items-center justify-center gap-2">
+            {/* כפתורי בקרה. Left to right in both languages, like the time bar below (a Radix slider,
+                which stays ltr): "forward" must point the way the bar moves. */}
+            <div className="flex items-center justify-center gap-2" dir="ltr">
                 <Button
                     variant="ghost"
                     size="icon"
@@ -66,7 +71,7 @@ export default function SimulationControls({
                     aria-label={t("workspace.stepBackward")}
                     className={cn("flex-shrink-0", ghostIconButtonClass)}
                 >
-                    <SkipBack className="w-4 h-4 rtl:-scale-x-100" />
+                    <SkipBack className="w-4 h-4" />
                 </Button>
 
                 {isIdle ? (
@@ -103,11 +108,12 @@ export default function SimulationControls({
                     variant="ghost"
                     size="icon"
                     onClick={onStepForward}
-                    disabled={disableStep || playbackTime >= maxAvailableTime}
+                    // Forward stops at what has been played so far, not at the end of the computed run.
+                    disabled={disableStep || playbackTime >= Math.min(maxAvailableTime, playedUntil ?? maxAvailableTime) - 1e-9}
                     aria-label={t("workspace.stepForward")}
                     className={cn("flex-shrink-0", ghostIconButtonClass)}
                 >
-                    <SkipForward className="w-4 h-4 rtl:-scale-x-100" />
+                    <SkipForward className="w-4 h-4" />
                 </Button>
 
                 <Button
@@ -123,13 +129,14 @@ export default function SimulationControls({
             </div>
 
             {!isValid && (
-                <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-md px-2 py-1.5 text-center" role="alert">
+                <p className="text-xs text-danger bg-danger/10 border border-danger/30 rounded-md px-2 py-1.5 text-center" role="alert">
                     {t("workspace.fixParameterErrors")}
                 </p>
             )}
 
             {/* בר הזמן - מוצג תמיד, מושבת כשאין נתונים */}
             <Slider
+                dir="ltr"
                 value={[playbackTime]}
                 onValueChange={([value]) => onScrub(value)}
                 max={sliderMax}

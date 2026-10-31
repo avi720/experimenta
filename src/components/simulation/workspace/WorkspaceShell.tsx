@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
 import { AnimatePresence } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
 import ExperimentHeader, { type ExperimentMenuItem } from "./ExperimentHeader";
 import ExperimentSidePanel from "./ExperimentSidePanel";
@@ -10,6 +12,7 @@ import type { ExperimentTemplateData, Parameter, ParameterValues } from "@/types
 import type { AppSettings, AppUser } from "@/types/models";
 import type { ChildrenProps, IsRTLProps } from "@/types/props";
 import type { SimulationConsoleHandlers, SimulationDataPoint } from "@/types/simulation";
+import type { ExperimentChallenge } from "@/hooks/simulation/useExperimentChallenge";
 
 type WorkspaceShellProps = ChildrenProps &
     IsRTLProps &
@@ -33,6 +36,8 @@ type WorkspaceShellProps = ChildrenProps &
         settings?: AppSettings | null;
         /** Passed by the workspace page; not used by the shell. */
         maxSimulationTime?: number;
+        /** "Find the unknown" state, with the experiment's guide (equations, quantities). */
+        challenge?: ExperimentChallenge;
     };
 
 export default function WorkspaceShell({
@@ -52,6 +57,7 @@ export default function WorkspaceShell({
     onScrub,
     currentTime,
     playbackTime,
+    playedUntil,
     displayedDataPoint,
     simulationData = [],
     parameters,
@@ -64,10 +70,19 @@ export default function WorkspaceShell({
     onExport,
     canSave = false,
     canExport = false,
-    handleLogout
+    handleLogout,
+    challenge
 }: WorkspaceShellProps) {
-    const { dir } = useTranslation(isRTL);
-    const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+    const { t, dir, pick } = useTranslation(isRTL);
+    const guide = challenge?.guide ?? null;
+    const hiddenKeys = challenge?.hiddenKeys ?? [];
+    const hiddenOption = challenge?.isHiding
+        ? challenge.options.find((o) => o.spec.key === challenge.state?.key)
+        : undefined;
+    const unknown = hiddenOption
+        ? { spec: hiddenOption.spec, label: pick(hiddenOption.parameter.i18n_labels, hiddenOption.parameter.key) }
+        : null;
+    const [isSidePanelOpen, setIsSidePanelOpen] = useState(true);
     const [activeTab, setActiveTab] = useState("parameters");
     const [floatingWindows, setFloatingWindows] = useState({
         console: false,
@@ -152,13 +167,13 @@ export default function WorkspaceShell({
                 isRTL={isRTL}
                 experiments={experiments}
                 experimentsByCategory={experimentsByCategory}
-                onToggleRightPanel={() => setIsRightPanelOpen(!isRightPanelOpen)}
-                isRightPanelOpen={isRightPanelOpen}
                 onSave={onSave}
                 onExport={onExport}
                 onLogout={handleLogout}
                 canSave={canSave}
                 canExport={canExport}
+                guide={guide}
+                unknown={unknown}
             />
 
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -166,7 +181,8 @@ export default function WorkspaceShell({
                 <div className="flex-1 relative overflow-hidden">
                     {/* Space backdrop: a decorative animation behind the transparent scene canvas */}
                     <div className="absolute inset-0 bg-space">
-                        <BlackHoleBackdrop dir={dir} />
+                        {/* The panel sits at the inline start, so the hole goes to the end side. */}
+                        <BlackHoleBackdrop side={dir === "rtl" ? "left" : "right"} />
                     </div>
 
                     {/* Canvas - always full width and height */}
@@ -175,8 +191,27 @@ export default function WorkspaceShell({
                     </div>
 
                     {/* Side Panel - floating over the canvas with absolute positioning */}
+                    {/* The panel's own handle: a tab on its inner edge while open, and a small tab
+                        on the screen's start edge while closed. On phones the panel leaves a strip
+                        of scene for it (see ExperimentSidePanel), so it never covers the inputs. */}
+                    <button
+                        type="button"
+                        onClick={() => setIsSidePanelOpen((open) => !open)}
+                        aria-label={t("workspace.toggleSidePanel")}
+                        aria-expanded={isSidePanelOpen}
+                        className={cn(
+                            "focus-ring absolute top-1/2 z-[35] flex h-16 w-6 -translate-y-1/2 items-center justify-center rounded-e-md border border-s-0 border-line bg-space/90 text-dust shadow-lg shadow-hole/50 backdrop-blur-md transition-[inset-inline-start,color] duration-300 hover:text-blueshift",
+                            isSidePanelOpen ? "start-[calc(100%-1.5rem)] sm:start-96" : "start-0"
+                        )}
+                    >
+                        {/* Points the way the panel will move: back to its edge when open, out when closed. */}
+                        {isSidePanelOpen
+                            ? <ChevronLeft className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
+                            : <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />}
+                    </button>
+
                     <AnimatePresence>
-                        {isRightPanelOpen && (
+                        {isSidePanelOpen && (
                             <ExperimentSidePanel
                                 isRTL={isRTL}
                                 activeTab={activeTab}
@@ -197,11 +232,13 @@ export default function WorkspaceShell({
                                 onScrub={onScrub}
                                 currentTime={effectiveTime}
                                 playbackTime={playbackTime}
+                                playedUntil={playedUntil}
                                 displayedDataPoint={displayedDataPoint}
                                 simulationData={normalizedSimulationData}
                                 validationState={validationState}
                                 onFloatConsole={handleFloatConsole}
                                 showConsole={!floatingWindows.console}
+                                challenge={challenge}
                             />
                         )}
                     </AnimatePresence>
@@ -220,6 +257,7 @@ export default function WorkspaceShell({
                             onScrub={onScrub}
                             currentTime={effectiveTime}
                             playbackTime={playbackTime}
+                            playedUntil={playedUntil}
                             displayedDataPoint={displayedDataPoint}
                             simulationData={normalizedSimulationData}
                             experiment={experiment}
@@ -227,6 +265,8 @@ export default function WorkspaceShell({
                             onToggleConsole={handleCloseFloatingConsole}
                             onToggleCharts={handleCloseFloatingCharts}
                             validationState={validationState}
+                            guide={guide}
+                            hiddenKeys={hiddenKeys}
                         />
                     )}
                 </div>
@@ -238,6 +278,8 @@ export default function WorkspaceShell({
                     isRTL={isRTL}
                     isOpen={isChartsOpen}
                     onToggle={handleToggleCharts}
+                    guide={guide}
+                    hiddenKeys={hiddenKeys}
                 />
             </div>
         </div>

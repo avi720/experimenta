@@ -93,7 +93,7 @@ const inputClass = "h-11 bg-space border-line text-star text-[16px] focus-visibl
 const submitButtonClass = "focus-ring w-full h-11 text-[16px] font-medium hover:bg-plasma-hi";
 const googleButtonClass =
   "focus-ring w-full h-11 text-[15px] border-line bg-transparent text-star hover:bg-transparent hover:text-star hover:border-blueshift";
-const errorAlertClass = "mb-5 border-red-400/30 bg-red-500/10 text-red-300";
+const errorAlertClass = "mb-5 border-danger/30 bg-danger/10 text-danger";
 const noticeAlertClass = "mb-5 border-blueshift/30 bg-blueshift/10 text-star";
 
 type AuthShellProps = { dir: string; title: string; subtitle?: string; children: ReactNode };
@@ -264,7 +264,7 @@ export default function Login() {
 
   return (
     <AuthShell dir={dir} title={t("auth.welcomeTitle")} subtitle={t("auth.welcomeSubtitle")}>
-      <Tabs value={tab} onValueChange={(value) => { setTab(value); resetFeedback(); }}>
+      <Tabs dir={dir} value={tab} onValueChange={(value) => { setTab(value); resetFeedback(); }}>
         <TabsList className="grid w-full grid-cols-2 h-auto mb-7 rounded-none bg-transparent p-0 border-b border-line">
           <TabsTrigger value="signin" className={tabTriggerClass}>{t("auth.signInTab")}</TabsTrigger>
           <TabsTrigger value="signup" className={tabTriggerClass}>{t("auth.signUpTab")}</TabsTrigger>

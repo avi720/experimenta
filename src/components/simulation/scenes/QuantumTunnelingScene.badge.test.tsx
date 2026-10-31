@@ -98,7 +98,7 @@ describe("QuantumTunnelingScene measurement badge", () => {
             point({ hasCollapsed: true, measurementResult: "transmitted" })
         );
         expect(screen.getByText("Measured: particle passed")).toBeTruthy();
-        expect(statusDot(container).className).toContain("bg-emerald-300");
+        expect(statusDot(container).className).toContain("bg-success");
 
         rerender(
             <I18nContext.Provider value={{ locale: "en", isRTL: false, dir: "ltr" }}>
@@ -130,7 +130,7 @@ describe("QuantumTunnelingScene measurement badge", () => {
         const mount = container.querySelector("div.relative > div.w-full.h-full");
         const button = screen.getByRole("button", { name: "הסבר על קריסת פונקציית הגל" });
         expect(mount?.contains(button)).toBe(false);
-        expect(container.querySelector(".absolute.top-3.start-3")).toBeTruthy();
+        expect(container.querySelector(".absolute.top-3.end-3")).toBeTruthy();
         expect(container.innerHTML).not.toMatch(/\b(ml-|mr-|pl-|pr-|text-left|text-right|left-|right-)/);
     });
 });
