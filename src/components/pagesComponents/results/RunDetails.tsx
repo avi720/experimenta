@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle } from "lucide-react";
 import { useTranslation } from "@/i18n";
+import type { ExperimentRun } from "@/types/models";
 import { downloadCsv } from "@/lib/csv";
 import { exportStoredSamplesCsv } from "@/lib/simulationExport";
 import { formatRunDate } from "./resultsDomain";
@@ -10,6 +11,7 @@ import OverviewTab from "./OverviewTab";
 import DataTab from "./DataTab";
 import ChartsTab from "./ChartsTab";
 import AnalysisTab from "./AnalysisTab";
+import CompareTab from "./CompareTab";
 import type { RunAnalysis } from "./useRunAnalysis";
 
 const tabTriggerClass =
@@ -32,8 +34,8 @@ function EmptyTraceFigure() {
   );
 }
 
-/** Right-hand panel: empty state, or the four tabs for the selected run. */
-export default function RunDetails({ analysis }: { analysis: RunAnalysis }) {
+/** Right-hand panel: empty state, or the tabs for the selected run. */
+export default function RunDetails({ analysis, runs }: { analysis: RunAnalysis; runs: readonly ExperimentRun[] }) {
   const { t, dir } = useTranslation();
   const [currentTab, setCurrentTab] = useState("overview");
   const { selectedRun, paramState, samples, chartConfig } = analysis;
@@ -91,6 +93,7 @@ export default function RunDetails({ analysis }: { analysis: RunAnalysis }) {
           <TabsTrigger value="overview" className={tabTriggerClass}>{t('results.overviewTab')}</TabsTrigger>
           <TabsTrigger value="data" className={tabTriggerClass}>{t('results.dataTab')}</TabsTrigger>
           <TabsTrigger value="charts" className={tabTriggerClass}>{t('results.chartsTab')}</TabsTrigger>
+          <TabsTrigger value="compare" className={tabTriggerClass}>{t('results.compareTab')}</TabsTrigger>
           <TabsTrigger value="analysis" className={tabTriggerClass}>{t('results.analysisTab')}</TabsTrigger>
         </TabsList>
 
@@ -112,6 +115,15 @@ export default function RunDetails({ analysis }: { analysis: RunAnalysis }) {
               hasTheoreticalSeries={analysis.hasTheoreticalSeries}
               onChartConfigChange={analysis.updateChartConfig}
               onFormulaChange={analysis.selectFormula}
+            />
+          </TabsContent>
+
+          <TabsContent value="compare" className="focus-ring mt-0 focus-visible:ring-0 focus-visible:ring-offset-0">
+            <CompareTab
+              run={selectedRun}
+              samples={samples}
+              paramState={paramState}
+              runs={runs}
             />
           </TabsContent>
 
