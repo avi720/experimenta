@@ -173,16 +173,20 @@ function ParameterSide({
 }) {
   const blank = value === null || value === undefined;
   return (
-    <div className="min-w-0">
+    // items-start keeps the value on the same side as its run label. A dir=ltr on the
+    // whole dd would pin the number to the physical left in Hebrew.
+    <div className="flex min-w-0 flex-col items-start gap-1">
       <dt className="flex items-center gap-2 text-xs text-dust">
         <SeriesSwatch variant={variant} />
         <span className="break-all" dir="ltr">{label}</span>
       </dt>
       {missing ? (
-        <dd className="mt-1 text-sm text-dust">{missingLabel}</dd>
+        <dd className="text-sm text-dust">{missingLabel}</dd>
       ) : (
-        <dd className={`mt-1 break-all text-[15px] ${blank ? "text-dust" : valueClass}`} dir="ltr">
-          {blank ? "—" : formatDisplayValue(value, 3)}
+        <dd className={`text-[15px] ${blank ? "text-dust" : valueClass}`}>
+          <bdi dir="ltr" style={{ unicodeBidi: "isolate" }} className="break-all">
+            {blank ? "—" : formatDisplayValue(value, 3)}
+          </bdi>
         </dd>
       )}
     </div>
