@@ -10,6 +10,24 @@ import type { ParamState, Sample } from "@/types/results";
 import { formatRunDate } from "./resultsDomain";
 import CompareTab from "./CompareTab";
 
+const { templateQuery } = vi.hoisted(() => ({
+  templateQuery: {
+    data: [
+      {
+        slug: "free-fall",
+        parameters: [
+          { key: "h0", type: "float", unit: "m", i18n_labels: { he: "גובה התחלתי", en: "Initial height" } },
+          { key: "g", type: "float", unit: "m/s²", i18n_labels: { he: "תאוצת כובד", en: "Gravity" } },
+        ],
+      },
+    ],
+  },
+}));
+
+vi.mock("@/hooks/useDataQueries", () => ({
+  useExperimentTemplatesQuery: () => templateQuery,
+}));
+
 beforeAll(() => {
   if (!Element.prototype.hasPointerCapture) {
     Element.prototype.hasPointerCapture = () => false;
@@ -131,17 +149,25 @@ describe("CompareTab selection", () => {
 
     const chart = screen.getByRole("img");
     expect(chart.getAttribute("dir")).toBe("ltr");
-    expect(chart.getAttribute("aria-label")).toContain("position against time");
+    expect(chart.getAttribute("aria-label")).toContain("Height y [m] against Time t [s]");
     expect(chart.getAttribute("aria-label")).toContain(labelFor(current));
     expect(chart.getAttribute("aria-label")).toContain(labelFor(partner));
+    expect(chart.getAttribute("aria-label")).not.toContain("position");
 
-    expect(screen.getByText("h0")).toBeTruthy();
+    expect(screen.getAllByLabelText("Initial height (m)").length).toBeGreaterThan(0);
+    expect(screen.queryByText("h0")).toBeNull();
     expect(screen.getByText("10.000")).toBeTruthy();
     expect(screen.getByText("20.000")).toBeTruthy();
-    expect(screen.queryByText("g")).toBeNull();
+    expect(screen.queryByLabelText("Gravity (m/s²)")).toBeNull();
     expect(screen.getByText(translate("en", "results.compareOtherParametersMatch"))).toBeTruthy();
-    expect(screen.getByText("time 0.000–1.000")).toBeTruthy();
-    expect(screen.getByText("time 0.000–5.000")).toBeTruthy();
+    expect(screen.getAllByLabelText("Time t [s]").length).toBeGreaterThan(0);
+    expect(screen.getByText("0.000–1.000")).toBeTruthy();
+    expect(screen.getByText("0.000–5.000")).toBeTruthy();
+
+    await user.click(screen.getByRole("combobox", { name: "Y Axis" }));
+    expect(screen.getByRole("option", { name: "Height y [m]" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "Velocity v [m/s]" })).toBeTruthy();
+    expect(screen.queryByRole("option", { name: "position" })).toBeNull();
   });
 
   it("keeps the page direction RTL and the chart left to right in Hebrew", async () => {
@@ -155,8 +181,17 @@ describe("CompareTab selection", () => {
     await user.click(screen.getByRole("option", { name: labelFor(partner) }));
 
     expect(screen.getByRole("heading", { name: "מה השתנה" })).toBeTruthy();
-    expect(screen.getByRole("img").getAttribute("dir")).toBe("ltr");
-    expect(screen.getByText("h0")).toBeTruthy();
+    const chart = screen.getByRole("img");
+    expect(chart.getAttribute("dir")).toBe("ltr");
+    expect(chart.getAttribute("aria-label")).toContain("גובה y [m] כנגד זמן t [s]");
+    expect(chart.getAttribute("aria-label")).not.toContain("position");
+    expect(screen.getAllByLabelText("גובה התחלתי (m)").length).toBeGreaterThan(0);
+    expect(screen.queryByText("h0")).toBeNull();
     expect(screen.getByText("20.000")).toBeTruthy();
+    expect(screen.getAllByLabelText("זמן t [s]").length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole("combobox", { name: "ציר Y" }));
+    expect(screen.getByRole("option", { name: "גובה y [m]" })).toBeTruthy();
+    expect(screen.queryByRole("option", { name: "position" })).toBeNull();
   });
 });
