@@ -115,6 +115,18 @@ function labelFor(run: ExperimentRun): string {
   return formatRunDate(run.created_date, "dd/MM/yyyy HH:mm");
 }
 
+/** The measured value stays LTR-isolated, and shares a start-aligned box with its run label. */
+function expectValueBesideLabel(value: string, runLabel: string) {
+  const number = screen.getByText(value);
+  expect(number.tagName).toBe("BDI");
+  expect(number.getAttribute("dir")).toBe("ltr");
+  expect(number.style.unicodeBidi).toBe("isolate");
+  expect(number.closest("dd")?.getAttribute("dir")).toBeNull();
+  const side = number.closest(".items-start");
+  expect(side?.textContent).toContain(runLabel);
+  expect(side?.textContent).toContain(value);
+}
+
 function renderCompare(locale: Locale, runs: ExperimentRun[]) {
   const dir = locale === "he" ? "rtl" : "ltr";
   document.documentElement.lang = locale;
@@ -156,8 +168,8 @@ describe("CompareTab selection", () => {
 
     expect(screen.getAllByLabelText("Initial height (m)").length).toBeGreaterThan(0);
     expect(screen.queryByText("h0")).toBeNull();
-    expect(screen.getByText("10.000")).toBeTruthy();
-    expect(screen.getByText("20.000")).toBeTruthy();
+    expectValueBesideLabel("10.000", labelFor(current));
+    expectValueBesideLabel("20.000", labelFor(partner));
     expect(screen.queryByLabelText("Gravity (m/s²)")).toBeNull();
     expect(screen.getByText(translate("en", "results.compareOtherParametersMatch"))).toBeTruthy();
     expect(screen.getAllByLabelText("Time t [s]").length).toBeGreaterThan(0);
@@ -187,7 +199,8 @@ describe("CompareTab selection", () => {
     expect(chart.getAttribute("aria-label")).not.toContain("position");
     expect(screen.getAllByLabelText("גובה התחלתי (m)").length).toBeGreaterThan(0);
     expect(screen.queryByText("h0")).toBeNull();
-    expect(screen.getByText("20.000")).toBeTruthy();
+    expectValueBesideLabel("10.000", labelFor(current));
+    expectValueBesideLabel("20.000", labelFor(partner));
     expect(screen.getAllByLabelText("זמן t [s]").length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole("combobox", { name: "ציר Y" }));
