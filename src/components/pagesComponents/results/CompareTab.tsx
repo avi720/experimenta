@@ -2,11 +2,23 @@ import { useMemo, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useExperimentTemplatesQuery } from "@/hooks/useDataQueries";
 import { useTranslation } from "@/i18n";
 import type { ExperimentRun } from "@/types/models";
 import type { ParamState, Sample } from "@/types/results";
 import { loadRunSamples } from "./runAnalysis";
 import { formatDisplayValue, formatRunDate, parseRunParameters } from "./resultsDomain";
+import {
+  COMPARE_CHART_MARGIN,
+  COMPARE_X_AXIS_PADDING,
+  formatAxisTick,
+} from "./compareChartLayout";
+import {
+  parametersFromTemplate,
+  resolveParameterLabel,
+  resolveSeriesLabel,
+  type ResolvedLabel,
+} from "./compareLabels";
 import {
   chartAxisLabelStyle,
   chartColors,
@@ -27,6 +39,12 @@ import {
   type OverlayPoint,
   type ParameterDifference,
 } from "./compareRuns";
+
+/** Axis titles use the UI face so Hebrew is drawn in the same type as the rest of the page. */
+const axisTitleStyle = {
+  ...chartAxisLabelStyle,
+  fontFamily: '"IBM Plex Sans Hebrew", "Segoe UI", Arial, sans-serif',
+};
 
 /** Dashed horizon trace for the second run, distinct from the solid blueshift of the open run. */
 const OVERLAY_DASH = "6 4";
@@ -58,6 +76,21 @@ function SeriesSwatch({ variant }: { variant: SeriesVariant }) {
   );
 }
 
+function CompareLabelText({ label }: { label: ResolvedLabel }) {
+  const ltr = [
+    label.symbol,
+    label.unitAffix === "bracket" ? `[${label.unit}]` : label.unitAffix === "paren" ? `(${label.unit})` : "",
+  ].filter((part) => part.length > 0).join(" ");
+  // The symbol and unit stay left to right so "m/s²" does not reorder in Hebrew. aria-label
+  // keeps the spoken name spaced ("Height y [m]") when the visible runs are split.
+  return (
+    <span aria-label={label.text}>
+      <span aria-hidden="true">{label.name}</span>
+      {ltr ? <span aria-hidden="true" dir="ltr" className="font-mono">{` ${ltr}`}</span> : null}
+    </span>
+  );
+}
+
 function AxisSelect({
   id,
   label,
@@ -68,7 +101,7 @@ function AxisSelect({
   id: string;
   label: string;
   value: string;
-  options: string[];
+  options: ResolvedLabel[];
   onChange: (value: string) => void;
 }) {
   return (
@@ -79,8 +112,10 @@ function AxisSelect({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {options.map((key) => (
-            <SelectItem key={key} value={key}>{key}</SelectItem>
+          {options.map((option) => (
+            <SelectItem key={option.key} value={option.key}>
+              <CompareLabelText label={option} />
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -97,7 +132,7 @@ function SeriesLegendItem({
 }: {
   variant: SeriesVariant;
   label: string;
-  axis: string;
+  axis: ResolvedLabel;
   points: OverlayPoint[];
   emptyLabel: string;
 }) {
@@ -108,9 +143,14 @@ function SeriesLegendItem({
       <SeriesSwatch variant={variant} />
       <span className="break-all" dir="ltr">{label}</span>
       {first && last ? (
-        <span className="font-mono text-xs text-dust" dir="ltr">
-          {axis} {first.x.toFixed(3)}–{last.x.toFixed(3)}
-        </span>
+        <>
+          <span className="text-xs text-dust">
+            <CompareLabelText label={axis} />
+          </span>
+          <span className="font-mono text-xs text-dust" dir="ltr">
+            {first.x.toFixed(3)}–{last.x.toFixed(3)}
+          </span>
+        </>
       ) : (
         <span className="text-dust">{emptyLabel}</span>
       )}
@@ -160,6 +200,7 @@ function ParameterDifferences({
   partnerLabel,
   differences,
   unchangedCount,
+  labelFor,
 }: {
   title: string;
   unreadable: boolean;
@@ -171,6 +212,7 @@ function ParameterDifferences({
   partnerLabel: string;
   differences: ParameterDifference[] | null;
   unchangedCount: number;
+  labelFor: (key: string) => ResolvedLabel;
 }) {
   let body;
   if (unreadable || !differences) {
@@ -183,7 +225,9 @@ function ParameterDifferences({
         <ul className="mt-4 divide-y divide-line border-t border-line">
           {differences.map((diff) => (
             <li key={diff.key} className="py-3">
-              <p className="break-all text-sm font-medium text-star" dir="ltr">{diff.key}</p>
+              <p className="break-words text-sm font-medium text-star">
+                <CompareLabelText label={labelFor(diff.key)} />
+              </p>
               <dl className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <ParameterSide
                   variant="primary"
@@ -216,15 +260,9 @@ function ParameterDifferences({
   );
 }
 
-function formatAxisTick(value: unknown): string {
-  if (typeof value !== "number" || !Number.isFinite(value)) return "";
-  const abs = Math.abs(value);
-  if (abs !== 0 && (abs < 0.01 || abs >= 10000)) return value.toExponential(1);
-  return String(Math.round(value * 1000) / 1000);
-}
-
 export default function CompareTab({ run, samples, paramState, runs }: CompareTabProps) {
-  const { t, dir } = useTranslation();
+  const { t, dir, locale } = useTranslation();
+  const templatesQuery = useExperimentTemplatesQuery();
   const [partnerId, setPartnerId] = useState<string | null>(null);
   const [axes, setAxes] = useState<{ x: string; y: string } | null>(null);
 
@@ -267,8 +305,24 @@ export default function CompareTab({ run, samples, paramState, runs }: CompareTa
     return compareParameters(paramState.parameters, partnerParamState.parameters);
   }, [partner, partnerParamState, paramState]);
 
+  const parameterCatalog = useMemo(
+    () => parametersFromTemplate(templatesQuery.data, run.experiment_slug),
+    [templatesQuery.data, run.experiment_slug],
+  );
+  const seriesLabels = useMemo(() => {
+    const byKey = new Map<string, ResolvedLabel>();
+    for (const key of sharedKeys) {
+      byKey.set(key, resolveSeriesLabel(run.experiment_slug, key, locale));
+    }
+    return byKey;
+  }, [sharedKeys, run.experiment_slug, locale]);
+  const labelForSeries = (key: string) => seriesLabels.get(key) ?? resolveSeriesLabel(run.experiment_slug, key, locale);
+  const labelForParameter = (key: string) => resolveParameterLabel(key, parameterCatalog, locale);
+
   const currentLabel = labels.get(run.id) ?? run.id;
   const partnerLabel = partner ? labels.get(partner.id) ?? partner.id : "";
+  const xLabel = activeAxes ? labelForSeries(activeAxes.x) : null;
+  const yLabel = activeAxes ? labelForSeries(activeAxes.y) : null;
   const paramsUnreadable = Boolean(partner && (paramState.error || partnerParamState?.error));
   const describedBy = candidates.length === 0 ? "compare-empty" : "compare-run-hint";
   const canPlot = Boolean(
@@ -339,14 +393,14 @@ export default function CompareTab({ run, samples, paramState, runs }: CompareTa
                   id="compare-x-axis"
                   label={t("results.xAxisLabel")}
                   value={activeAxes.x}
-                  options={sharedKeys}
+                  options={sharedKeys.map(labelForSeries)}
                   onChange={(value) => chooseAxis("x", value)}
                 />
                 <AxisSelect
                   id="compare-y-axis"
                   label={t("results.yAxisLabel")}
                   value={activeAxes.y}
-                  options={sharedKeys}
+                  options={sharedKeys.map(labelForSeries)}
                   onChange={(value) => chooseAxis("y", value)}
                 />
               </div>
@@ -358,45 +412,46 @@ export default function CompareTab({ run, samples, paramState, runs }: CompareTa
                 <SeriesLegendItem
                   variant="primary"
                   label={currentLabel}
-                  axis={activeAxes.x}
+                  axis={labelForSeries(activeAxes.x)}
                   points={overlay.left}
-                  emptyLabel={t("results.compareNoAxisValues", { axis: activeAxes.y })}
+                  emptyLabel={t("results.compareNoAxisValues", { axis: labelForSeries(activeAxes.y).name })}
                 />
                 <SeriesLegendItem
                   variant="overlay"
                   label={partnerLabel}
-                  axis={activeAxes.x}
+                  axis={labelForSeries(activeAxes.x)}
                   points={overlay.right}
-                  emptyLabel={t("results.compareNoAxisValues", { axis: activeAxes.y })}
+                  emptyLabel={t("results.compareNoAxisValues", { axis: labelForSeries(activeAxes.y).name })}
                 />
               </ul>
 
-              {canPlot && overlay.xDomain && overlay.yDomain && (
+              {canPlot && overlay.xDomain && overlay.yDomain && xLabel && yLabel && (
                 <div
-                  className="h-80 sm:h-96"
+                  className="h-80 overflow-visible sm:h-96"
                   dir="ltr"
                   role="img"
                   aria-label={t("results.compareChartSummary", {
-                    y: activeAxes.y,
-                    x: activeAxes.x,
+                    y: yLabel.text,
+                    x: xLabel.text,
                     a: currentLabel,
                     b: partnerLabel,
                   })}
                 >
                   {/* Chart axes are physical quantities: they read left to right in both languages. */}
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart margin={{ top: 8, right: 16, bottom: 24, left: 8 }}>
+                    <LineChart margin={COMPARE_CHART_MARGIN}>
                       <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
                       <XAxis
                         dataKey="x"
                         type="number"
                         domain={overlay.xDomain}
                         allowDataOverflow
+                        padding={COMPARE_X_AXIS_PADDING}
                         stroke={chartColors.grid}
                         tick={chartTick}
                         tickFormatter={formatAxisTick}
                         tickLine={{ stroke: chartColors.grid }}
-                        label={{ value: activeAxes.x, position: "insideBottom", offset: -16, style: chartAxisLabelStyle }}
+                        label={{ value: xLabel.text, position: "insideBottom", offset: -16, style: axisTitleStyle }}
                       />
                       <YAxis
                         type="number"
@@ -406,15 +461,24 @@ export default function CompareTab({ run, samples, paramState, runs }: CompareTa
                         tick={chartTick}
                         tickFormatter={formatAxisTick}
                         tickLine={{ stroke: chartColors.grid }}
-                        label={{ value: activeAxes.y, angle: -90, position: "insideLeft", style: chartAxisLabelStyle }}
+                        label={{ value: yLabel.text, angle: -90, position: "insideLeft", style: axisTitleStyle }}
                       />
                       <Tooltip
                         {...chartTooltipProps}
-                        formatter={(value, name) => [
-                          typeof value === "number" ? value.toFixed(4) : value,
-                          name,
-                        ]}
-                        labelFormatter={(label) => formatAxisTick(label)}
+                        formatter={(value, name) => {
+                          const formatted = typeof value === "number" ? value.toFixed(4) : value;
+                          const withUnit = yLabel.unit && formatted !== undefined && formatted !== null
+                            ? `${formatted} ${yLabel.unit}`
+                            : formatted;
+                          return [withUnit, name];
+                        }}
+                        labelFormatter={(label) => {
+                          const formatted = formatAxisTick(label);
+                          if (!xLabel.symbol && !xLabel.unit) return formatted;
+                          const head = xLabel.symbol ? `${xLabel.symbol} = ` : "";
+                          const tail = xLabel.unit ? ` ${xLabel.unit}` : "";
+                          return `${head}${formatted}${tail}`;
+                        }}
                       />
                       {overlay.left.length > 0 && (
                         <Line
@@ -464,6 +528,7 @@ export default function CompareTab({ run, samples, paramState, runs }: CompareTa
           partnerLabel={partnerLabel}
           differences={parameterComparison?.differences ?? null}
           unchangedCount={parameterComparison?.unchangedCount ?? 0}
+          labelFor={labelForParameter}
         />
       )}
     </div>
