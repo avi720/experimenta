@@ -32,8 +32,12 @@ means for changes:
 | `npx vitest run -t "key parity"` | Run tests whose name matches |
 | `npm run build` | Production build into `dist/` |
 
-CI (`.github/workflows/ci.yml`) runs lint → typecheck → test:run → build on pushes to `main`/`dev`
-and on PRs, with placeholder `VITE_SUPABASE_*` values — tests must not hit the network.
+CI (`.github/workflows/ci.yml`) runs lint → typecheck → test:run → build → `npm audit --omit=dev
+--audit-level=high` → the no-`base44` check on PRs and on pushes to `main`, with placeholder
+`VITE_SUPABASE_*` values — tests must not hit the network. It does not run on pushes to `dev`: the
+open `dev` → `main` PR already runs it, and a push run would repeat the same commit. Node comes from
+`.nvmrc` (jsdom 30 needs Node ≥ 22.22.2). Keep the job name `lint-and-build` stable: branch protection
+matches status checks by that name.
 Tests are colocated as `*.test.ts` next to the code they cover.
 
 ## Architecture
