@@ -1,13 +1,19 @@
 name: CI
 
+# Pull requests are the gate for every branch, so `dev` is covered by its open `dev` -> `main` PR.
+# Running on `push` to `dev` as well would run the same commit twice (a push run and a PR run).
+# `main` still runs on push to check the merged result.
 on:
   pull_request:
   push:
-    branches: [main, dev]
+    branches: [main]
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   lint-and-build:
@@ -22,7 +28,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # .nvmrc is the single source of the Node version for CI and local development.
+          node-version-file: .nvmrc
           cache: npm
 
       - run: npm ci
@@ -39,9 +46,22 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Only what ships to users: dev tooling advisories (vitest, eslint) do not reach production.
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Ensure no Base44 references remain
         run: |
-          if grep -rni "base44" src index.html vite.config.js package.json package-lock.json; then
+          # `git grep` exits 1 for "no match" and >1 for a real error. A plain `grep -r` over a
+          # missing file (e.g. vite.config.js renamed to .ts) also exits non-zero, which the old
+          # `if grep ...` read as "no match" and silently passed. A pathspec that matches nothing is
+          # not an error for git grep, and `vite.config.*` follows a rename.
+          status=0
+          git grep -niI base44 -- src index.html 'vite.config.*' package.json package-lock.json || status=$?
+          if [ "$status" -eq 0 ]; then
             echo "::error::Found Base44 references"
             exit 1
+          elif [ "$status" -ne 1 ]; then
+            echo "::error::Base44 check could not run (git grep exit code $status)"
+            exit "$status"
           fi

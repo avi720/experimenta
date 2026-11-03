@@ -28,6 +28,8 @@ export const chartColors = {
   tick: "rgb(var(--dust))",
   experimental: "rgb(var(--blueshift))",
   theoretical: "rgb(var(--plasma))",
+  /** Second saved run on a comparison chart. Horizon is the rare data accent. */
+  overlay: "rgb(var(--horizon))",
 } as const;
 
 export const chartTick = { fill: chartColors.tick, fontSize: 12, fontFamily: '"IBM Plex Mono", ui-monospace, monospace' };

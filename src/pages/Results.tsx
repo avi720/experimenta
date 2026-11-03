@@ -84,7 +84,8 @@ export default function Results() {
         />
 
         <div className="min-w-0">
-          <RunDetails analysis={analysis} />
+          {/* All saved runs, not the filtered list: a partner can sit outside the date filter. */}
+          <RunDetails analysis={analysis} runs={runs} />
         </div>
       </div>
 
