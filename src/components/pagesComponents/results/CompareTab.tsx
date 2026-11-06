@@ -35,6 +35,7 @@ import {
   compareParameters,
   compareRunLabel,
   defaultOverlayAxes,
+  overlayValuesAt,
   sharedNumericKeys,
   type OverlayPoint,
   type ParameterDifference,
@@ -83,11 +84,111 @@ function CompareLabelText({ label }: { label: ResolvedLabel }) {
   ].filter((part) => part.length > 0).join(" ");
   // The symbol and unit stay left to right so "m/s²" does not reorder in Hebrew. aria-label
   // keeps the spoken name spaced ("Height y [m]") when the visible runs are split.
+  // A leading space, or a margin, on that LTR run is drawn on the far side of "(m)"
+  // in Hebrew, so the heading reads "גובה התחלתי(m)". The gap belongs to the name:
+  // its inline-end faces the unit in both directions.
   return (
     <span aria-label={label.text}>
-      <span aria-hidden="true">{label.name}</span>
-      {ltr ? <span aria-hidden="true" dir="ltr" className="font-mono">{` ${ltr}`}</span> : null}
+      <span aria-hidden="true" style={ltr ? { marginInlineEnd: "0.25em" } : undefined}>
+        {label.name}
+      </span>
+      {ltr ? (
+        <bdi dir="ltr" aria-hidden="true" className="font-mono" style={{ unicodeBidi: "isolate" }}>
+          {ltr}
+        </bdi>
+      ) : null}
     </span>
+  );
+}
+
+function finiteAxisValue(value: unknown): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+/** Hovered x from the axis label, or from the active point when the label is not a number. */
+function hoveredX(
+  label: unknown,
+  payload: ReadonlyArray<{ payload?: { x?: unknown } }> | undefined,
+): number | null {
+  const fromLabel = finiteAxisValue(label);
+  if (fromLabel !== null) return fromLabel;
+  return finiteAxisValue(payload?.[0]?.payload?.x);
+}
+
+function formatTooltipX(x: number, xLabel: ResolvedLabel): string {
+  const formatted = formatAxisTick(x);
+  if (!xLabel.symbol && !xLabel.unit) return formatted;
+  const head = xLabel.symbol ? `${xLabel.symbol} = ` : "";
+  const tail = xLabel.unit ? ` ${xLabel.unit}` : "";
+  return `${head}${formatted}${tail}`;
+}
+
+function formatTooltipY(y: number, yLabel: ResolvedLabel): string {
+  const formatted = y.toFixed(4);
+  return yLabel.unit ? `${formatted} ${yLabel.unit}` : formatted;
+}
+
+type CompareTooltipProps = {
+  active?: boolean;
+  label?: unknown;
+  payload?: ReadonlyArray<{ payload?: { x?: unknown } }>;
+  left: readonly OverlayPoint[];
+  right: readonly OverlayPoint[];
+  leftName: string;
+  rightName: string;
+  xLabel: ResolvedLabel;
+  yLabel: ResolvedLabel;
+};
+
+function CompareTooltip({
+  active,
+  label,
+  payload,
+  left,
+  right,
+  leftName,
+  rightName,
+  xLabel,
+  yLabel,
+}: CompareTooltipProps) {
+  if (!active) return null;
+  const x = hoveredX(label, payload);
+  if (x === null) return null;
+  // Recharts looks both lines up by one index into the concatenated series.
+  // Read each run at this x instead, and skip a run the hover has passed.
+  const values = overlayValuesAt(left, right, x);
+  const rows = [
+    values.left ? { key: "left", name: leftName, y: values.left.y } : null,
+    values.right ? { key: "right", name: rightName, y: values.right.y } : null,
+  ].filter((row): row is { key: string; name: string; y: number } => row !== null);
+  if (rows.length === 0) return null;
+  return (
+    <div
+      className="recharts-default-tooltip"
+      style={{ margin: 0, padding: 10, whiteSpace: "nowrap", ...chartTooltipProps.contentStyle }}
+    >
+      <p className="recharts-tooltip-label" style={{ margin: 0, ...chartTooltipProps.labelStyle }}>
+        {formatTooltipX(x, xLabel)}
+      </p>
+      <ul className="recharts-tooltip-item-list" style={{ padding: 0, margin: 0 }}>
+        {rows.map((row) => (
+          <li
+            key={row.key}
+            className="recharts-tooltip-item"
+            style={{ display: "block", paddingTop: 4, paddingBottom: 4, ...chartTooltipProps.itemStyle }}
+          >
+            <span className="recharts-tooltip-item-name">{row.name}</span>
+            <span className="recharts-tooltip-item-separator"> : </span>
+            <span className="recharts-tooltip-item-value">{formatTooltipY(row.y, yLabel)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -469,20 +570,19 @@ export default function CompareTab({ run, samples, paramState, runs }: CompareTa
                       />
                       <Tooltip
                         {...chartTooltipProps}
-                        formatter={(value, name) => {
-                          const formatted = typeof value === "number" ? value.toFixed(4) : value;
-                          const withUnit = yLabel.unit && formatted !== undefined && formatted !== null
-                            ? `${formatted} ${yLabel.unit}`
-                            : formatted;
-                          return [withUnit, name];
-                        }}
-                        labelFormatter={(label) => {
-                          const formatted = formatAxisTick(label);
-                          if (!xLabel.symbol && !xLabel.unit) return formatted;
-                          const head = xLabel.symbol ? `${xLabel.symbol} = ` : "";
-                          const tail = xLabel.unit ? ` ${xLabel.unit}` : "";
-                          return `${head}${formatted}${tail}`;
-                        }}
+                        content={(props) => (
+                          <CompareTooltip
+                            active={props.active}
+                            label={props.label}
+                            payload={props.payload}
+                            left={overlay.left}
+                            right={overlay.right}
+                            leftName={currentLabel}
+                            rightName={partnerLabel}
+                            xLabel={xLabel}
+                            yLabel={yLabel}
+                          />
+                        )}
                       />
                       {overlay.left.length > 0 && (
                         <Line
