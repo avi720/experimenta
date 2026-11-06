@@ -125,8 +125,10 @@ function expectUnitBesideLabel(ariaLabel: string, name: string, ltr: string) {
     expect(unit?.style.unicodeBidi).toBe("isolate");
     expect(unit?.textContent).toBe(ltr);
     const nameNode = node.querySelector("span[aria-hidden='true']");
-    expect(nameNode?.textContent).toBe(name);
-    expect(nameNode?.style.marginInlineEnd).toBe("0.25em");
+    expect(nameNode).toBeInstanceOf(HTMLElement);
+    if (!(nameNode instanceof HTMLElement)) return;
+    expect(nameNode.textContent).toBe(name);
+    expect(nameNode.style.marginInlineEnd).toBe("0.25em");
   }
 }
 
