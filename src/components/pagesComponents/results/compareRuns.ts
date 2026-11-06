@@ -243,3 +243,47 @@ export function buildRunOverlay(
     yDomain: extent(ys, Y_PAD_RATIO),
   };
 }
+
+export type OverlayReadout = {
+  left: OverlayPoint | null;
+  right: OverlayPoint | null;
+};
+
+/**
+ * Value of each run at one hovered x.
+ *
+ * Each series is read from its own samples. The runs are not concatenated, and
+ * a shared index is not used: a 161-sample fall and a 102-sample fall do not
+ * line up by position, so one index can show the longer run's value twice.
+ * Inside a run's x range, the sample nearest to `x` is used. An exact tie keeps
+ * the earlier sample. Outside that range the run is omitted. `left` and `right`
+ * are sorted by x, as `buildRunOverlay` returns them.
+ */
+export function overlayValuesAt(
+  left: readonly OverlayPoint[],
+  right: readonly OverlayPoint[],
+  x: number,
+): OverlayReadout {
+  return {
+    left: sampleNearestX(left, x),
+    right: sampleNearestX(right, x),
+  };
+}
+
+function sampleNearestX(points: readonly OverlayPoint[], x: number): OverlayPoint | null {
+  if (points.length === 0 || !Number.isFinite(x)) return null;
+  const first = points[0];
+  const last = points[points.length - 1];
+  if (x < first.x || x > last.x) return null;
+  let best = first;
+  let bestDistance = Math.abs(first.x - x);
+  for (let i = 1; i < points.length; i++) {
+    const point = points[i];
+    const distance = Math.abs(point.x - x);
+    if (distance < bestDistance) {
+      best = point;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}

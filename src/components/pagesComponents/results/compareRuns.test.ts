@@ -6,6 +6,7 @@ import {
   compareParameters,
   compareRunLabel,
   defaultOverlayAxes,
+  overlayValuesAt,
   sharedNumericKeys,
 } from "./compareRuns";
 
@@ -164,5 +165,77 @@ describe("buildRunOverlay", () => {
     expect(overlay.xDomain?.[1]).toBeGreaterThan(1);
     expect(overlay.yDomain?.[0]).toBeLessThan(3);
     expect(overlay.yDomain?.[1]).toBeGreaterThan(3);
+  });
+});
+
+/** One sample per index, so a shared index would return this y and no other. */
+function grid(count: number, duration: number, yAt: (index: number) => number): { x: number; y: number }[] {
+  return Array.from({ length: count }, (_, index) => ({
+    x: count === 1 ? 0 : (duration * index) / (count - 1),
+    y: yAt(index),
+  }));
+}
+
+function nearestSample(points: readonly { x: number; y: number }[], x: number) {
+  return points.reduce((best, point) =>
+    Math.abs(point.x - x) < Math.abs(best.x - x) ? point : best,
+  );
+}
+
+describe("overlayValuesAt", () => {
+  // The QA pair: free fall recorded as 161 samples over 3.193 s, and 102 over 2.019 s.
+  const longer = grid(161, 3.193, (index) => 1000 + index);
+  const shorter = grid(102, 2.019, (index) => 2000 + index);
+
+  it("reads each run from its own time grid, not from one shared index", () => {
+    const left = [
+      { x: 0, y: 1 },
+      { x: 1, y: 2 },
+      { x: 2, y: 3 },
+      { x: 3, y: 4 },
+    ];
+    const right = [
+      { x: 0, y: 10 },
+      { x: 0.25, y: 11 },
+    ];
+    // Index 1 is t = 1 on the left and t = 0.25 on the right. A shared index
+    // would report y = 2 for the left run at the hovered time 0.25.
+    const values = overlayValuesAt(left, right, 0.25);
+    expect(left[1].x).not.toBe(right[1].x);
+    expect(values.left).toEqual({ x: 0, y: 1 });
+    expect(values.right).toEqual({ x: 0.25, y: 11 });
+
+    const hovered = longer[40];
+    const onQaGrids = overlayValuesAt(longer, shorter, hovered.x);
+    expect(onQaGrids.left).toEqual(hovered);
+    expect(onQaGrids.right).toEqual(nearestSample(shorter, hovered.x));
+    expect(onQaGrids.right?.y).not.toBe(hovered.y);
+  });
+
+  it("omits a run once the hovered time is past its last sample", () => {
+    const hovered = longer[150];
+    expect(hovered.x).toBeGreaterThan(shorter[shorter.length - 1].x);
+    // Index 150 of the concatenated series is the longer run's point. Both tooltip
+    // rows would show that y, because the shorter run has no index 150.
+    const concatenated = [...longer, ...shorter];
+    expect(concatenated[150]).toEqual(hovered);
+    const values = overlayValuesAt(longer, shorter, hovered.x);
+    expect(values.left).toEqual(hovered);
+    expect(values.right).toBeNull();
+
+    const swapped = overlayValuesAt(shorter, longer, hovered.x);
+    expect(swapped.left).toBeNull();
+    expect(swapped.right).toEqual(hovered);
+  });
+
+  it("keeps the earlier sample when the hovered time is exactly halfway, and ignores an empty run", () => {
+    const values = overlayValuesAt(
+      [{ x: 0, y: 1 }, { x: 2, y: 3 }],
+      [],
+      1,
+    );
+    expect(values.left).toEqual({ x: 0, y: 1 });
+    expect(values.right).toBeNull();
+    expect(overlayValuesAt([], [], Number.NaN)).toEqual({ left: null, right: null });
   });
 });
