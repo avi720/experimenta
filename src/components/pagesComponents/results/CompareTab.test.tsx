@@ -115,6 +115,23 @@ function labelFor(run: ExperimentRun): string {
   return formatRunDate(run.created_date, "dd/MM/yyyy HH:mm");
 }
 
+/** The unit is an LTR isolate with no leading space; the gap is on the name's inline end. */
+function expectUnitBesideLabel(ariaLabel: string, name: string, ltr: string) {
+  const nodes = screen.getAllByLabelText(ariaLabel);
+  expect(nodes.length).toBeGreaterThan(0);
+  for (const node of nodes) {
+    const unit = node.querySelector("bdi");
+    expect(unit?.getAttribute("dir")).toBe("ltr");
+    expect(unit?.style.unicodeBidi).toBe("isolate");
+    expect(unit?.textContent).toBe(ltr);
+    const nameNode = node.querySelector("span[aria-hidden='true']");
+    expect(nameNode).toBeInstanceOf(HTMLElement);
+    if (!(nameNode instanceof HTMLElement)) return;
+    expect(nameNode.textContent).toBe(name);
+    expect(nameNode.style.marginInlineEnd).toBe("0.25em");
+  }
+}
+
 /** The measured value stays LTR-isolated, and shares a start-aligned box with its run label. */
 function expectValueBesideLabel(value: string, runLabel: string) {
   const number = screen.getByText(value);
@@ -166,7 +183,8 @@ describe("CompareTab selection", () => {
     expect(chart.getAttribute("aria-label")).toContain(labelFor(partner));
     expect(chart.getAttribute("aria-label")).not.toContain("position");
 
-    expect(screen.getAllByLabelText("Initial height (m)").length).toBeGreaterThan(0);
+    expectUnitBesideLabel("Initial height (m)", "Initial height", "(m)");
+    expectUnitBesideLabel("Time t [s]", "Time", "t [s]");
     expect(screen.queryByText("h0")).toBeNull();
     expectValueBesideLabel("10.000", labelFor(current));
     expectValueBesideLabel("20.000", labelFor(partner));
@@ -197,7 +215,8 @@ describe("CompareTab selection", () => {
     expect(chart.getAttribute("dir")).toBe("ltr");
     expect(chart.getAttribute("aria-label")).toContain("גובה y [m] כנגד זמן t [s]");
     expect(chart.getAttribute("aria-label")).not.toContain("position");
-    expect(screen.getAllByLabelText("גובה התחלתי (m)").length).toBeGreaterThan(0);
+    expectUnitBesideLabel("גובה התחלתי (m)", "גובה התחלתי", "(m)");
+    expectUnitBesideLabel("זמן t [s]", "זמן", "t [s]");
     expect(screen.queryByText("h0")).toBeNull();
     expectValueBesideLabel("10.000", labelFor(current));
     expectValueBesideLabel("20.000", labelFor(partner));
